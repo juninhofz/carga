@@ -3319,3 +3319,15 @@ button.wl-summary{width:100%;padding:0 0 10px;text-align:start;border-radius:var
 :root:lang(pt) :is(.capitalize,.tag,.chip,.today-row .ttl,.pcard-ex-n,.ins-row-n,.cmp-h,.focus-card-header h2){text-transform:none}
 :root:lang(pt) :is(.capitalize,.tag,.chip,.today-row .ttl,.pcard-ex-n,.ins-row-n,.cmp-h,.focus-card-header h2)::first-letter{text-transform:uppercase}
 :root:lang(pt) span.capitalize{display:inline-block}
+
+/* CARGA's level card (components/LevelCard.jsx) */
+.level-card .lv-glyph{font-size:28px;line-height:1}
+.level-card .lv-bar{margin:12px 0 4px;height:10px}
+.level-card .lv-bar i{background:linear-gradient(90deg,var(--accent),#ff9500)}
+.level-card .lv-next{margin-bottom:6px}
+.level-card .lv-h{font-size:var(--fs-footnote);font-weight:600;color:var(--text-2,#a3a3a3);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 6px}
+.level-card .lv-how{display:inline-flex;align-items:center;gap:4px;margin-top:10px;background:none;border:0;padding:4px 0;color:var(--accent);font:inherit;cursor:pointer}
+.level-card .lv-rules{margin:6px 0 0;padding-left:18px;display:grid;gap:4px}
+.level-card .lv-rules b{color:var(--accent)}
+.level-card .lv-party-icon{font-size:34px;line-height:1}
+.level-card.max .lv-bar i{background:linear-gradient(90deg,#ff6b00,#ffd23f)}

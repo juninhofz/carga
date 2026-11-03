@@ -29,6 +29,7 @@ import { SeasonDeco } from '../components/Seasonal.jsx'
 import { WrappedHomeCard } from '../components/WrappedEntry.jsx'
 import RecoveryHint from '../components/RecoveryHint.jsx'
 import { ChallengesCard } from '../components/Challenges.jsx'
+import { LevelCard } from '../components/LevelCard.jsx'
 import { isOn } from '../lib/modules.js'
 import { APP_NAME } from '../lib/brand.js'
 
@@ -205,6 +206,7 @@ export default function Home() {
     {on('health') && <RecoveryHint S={S} />}
 
     {/* This month's three challenges and how far you are (lib/challenges.js). */}
+    <LevelCard S={S} />
     <ChallengesCard S={S} />
 
     {/* Jump to the gym check-in cards (QR membership codes). Shown here as a quick tap on
