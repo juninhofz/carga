@@ -3,12 +3,13 @@ import { useStore } from '../store/useStore.js'
 import { t, tn } from '../lib/i18n.js'
 import { fmtNum } from '../lib/format.js'
 import Icon from './Icon.jsx'
-import CardHead from './CardHead.jsx'
+import { RankCard, RankUp } from './RankCard.jsx'
 import { PartyBanner, PARTY_MS } from './Streak.jsx'
 import { levelCard, TIERS, XP_WEEKLY, XP_WORKOUT, XP_PR, XP_MONTHLY, XP_GOLD } from '../lib/carga-level.js'
 
-/* CARGA's level (lib/carga-level.js) on Home: what you carry and how far to the next level, this
-   week's two personal challenges, and a party when you level up or make one of them. */
+/* CARGA's level (lib/carga-level.js) on Home: the rank card and how far to the next level, this
+   week's two personal challenges, a party for a new level or a challenge made, and the card
+   turning over (RankUp) for a new rank. */
 
 /** A weekly challenge as a goal: "Train 3 times this week". */
 export function weeklyTitle(p) {
@@ -23,7 +24,7 @@ export function weeklyTitle(p) {
   }
 }
 
-/** "Brick II" — the tier's name and its step within the tier. */
+/** "Flame II" — the rank's name and its step within the rank. */
 export const levelName = L => t(L.tier.name) + (L.sub ? ' ' + L.sub : '')
 
 // What this viewer last saw, so a level-up or a challenge made is celebrated once. A remembered
@@ -37,18 +38,23 @@ export function LevelCard({ S, now }) {
   const L = useMemo(() => levelCard(S, now || new Date()), [S.workouts, S.challenges, S.weekStart]) // eslint-disable-line react-hooks/exhaustive-deps
   const [open, setOpen] = useState(false)
   const [party, setParty] = useState(null)
+  const [rankUp, setRankUp] = useState(null)
+  const name = useStore(s => s.user?.name || '')
   const closeParty = useCallback(() => setParty(null), [])
+  const closeRankUp = useCallback(() => setRankUp(null), [])
   const doneNow = L.week.filter(p => p.done).map(p => L.weekKey + '|' + p.id)
 
   useEffect(() => {
     if (sandbox) return
     const seen = readSeen()
-    if (seen && L.level > seen.level) setParty({ kind: 'level', text: t('Level {0}! You now carry: {1}', L.level, levelName(L)), icon: L.tier.icon })
+    const seenRank = seen ? (seen.rank ?? Math.min(TIERS.length - 1, Math.floor(((seen.level || 1) - 1) / 5))) : null
+    if (seen && L.rank > seenRank) setRankUp({ from: Math.max(0, Math.min(TIERS.length - 1, seenRank)), to: L.rank })
+    else if (seen && L.level > seen.level) setParty({ kind: 'level', text: t('Level {0}! {1}', L.level, levelName(L)), icon: '⬆️' })
     else if (seen) {
       const fresh = L.week.find(p => p.done && !(seen.done || []).includes(L.weekKey + '|' + p.id))
       if (fresh) setParty({ kind: 'week', text: t('Weekly challenge done: +{0} XP', XP_WEEKLY), icon: '⚡' })
     }
-    writeSeen({ level: L.level, done: doneNow })
+    writeSeen({ level: L.level, rank: L.rank, done: doneNow })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [L.level, doneNow.join(','), sandbox])
 
@@ -61,8 +67,14 @@ export function LevelCard({ S, now }) {
   const pct = Math.min(1, L.into / L.step)
   const left = L.step - L.into
   return <div className={'card level-card' + (L.tier.id === 'max' ? ' max' : '')} data-level>
-    <CardHead glyph={<span className="lv-glyph">{L.tier.icon}</span>}
-      eyebrow={<>{t('Level {0}', L.level)} · {fmtNum(L.total)} XP</>} title={levelName(L)} />
+    <div className="lv-top">
+      <RankCard rank={L.rank} level={L.level} name={name} />
+      <div className="lv-who">
+        <div className="lv-eyebrow">{t('Rank {0}', L.tier.r)} · {fmtNum(L.total)} XP</div>
+        <div className="lv-title">{levelName(L)}</div>
+        <div className="small muted">{t('Level {0}', L.level)}</div>
+      </div>
+    </div>
     <div className="pbar lv-bar" role="progressbar" aria-label={t('To the next level')} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct * 100)}>
       <i style={{ '--p': pct }} />
     </div>
@@ -95,11 +107,12 @@ export function LevelCard({ S, now }) {
       <li><b>+{XP_WEEKLY}</b> {t('each weekly challenge')}</li>
       <li><b>+{XP_MONTHLY}</b> {t('each monthly challenge')}</li>
       <li><b>+{XP_GOLD}</b> {t('a gold month (all three monthly challenges)')}</li>
-      <li className="muted">{t('Every five levels you carry something heavier: {0}.', LADDER())}</li>
+      <li className="muted">{t('Every five levels your card climbs a rank: {0}.', LADDER())}</li>
     </ul>}
+    {rankUp && <RankUp from={rankUp.from} to={rankUp.to} level={L.level} name={name} onClose={closeRankUp} />}
     {party && <PartyBanner text={party.text} icon={<span className="lv-party-icon">{party.icon}</span>} className={'lv-party ' + party.kind} onClose={closeParty} />}
   </div>
 }
 
-// "🪶 Feather → 🧱 Brick → … → 🔥 Full Load"
-const LADDER = () => TIERS.map(tr => tr.icon + ' ' + t(tr.name)).join(' → ')
+// "E Dormant → D Spark → … → ∞ Full Load"
+const LADDER = () => TIERS.map(tr => tr.r + ' ' + t(tr.name)).join(' → ')

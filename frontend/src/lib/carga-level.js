@@ -12,8 +12,8 @@
 //   a month with all three made   XP_GOLD on top
 //
 // THE LEVELS. Level n needs stepFor(n) more XP to reach n + 1, a little more every level, so the
-// first ones come within days and the last ones over years. Every five levels share a TIER: what
-// you can carry, from a feather to the Full Load (Carga Máxima), the brand's own word.
+// first ones come within days and the last ones over years. Every five levels share a RANK, shown
+// as the rank card, from E to the Full Load (Carga Máxima), the brand's own word.
 //
 // THE WEEKLY CHALLENGES. Two a week, worked out like the monthly ones: one habit (how often you
 // train) and one to vary (legs, something new, cardio, a record), sized from the last weeks and
@@ -36,19 +36,21 @@ export const XP_GOLD = 200
 /** XP from level n to n + 1. */
 export const stepFor = n => 200 + 50 * (Math.max(1, n) - 1)
 
-// What you carry, five levels each; past the last tier the levels go on under its name. The icons
-// are emoji every phone and Windows 10 draws (no newer than 2018).
+// The ranks of the rank card (components/RankCard.jsx), five levels each; past the last one the
+// levels go on under its name. `r` is the letter on the card, `c` and `c2` the two colours of its
+// frame and aura, `fx` how fine the frame is (sparks, a foil sheen, holographic, living fire).
+// The names are provisional: they are i18n keys, so renaming one is a change to the locales.
 export const TIERS = [
-  { id: 'feather', name: 'Feather', icon: '🕊️' },
-  { id: 'brick', name: 'Brick', icon: '🧱' },
-  { id: 'cement', name: 'Cement bag', icon: '🏗️' },
-  { id: 'gas', name: 'Gas cylinder', icon: '🛢️' },
-  { id: 'fridge', name: 'Fridge', icon: '❄️' },
-  { id: 'piano', name: 'Grand piano', icon: '🎹' },
-  { id: 'beetle', name: 'Beetle', icon: '🚗' },
-  { id: 'elephant', name: 'Elephant', icon: '🐘' },
-  { id: 'truck', name: 'Truck', icon: '🚚' },
-  { id: 'max', name: 'Full Load', icon: '🔥' },
+  { id: 'dormant', r: 'E', name: 'Dormant', c: '#8a8f98', c2: '#3f4247', fx: '' },
+  { id: 'spark', r: 'D', name: 'Spark', c: '#e9edf2', c2: '#7d8590', fx: 'sparks' },
+  { id: 'ember', r: 'C', name: 'Ember', c: '#ffd23f', c2: '#8a6500', fx: 'sparks' },
+  { id: 'flame', r: 'B', name: 'Flame', c: '#ff6b00', c2: '#7a2f00', fx: 'sparks' },
+  { id: 'current', r: 'A', name: 'Surge', c: '#3fa9ff', c2: '#0b3f73', fx: 'sparks' },
+  { id: 'storm', r: 'S', name: 'Storm', c: '#a66bff', c2: '#3b1580', fx: 'sparks foil' },
+  { id: 'titan', r: 'SS', name: 'Titan', c: '#ff3b3b', c2: '#6e0d0d', fx: 'sparks foil' },
+  { id: 'colossus', r: 'SSS', name: 'Colossus', c: '#ffc83d', c2: '#7a5300', fx: 'sparks foil holo' },
+  { id: 'supernova', r: '★', name: 'Supernova', c: '#fff1c4', c2: '#b08a2a', fx: 'sparks foil holo' },
+  { id: 'max', r: '∞', name: 'Full Load', c: '#ff8a1f', c2: '#7a2f00', fx: 'sparks foil fire' },
 ]
 export const PER_TIER = 5
 const ROMAN = ['I', 'II', 'III', 'IV', 'V']
@@ -60,7 +62,7 @@ export function levelFor(xp) {
   while (total >= floor + stepFor(level)) { floor += stepFor(level); level++ }
   const t = Math.min(TIERS.length - 1, Math.floor((level - 1) / PER_TIER))
   const sub = t === TIERS.length - 1 && level > TIERS.length * PER_TIER ? null : ROMAN[(level - 1) % PER_TIER]
-  return { level, tier: TIERS[t], sub, into: total - floor, step: stepFor(level), total }
+  return { level, rank: t, tier: TIERS[t], sub, into: total - floor, step: stepFor(level), total }
 }
 
 /* ---------- reading the workouts ---------- */
