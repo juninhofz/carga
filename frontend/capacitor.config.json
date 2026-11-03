@@ -1,0 +1,21 @@
+{
+  "appId": "ch.duartesantos.opengym",
+  "appName": "CARGA",
+  "webDir": "dist",
+  "backgroundColor": "#0d0d0d",
+  "android": {
+    "allowMixedContent": true
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "disable"
+    },
+    "SplashScreen": {
+      "launchShowDuration": 8000,
+      "launchAutoHide": true,
+      "launchFadeOutDuration": 180,
+      "backgroundColor": "#0d0d0d",
+      "showSpinner": false
+    }
+  }
+}

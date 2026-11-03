@@ -1,0 +1,35 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>preview</title>
+<style>
+body{background:#0d0d0d;color:#fff;font:13px system-ui;margin:0;padding:10px}
+.g{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.c{background:#161616;border-radius:8px;padding:4px;text-align:center}
+.c div{height:150px;display:grid;place-items:center}
+.c svg{height:100%;width:100%}
+b{color:#ff6b00}
+</style>
+<div id="sum"></div>
+<div class="g" id="g"></div>
+<script type="module">
+import { EXDB } from '/src/lib/exercises-data.js'
+import { CATALOGUE, isBuiltinEx } from '/src/lib/exercises.js'
+import { drawExercise, moveOf, MOVE_NAMES } from '/src/lib/carga-figure.js'
+const qs = new URLSearchParams(location.search)
+const p = qs.has('p') ? +qs.get('p') : null
+const want = qs.get('ids')
+const count = {}, first = {}
+for (const e of CATALOGUE) { const m = moveOf(e); count[m] = (count[m] || 0) + 1; if (!first[m] || (e.eq !== 'body weight' && first[m].eq === 'body weight')) first[m] = first[m] && first[m].eq !== 'body weight' ? first[m] : e }
+document.getElementById('sum').textContent = Object.entries(count).sort((a, b) => b[1] - a[1]).map(([m, n]) => m + ' ' + n).join(' · ')
+const list = want ? want.split(',').map(id => CATALOGUE.find(e => e.id === id)) : MOVE_NAMES.map(m => first[m]).filter(Boolean)
+const sets = []
+for (const e of list) {
+  const c = document.createElement('div'); c.className = 'c'
+  const h = document.createElement('div'); c.appendChild(h)
+  const r = drawExercise(h, e)
+  c.insertAdjacentHTML('beforeend', '<b>' + r.move + '</b> ' + e.n + ' <i>(' + e.eq + ')</i>')
+  document.getElementById('g').appendChild(c)
+  r.set(p ?? 0); sets.push(r.set)
+}
+if (p == null) requestAnimationFrame(function tick(now) { const ph = (now % 2800) / 2800, x = 0.5 - 0.5 * Math.cos(2 * Math.PI * ph); sets.forEach(s => s(x)); requestAnimationFrame(tick) })
+</script>
