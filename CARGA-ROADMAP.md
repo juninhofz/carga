@@ -18,9 +18,8 @@ Legenda: [x] feito · [ ] a fazer
 
 ## Fase 1 — Arrumar a casa (curta, e a primeira obrigação legal)
 
-- [ ] **Código aberto no GitHub**: a AGPL exige que o código de um app publicado esteja
-      disponível. Salvar o trabalho no ramo `meu-app` e publicar o repositório.
-      Colocar o link do código dentro do app (Ajustes → Sobre).
+- [x] **Código aberto no GitHub**: https://github.com/juninhofz/carga (público, AGPL), sem as
+      mídias da Gym visual nem o histórico do openGym. Link do código em Ajustes → Sobre.
 - [ ] Ícones do Android e do iPhone com o logo da CARGA (hoje ainda é o haltere)
 - [ ] Traduzir as descrições e o passo a passo dos exercícios que ainda aparecem em inglês
 - [ ] Revisar as animações com a lista de exercícios que você achar estranhos

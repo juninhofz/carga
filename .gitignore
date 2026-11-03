@@ -59,3 +59,4 @@ frontend/dist/.vercel/
 
 # The openGym CI (store releases, its own servers) does not run for CARGA
 .github/workflows/
+.github/FUNDING.yml
