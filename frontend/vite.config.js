@@ -126,5 +126,5 @@ export default defineConfig({
   build: { chunkSizeWarningLimit: 1500, target: ['safari15', 'chrome100', 'firefox100', 'edge100'] },
   // Gives happy-dom tests a working localStorage on Node 24+ (#733).
   // VITE_APP_NAME: the suites read the upstream English strings, so they run under its name (lib/brand.js)
-  test: { setupFiles: ['./src/test-setup.js'], env: { VITE_APP_NAME: 'openGym', VITE_DEFAULT_LANG: '', VITE_ENGLISH_NAME_HINT: '1', VITE_OWN_FIGURES: '' } }
+  test: { setupFiles: ['./src/test-setup.js'], env: { VITE_APP_NAME: 'openGym', VITE_DEFAULT_LANG: '', VITE_ENGLISH_NAME_HINT: '1', VITE_OWN_FIGURES: '', VITE_SOURCE_URL: 'https://github.com/DuarteSantos8/openGym', VITE_CLOUD_URL: '', VITE_CLOUD_KEY: '' } }
 })

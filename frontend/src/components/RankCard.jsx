@@ -42,15 +42,15 @@ function letterSVG(k) {
     `<line class="rc-slash" x1="156" y1="-6" x2="24" y2="206" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>`
 }
 
-function Face({ rank, level, name, xp, stats }) {
+function Face({ rank, level, name, xp, stats, number }) {
   const k = TIERS[rank] || TIERS[0]
   const letter = useMemo(() => letterSVG(k), [k])
   const step = level <= TIERS.length * 5 ? ' ' + ROMAN[(level - 1) % 5] : ''
   return <div className="rc-in">
     <div className="rc-top">
       <span className="rc-seal"><span className="rc-m" dangerouslySetInnerHTML={{ __html: MARK }} /><b>CARGA</b></span>
-      {/* the card's own number comes with accounts (who reached the rank first, CARGA-ROADMAP.md) */}
-      <span className="rc-tag">Nº —</span>
+      {/* the card's own number: the order its holder reached this rank in, among every account (lib/cloud.js) */}
+      {number ? <span className="rc-tag">Nº {String(number).padStart(3, '0')}</span> : <span className="rc-tag">{t('Rank {0}', k.r)}</span>}
     </div>
     <div className="rc-art"><span className="rc-aura" /><span className="rc-ring" /><span className="rc-letter" dangerouslySetInnerHTML={{ __html: letter }} /></div>
     <div className="rc-foot">
@@ -71,10 +71,10 @@ function Face({ rank, level, name, xp, stats }) {
 }
 
 /** The card, still. `size` 'sm' for Home's card, 'lg' for the big one: the same card at two sizes. */
-export function RankCard({ rank, level, name, xp, stats, risk = false, size = 'sm', twoFaced = false }) {
+export function RankCard({ rank, level, name, xp, stats, number, risk = false, size = 'sm', twoFaced = false }) {
   const k = TIERS[rank] || TIERS[0]
   // the small card is the same card, only smaller: it shows everything the big one does
-  const face = <Face rank={rank} level={level} name={name} xp={xp} stats={stats} />
+  const face = <Face rank={rank} level={level} name={name} xp={xp} stats={stats} number={number} />
   return <div className={`rc rc-${size} ${k.fx}${risk ? ' risk' : ''}`} style={vars(k)} role="img" aria-label={t('Rank {0}: {1}, level {2}', k.r, t(k.name), level)}>
     {twoFaced
       ? <><div className="rc-front">{face}</div><div className="rc-back"><span className="rc-m" dangerouslySetInnerHTML={{ __html: MARK }} /></div></>
@@ -141,12 +141,12 @@ function useEscape(onClose) {
 }
 
 /** The card shown big, to lean and admire; the button or Escape closes it. */
-export function CardView({ rank, level, name, xp, stats, risk, onClose }) {
+export function CardView({ rank, level, name, xp, stats, risk, number, onClose }) {
   const ref = useRef(null), locked = useRef(false)
   useLively(ref, (TIERS[rank] || TIERS[0]).c, locked)
   useEscape(onClose)
   return createPortal(<div className="rankup" role="dialog" aria-modal="true" aria-label={t('Your rank card')}>
-    <div className="rankup-hold" ref={ref}><RankCard rank={rank} level={level} name={name} xp={xp} stats={stats} risk={risk} size="lg" /></div>
+    <div className="rankup-hold" ref={ref}><RankCard rank={rank} level={level} name={name} xp={xp} stats={stats} risk={risk} number={number} size="lg" /></div>
     <div className="rankup-hint">{t('Drag across the card · tap it')}</div>
     <button type="button" className="rankup-ok" onClick={onClose}>{t('Close')}</button>
   </div>, document.body)
@@ -157,7 +157,7 @@ export function CardView({ rank, level, name, xp, stats, risk, onClose }) {
  * the system's line. `down` plays the same turn for a rank lost: the card dims instead of flashing.
  * Over the whole screen; the button or Escape closes it.
  */
-export function RankUp({ from, to, down = false, level, name, xp, stats, onClose }) {
+export function RankUp({ from, to, down = false, level, name, xp, stats, numbers, onClose }) {
   const still = useMemo(stillMotion, [])
   const [phase, setPhase] = useState(still ? 'done' : 'charge')
   const [shown, setShown] = useState(still ? to : from)
@@ -177,7 +177,7 @@ export function RankUp({ from, to, down = false, level, name, xp, stats, onClose
   const k = TIERS[to] || TIERS[0]
   return createPortal(<div className={'rankup' + (down ? ' down' : '')} role="dialog" aria-modal="true" aria-label={t('New rank')}>
     <div className="rankup-hold" ref={ref}>
-      <div className={'rankup-flip ' + phase}><div className="rankup-flipper"><RankCard rank={shown} level={level} name={name} xp={xp} stats={stats} size="lg" twoFaced /></div></div>
+      <div className={'rankup-flip ' + phase}><div className="rankup-flipper"><RankCard rank={shown} level={level} name={name} xp={xp} stats={stats} number={numbers?.[shown]} size="lg" twoFaced /></div></div>
     </div>
     {phase === 'done' && <div className="rankup-flash" />}
     <div className={'rankup-sys' + (phase === 'done' ? ' show' : '')} aria-live="polite">

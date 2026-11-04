@@ -60,6 +60,7 @@ import { usePasskeys, PasskeysRow, DeviceLinkRow, openDeviceLinkRedeem, PairShee
 import { DeleteAccountRow } from '../components/DeleteAccount.jsx'
 import { warmupAutoOf } from '../lib/warmup-ramp.js'
 import { Section, Row, SelectRow, Switch, Segmented, Button, TextField, SearchField } from '../components/ui.jsx'
+import { CloudAccountSection, useCloud } from '../components/CloudAccount.jsx'
 import { POLICIES_FOR, POLICY_NAME, POLICY_DESC, profileRule } from '../lib/progression.js'
 import { PAGES, ROOT_GROUPS, pageVisible, searchSettings, pageTrail } from './settings-pages.js'
 import { platformNow } from '../lib/platform-now.js'
@@ -1188,6 +1189,8 @@ export default function Settings({ page = null, find = null, via = null, entryKe
     </>,
 
     account: () => <>
+      {/* CARGA's own account and cloud (components/CloudAccount.jsx) */}
+      <CloudAccountSection />
       {/* The server: which one, which account, how that stands, "Sync now". A paired phone's
           Admin and Disconnect sit in the same block; a browser's account rows follow in their own. */}
       {user && !DEMO && <ServerSyncSection>
@@ -1286,14 +1289,18 @@ function SettingsRoot({ ctx, preview, open, user, sync, home, go, entryKey }) {
   const set = v => { lastQuery = { q: v, key }; setQ(v) }
   const hits = q.trim() ? searchSettings(q, ctx) : null
   // The account card: who this is, and the one line that matters about it.
+  const cloudUser = useCloud(c => c.user)
+  const cloudProfile = useCloud(c => c.profile)
   const acct = DEMO ? { title: t('Demo'), sub: t('Example data, only in this browser.') }
+    : cloudUser ? { title: cloudProfile?.name || cloudUser.email, sub: t('CARGA account · saved in the cloud') }
     : user ? {
       title: user.name || t('Account'),
       sub: sync && sync.status && sync.status !== 'ok' ? t('Sync needs a look') : MOBILE ? t('Synced with your server') : t('Account, devices and sync'),
     }
     : MOBILE ? { title: t('This phone'), sub: t('All data stays on this phone') }
     : { title: t('Guest'), sub: t('Your data lives on this device. Sign in to sync.') }
-  const initial = user && !DEMO ? String(user.name || '?').trim().charAt(0).toUpperCase() : null
+  const initial = user && !DEMO ? String(user.name || '?').trim().charAt(0).toUpperCase()
+    : cloudUser ? String(cloudProfile?.name || cloudUser.email || '?').trim().charAt(0).toUpperCase() : null
   const nav = useNavigate()
   // Only while the server offers the Coach (the flag every Coach screen reads): on a box without
   // it the admin dashboard has no Coach card to land on.

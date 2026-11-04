@@ -30,6 +30,7 @@ import { WrappedHomeCard } from '../components/WrappedEntry.jsx'
 import RecoveryHint from '../components/RecoveryHint.jsx'
 import { ChallengesCard } from '../components/Challenges.jsx'
 import { LevelCard } from '../components/LevelCard.jsx'
+import GlassField from '../components/GlassField.jsx'
 import { isOn } from '../lib/modules.js'
 import { APP_NAME } from '../lib/brand.js'
 
@@ -125,72 +126,12 @@ export default function Home() {
   const progChip = programmeChip(S)
   const onQueueStart = id => { if (S.active) nav('/workout'); else startFlow([id]) }
 
-  return <div className="narrow">
+  return <div className="narrow home-glass">
+    <GlassField />
     <div className="hdr">
       <SeasonDeco spot="header-bats" />
       <div><h1>{user ? t('Hi {0}', user.name) : APP_NAME}</h1><div className="sub">{today.toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
       <button className="iconbtn" data-tour="settings-gear" onClick={() => nav('/settings')} aria-label={trouble ? t('Settings') + ', ' + t('Connection problem') : t('Settings')}><Icon name="gear" />{trouble && <span className="tab-dot" aria-hidden="true" />}</button>
-    </div>
-
-    <div className="card">
-      {/* A running programme (lib/programmes.js) wrote this week's plan: where it stands, one tap from its screen. */}
-      {progChip && <button type="button" className="chip ichip prog-chip" onClick={() => nav('/plan/programmes')}><Icon name="calendar" /><span>{progChip}</span></button>}
-      {/* A coach week runs by order, not by weekday, so its progress row stands in for the
-          seven dots (components/QueueRow.jsx). The today row below stays as it is: the queue's
-          next session reaches it through effectiveRoutineIds like any planned routine. */}
-      {rotating ? (queue ? <QueueRow S={S} today={todayISO()} onStart={onQueueStart} managed={managedQueue} /> : <div className="empty">
-        {t('No rotation yet. Add routines to it in Plan.')}
-        <div style={{ marginTop: 10 }}><Button size="sm" variant="tinted" onClick={() => nav('/plan')}>{t('Set up in Plan')}</Button></div>
-      </div>) : <>
-        <div className="row between" style={{ marginBottom: 8 }}>
-          <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 'var(--fs-subhead)' }} onClick={() => setWeekOffset(w => w - 1)} aria-label={t('Previous week')}><Icon name="chevronLeft" /></button>
-          <div className="small muted" style={{ fontWeight: 500 }}>{wkLabel}</div>
-          <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 'var(--fs-subhead)' }} onClick={() => setWeekOffset(w => w + 1)} aria-label={t('Next week')}><Icon name="chevronRight" /></button>
-        </div>
-        <div className="week">{strip}</div>
-      </>}
-      {/* The week's plan as a countdown (#753, lib/week-left.js): "2 of 4 left this week". */}
-      {left && <div className={'small dim wkleft' + (left.left > 0 ? '' : ' done')}>
-        {left.left > 0 ? tn('{0} of {1} left this week', '{0} of {1} left this week', left.left, left.of) : t('All done this week. Nice.')}
-      </div>}
-      {/* Once today's session is logged the row stops asking for it. The week strip already
-          knew (its dot goes 'done'); this row did not, so a finished day kept showing the
-          routine name behind a green Start tag and read as still outstanding (issue #4).
-          An in-progress session still wins — that one is happening right now. Tapping the
-          row keeps working, so a second session in one day is a tap away, just not urged. */}
-      <div className="today-row" data-tour="today" {...tappable(onToday)}>
-        <div className="row" style={{ gap: 9, minWidth: 0 }}>
-          <span className="lrow-i" style={{ background: S.active ? 'var(--orange)' : doneToday ? 'var(--surface-3)' : routine ? 'var(--acc)' : 'var(--surface-3)',
-            // the rest day's moon on the grey square: white on #e3e3e8 vanished in the light theme
-            ...(!S.active && !doneToday && !routine ? { color: 'var(--label-2)' } : {}) }}>
-            <Icon name={S.active ? (editingSaved ? 'pencil' : 'play') : doneToday ? 'checkCircle' : routine ? glyphOf(routine.emoji) : 'moon'}
-              style={doneToday && !S.active ? { color: 'var(--green)' } : undefined} />
-          </span>
-          <div style={{ minWidth: 0 }}>
-            <div className="lbl2">{t('Today')}</div>
-            <div className="ttl">{S.active ? (editingSaved ? S.active.name : t('{0} (in progress)', S.active.name))
-              : doneToday ? (doneToday.name ? t('{0} (done)', doneToday.name) : t('Workout done'))
-              : routine ? todayName : t('Rest day')}{todayOvr && routine && !doneToday ? ' · ' + t('rescheduled') : ''}</div>
-            {next && !doneToday && <div className="ss">{t('Next session: {0}, {1}', t(DAYN[next.weekday]), next.routine.name)}</div>}
-          </div>
-        </div>
-        {S.active ? <span className="tag" style={{ color: 'var(--orange)', background: 'color-mix(in srgb,var(--orange) 16%,transparent)' }}>{editingSaved ? t('Edit') : t('Resume')}</span>
-          : doneToday ? <span className="tag" style={{ color: 'var(--green)', background: 'color-mix(in srgb,var(--green) 16%,transparent)' }}>{t('Done')}</span>
-          : routine ? <span className="row" style={{ gap: 8 }}><MiniBodyMap routines={todayRoutines} body={S.body} /><span className="tag acc">{t('Start')}</span></span>
-          : <Icon name="plus" className="chev" />}
-      </div>
-      {/* The row above starts today's plan in one tap, and so does the Start button in the tab
-          bar — which is the whole problem when you want something else. Both jump straight into
-          the planned session whenever there is one, so the Start screen (a freestyle session,
-          and your other routines) is only reachable on a day with nothing planned. The one other
-          way in, "Choose a different workout" on the weigh-in sheet, does not exist when the
-          weigh-in is switched off. This is that door, and it starts nothing on its own. */}
-      {!S.active && <div style={{ display: 'flex', justifyContent: 'center', marginTop: 4 }}>
-        <Button size="sm" variant="ghost" className="dim" icon="swap" onClick={() => nav('/workout')}>
-          {t('Choose a different workout')}
-        </Button>
-      </div>}
-      <SeasonDeco spot="home-hero" />
     </div>
 
     {/* Monday: Your week; the 1st: Your month (lib/recap.js). Off in Settings → Look & Home. */}
@@ -206,7 +147,70 @@ export default function Home() {
     {on('health') && <RecoveryHint S={S} />}
 
     {/* This month's three challenges and how far you are (lib/challenges.js). */}
-    <LevelCard S={S} />
+    {/* the rank card first, the week's days and today's workout right below it (components/LevelCard.jsx) */}
+    <LevelCard S={S} after={<>
+      <div className="card">
+        {/* A running programme (lib/programmes.js) wrote this week's plan: where it stands, one tap from its screen. */}
+        {progChip && <button type="button" className="chip ichip prog-chip" onClick={() => nav('/plan/programmes')}><Icon name="calendar" /><span>{progChip}</span></button>}
+        {/* A coach week runs by order, not by weekday, so its progress row stands in for the
+            seven dots (components/QueueRow.jsx). The today row below stays as it is: the queue's
+            next session reaches it through effectiveRoutineIds like any planned routine. */}
+        {rotating ? (queue ? <QueueRow S={S} today={todayISO()} onStart={onQueueStart} managed={managedQueue} /> : <div className="empty">
+          {t('No rotation yet. Add routines to it in Plan.')}
+          <div style={{ marginTop: 10 }}><Button size="sm" variant="tinted" onClick={() => nav('/plan')}>{t('Set up in Plan')}</Button></div>
+        </div>) : <>
+          <div className="row between" style={{ marginBottom: 8 }}>
+            <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 'var(--fs-subhead)' }} onClick={() => setWeekOffset(w => w - 1)} aria-label={t('Previous week')}><Icon name="chevronLeft" /></button>
+            <div className="small muted" style={{ fontWeight: 500 }}>{wkLabel}</div>
+            <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 'var(--fs-subhead)' }} onClick={() => setWeekOffset(w => w + 1)} aria-label={t('Next week')}><Icon name="chevronRight" /></button>
+          </div>
+          <div className="week">{strip}</div>
+        </>}
+        {/* The week's plan as a countdown (#753, lib/week-left.js): "2 of 4 left this week". */}
+        {left && <div className={'small dim wkleft' + (left.left > 0 ? '' : ' done')}>
+          {left.left > 0 ? tn('{0} of {1} left this week', '{0} of {1} left this week', left.left, left.of) : t('All done this week. Nice.')}
+        </div>}
+        {/* Once today's session is logged the row stops asking for it. The week strip already
+            knew (its dot goes 'done'); this row did not, so a finished day kept showing the
+            routine name behind a green Start tag and read as still outstanding (issue #4).
+            An in-progress session still wins — that one is happening right now. Tapping the
+            row keeps working, so a second session in one day is a tap away, just not urged. */}
+        <div className="today-row" data-tour="today" {...tappable(onToday)}>
+          <div className="row" style={{ gap: 9, minWidth: 0 }}>
+            <span className="lrow-i" style={{ background: S.active ? 'var(--orange)' : doneToday ? 'var(--surface-3)' : routine ? 'var(--acc)' : 'var(--surface-3)',
+              // the rest day's moon on the grey square: white on #e3e3e8 vanished in the light theme
+              ...(!S.active && !doneToday && !routine ? { color: 'var(--label-2)' } : {}) }}>
+              <Icon name={S.active ? (editingSaved ? 'pencil' : 'play') : doneToday ? 'checkCircle' : routine ? glyphOf(routine.emoji) : 'moon'}
+                style={doneToday && !S.active ? { color: 'var(--green)' } : undefined} />
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div className="lbl2">{t('Today')}</div>
+              <div className="ttl">{S.active ? (editingSaved ? S.active.name : t('{0} (in progress)', S.active.name))
+                : doneToday ? (doneToday.name ? t('{0} (done)', doneToday.name) : t('Workout done'))
+                : routine ? todayName : t('Rest day')}{todayOvr && routine && !doneToday ? ' · ' + t('rescheduled') : ''}</div>
+              {next && !doneToday && <div className="ss">{t('Next session: {0}, {1}', t(DAYN[next.weekday]), next.routine.name)}</div>}
+            </div>
+          </div>
+          {S.active ? <span className="tag" style={{ color: 'var(--orange)', background: 'color-mix(in srgb,var(--orange) 16%,transparent)' }}>{editingSaved ? t('Edit') : t('Resume')}</span>
+            : doneToday ? <span className="tag" style={{ color: 'var(--green)', background: 'color-mix(in srgb,var(--green) 16%,transparent)' }}>{t('Done')}</span>
+            : routine ? <span className="row" style={{ gap: 8 }}><MiniBodyMap routines={todayRoutines} body={S.body} /><span className="tag acc">{t('Start')}</span></span>
+            : <Icon name="plus" className="chev" />}
+        </div>
+        {/* The row above starts today's plan in one tap, and so does the Start button in the tab
+            bar — which is the whole problem when you want something else. Both jump straight into
+            the planned session whenever there is one, so the Start screen (a freestyle session,
+            and your other routines) is only reachable on a day with nothing planned. The one other
+            way in, "Choose a different workout" on the weigh-in sheet, does not exist when the
+            weigh-in is switched off. This is that door, and it starts nothing on its own. */}
+        {!S.active && <div style={{ display: 'flex', justifyContent: 'center', marginTop: 4 }}>
+          <Button size="sm" variant="ghost" className="dim" icon="swap" onClick={() => nav('/workout')}>
+            {t('Choose a different workout')}
+          </Button>
+        </div>}
+        <SeasonDeco spot="home-hero" />
+      </div>
+
+    </>} />
     <ChallengesCard S={S} />
 
     {/* Jump to the gym check-in cards (QR membership codes). Shown here as a quick tap on

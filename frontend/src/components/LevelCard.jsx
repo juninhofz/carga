@@ -4,12 +4,15 @@ import { t, tn } from '../lib/i18n.js'
 import { fmtNum, isoOf } from '../lib/format.js'
 import Icon from './Icon.jsx'
 import { RankCard, RankUp, CardView } from './RankCard.jsx'
+import { useCloud } from './CloudAccount.jsx'
 import { PartyBanner, PARTY_MS } from './Streak.jsx'
 import {
   levelCard, TIERS, PTS, PAUSE_DAYS, DECAY, STREAK_MAX, monthAllPts, startPause, endPause,
 } from '../lib/carga-level.js'
 
-/* CARGA's level (lib/carga-level.js) on Home: the rank card and the Carga, this week's missions
+/* CARGA's level (lib/carga-level.js) on Home, as glass cards: the rank card and the Carga (with
+   whatever Home passes as `after` right below it: the week's days), the streak and the totals,
+   today's flash mission, then this week's missions
    (each worth a little, all of them a lot, more with the streak), today's optional mission and a
    flash one, a warning before the card drops, a pause for an injury or a holiday, and the card
    turning over (RankUp) when the rank changes, up or down. */
@@ -38,6 +41,15 @@ const flashTitle = f => ({
   pr: t('Hit a new PR today'),
 }[f.id] || t('Train today'))
 
+/** The time left until midnight, ticking: "3h 12min", "12min". */
+function Countdown() {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => { const tm = setInterval(() => setNow(Date.now()), 30000); return () => clearInterval(tm) }, [])
+  const end = new Date(now); end.setHours(24, 0, 0, 0)
+  const min = Math.max(0, Math.round((end - now) / 60000))
+  return <>{t('ends in {0}', min >= 60 ? Math.floor(min / 60) + 'h ' + String(min % 60).padStart(2, '0') + 'min' : min + 'min')}</>
+}
+
 /** "Flame II": the rank's name and its step within the rank. */
 export const levelName = L => t(L.tier.name) + (L.sub ? ' ' + L.sub : '')
 const multText = m => '×' + m.toFixed(1).replace('.', ',')
@@ -62,9 +74,11 @@ function MissionRow({ icon, title, have, n, done, pts, tag }) {
   </div>
 }
 
-export function LevelCard({ S, now }) {
+export function LevelCard({ S, now, after = null }) {
   const sandbox = useStore(s => s.tourSandbox)
-  const name = useStore(s => s.user?.name || '')
+  const cloudName = useCloud(c => c.profile?.name || '')
+  const numbers = useCloud(c => c.numbers)
+  const name = useStore(s => s.user?.name || '') || cloudName
   const L = useMemo(() => levelCard(S, now || new Date()), [S.workouts, S.challenges, S.weekStart, S.bodyweight, S.cargaPauses]) // eslint-disable-line react-hooks/exhaustive-deps
   const [open, setOpen] = useState(false)
   const [party, setParty] = useState(null)
@@ -102,65 +116,76 @@ export function LevelCard({ S, now }) {
   const pct = Math.min(1, L.into / L.step)
   const left = L.step - L.into
   const prev = L.rank > 0 ? TIERS[L.rank - 1] : null
-  return <div className={'card level-card' + (L.tier.id === 'max' ? ' max' : '')} data-level>
-    <div className="lv-top">
-      <button type="button" className="lv-card" onClick={() => setViewing(true)} aria-label={t('Open your rank card')}>
-        <RankCard rank={L.rank} level={L.level} name={name} xp={xp} stats={L.stats} risk={L.risk} />
-      </button>
-      <div className="lv-who">
-        <div className="lv-eyebrow">{t('Rank {0}', L.tier.r)} · {fmtNum(L.carga)} {t('pts')}</div>
-        <div className="lv-title">{levelName(L)}</div>
-        <div className="small muted">{t('Level {0}', L.level)}</div>
-        {L.best > L.rank && <div className="lv-best small">{t('Best: Rank {0}', TIERS[L.best].r)}</div>}
-        {L.streak > 0 && <div className="lv-streak small">🔥 {tn('{0} full week in a row', '{0} full weeks in a row', L.streak)} · {multText(W ? W.mult : 1)}</div>}
+  return <>
+    <div className={'card level-card lv-hero' + (L.tier.id === 'max' ? ' max' : '')} data-level>
+      <div className="lv-top">
+        <button type="button" className="lv-card" onClick={() => setViewing(true)} aria-label={t('Open your rank card')}>
+          <RankCard rank={L.rank} level={L.level} name={name} xp={xp} stats={L.stats} risk={L.risk} number={numbers?.[L.rank]} />
+        </button>
+        <div className="lv-who">
+          <span className="lv-chip hot">{t('Rank {0}', L.tier.r)}</span>
+          <div className="lv-title">{levelName(L)}</div>
+          <div className="small muted">{name ? name + ' · ' : ''}{t('Level {0}', L.level)}</div>
+          <div className="pbar lv-bar" role="progressbar" aria-label={t('To the next level')} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct * 100)}>
+            <i style={{ '--p': pct }} />
+          </div>
+          <div className="lv-next small muted">{fmtNum(L.carga)} {t('pts')} · {t('{0} to go', fmtNum(left))}</div>
+          {L.best > L.rank && <span className="lv-chip">{t('Best: Rank {0}', TIERS[L.best].r)}</span>}
+        </div>
       </div>
+      {L.risk && prev && <div className="lv-risk small">⚠ {t('Your Carga is dropping. Train this week or your card goes back to Rank {0}.', prev.r)}</div>}
+      {party && <PartyBanner text={party.text} icon={<span className="lv-party-icon">{party.icon}</span>} className={'lv-party ' + party.kind} onClose={closeParty} />}
     </div>
-    <div className="pbar lv-bar" role="progressbar" aria-label={t('To the next level')} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct * 100)}>
-      <i style={{ '--p': pct }} />
+
+    {/* the week's days and today's workout sit right under the card (Home passes them in) */}
+    {after}
+
+    <div className="lv-bento">
+      <div className="card lv-tile"><b>🔥 {fmtNum(L.streak)}</b><span>{t('full weeks in a row')}{W && W.mult > 1 ? ' · ' + multText(W.mult) : ''}</span></div>
+      <div className="card lv-tile"><b>{fmtNum(L.stats.workouts)}</b><span>{t('workouts · {0} records', fmtNum(L.stats.prs))}</span></div>
     </div>
-    <div className="lv-next small muted">{t('{0} pts to level {1}', fmtNum(left), L.level + 1)}</div>
-    {L.risk && prev && <div className="lv-risk small">⚠ {t('Your Carga is dropping. Train this week or your card goes back to Rank {0}.', prev.r)}</div>}
 
-    {L.pause
-      ? <div className="lv-pause">
-        <div><b>{t('Paused')}</b> · {t('your Carga is frozen until {0}', new Date(L.pause.to + 'T12:00:00').toLocaleDateString())}</div>
-        <button type="button" className="lv-how" onClick={() => update(s => { endPause(s, today) })}>{t('Back to training')}</button>
-      </div>
-      : W && <>
-        <h3 className="lv-h">{t('This week’s missions')} · {W.done}/{W.missions.length}</h3>
-        <div className="ch-list">
-          {W.missions.map(p => <MissionRow key={p.id} icon={p.icon} title={weeklyTitle(p)} have={p.have} n={p.n} done={p.done} pts={W.missionPts} />)}
-        </div>
-        <div className={'lv-bonus small' + (W.allDone ? ' done' : '')}>
-          {W.allDone ? '⚡ ' + t('All done this week: +{0} pts', W.bonus) : t('Finish all {0} for +{1} pts', W.missions.length, W.bonus)}{W.mult > 1 ? ' (' + multText(W.mult) + ')' : ''}
-        </div>
-
-        <h3 className="lv-h">{t('Today')}</h3>
-        <div className="ch-list">
-          <MissionRow icon={L.daily.icon} title={dailyTitle(L.daily)} have={L.daily.done ? 1 : 0} n={1} done={L.daily.done} pts={PTS.daily} tag={t('optional')} />
-          {L.flash && <MissionRow icon={L.flash.icon} title={flashTitle(L.flash)} have={L.flash.have} n={L.flash.n} done={L.flash.done} pts={PTS.flash} tag={'⚡ ' + t('flash · ends at midnight')} />}
-        </div>
-      </>}
-
-    <button type="button" className="lv-how small" aria-expanded={open} onClick={() => setOpen(o => !o)}>
-      {t('How the Carga works')} <Icon name={open ? 'chevronUp' : 'chevronDown'} />
-    </button>
-    {open && <div className="lv-rules small">
-      <ul>
-        <li>{t('Each mission is worth a little; finishing all of the week’s is worth a lot.')}</li>
-        <li>{t('Weeks with every mission done in a row multiply the bonus, up to {0}.', multText(STREAK_MAX))}</li>
-        <li>{t('All three monthly challenges: +{0} pts.', monthAllPts(L.rank))} {t('Each workout +{0}, each new PR +{1}.', PTS.workout, PTS.pr)}</li>
-        <li>{t('Every week your Carga loses {0}% of itself. Training earns more than that; stopping lets it drain, and the card can go back a rank.', Math.round(DECAY * 100))}</li>
-        <li>{t('Each rank brings more missions, and harder ones.')}</li>
-      </ul>
-      {!L.pause && <button type="button" className="lv-pausebtn" disabled={!L.canPause}
-        onClick={() => update(s => { startPause(s, today) })}>
-        {t('Pause for {0} days (injury or holiday)', PAUSE_DAYS)}
-      </button>}
-      {!L.pause && !L.canPause && <div className="muted">{t('One pause every three months.')}</div>}
+    {L.flash && !L.pause && <div className={'card lv-flash' + (L.flash.done ? ' done' : '')}>
+      <span className="lv-flash-ic" aria-hidden="true">⚡</span>
+      <div className="lv-flash-t"><b>{flashTitle(L.flash)}</b><span className="small">{t('flash')} · {L.flash.done ? t('done') : <Countdown />}{!L.flash.done && L.flash.n > 1 ? ' · ' + fmtNum(Math.min(L.flash.have, L.flash.n)) + '/' + fmtNum(L.flash.n) : ''}</span></div>
+      <span className={'lv-chip' + (L.flash.done ? ' ok' : ' hot')}>+{PTS.flash}</span>
     </div>}
-    {rankUp && <RankUp from={rankUp.from} to={rankUp.to} down={rankUp.down} level={L.level} name={name} xp={xp} stats={L.stats} onClose={closeRankUp} />}
-    {viewing && !rankUp && <CardView rank={L.rank} level={L.level} name={name} xp={xp} stats={L.stats} risk={L.risk} onClose={closeView} />}
-    {party && <PartyBanner text={party.text} icon={<span className="lv-party-icon">{party.icon}</span>} className={'lv-party ' + party.kind} onClose={closeParty} />}
-  </div>
+
+    <div className="card level-card lv-missions">
+      {L.pause
+        ? <div className="lv-pause">
+          <div><b>{t('Paused')}</b> · {t('your Carga is frozen until {0}', new Date(L.pause.to + 'T12:00:00').toLocaleDateString())}</div>
+          <button type="button" className="lv-how" onClick={() => update(s => { endPause(s, today) })}>{t('Back to training')}</button>
+        </div>
+        : W && <>
+          <div className="lv-mhead"><h3 className="lv-h">{t('Missions · {0} of {1}', W.done, W.missions.length)}</h3><span className={'lv-chip' + (W.allDone ? ' ok' : ' hot')}>{W.allDone ? '✓ ' : ''}+{fmtNum(W.bonus)}{W.mult > 1 ? ' ' + multText(W.mult) : ''}</span></div>
+          <div className="ch-list">
+            {W.missions.map(p => <MissionRow key={p.id} icon={p.icon} title={weeklyTitle(p)} have={p.have} n={p.n} done={p.done} pts={W.missionPts} />)}
+            <MissionRow icon={L.daily.icon} title={dailyTitle(L.daily)} have={L.daily.done ? 1 : 0} n={1} done={L.daily.done} pts={PTS.daily} tag={t('today · optional')} />
+          </div>
+          <div className={'lv-bonus small' + (W.allDone ? ' done' : '')}>
+            {W.allDone ? '⚡ ' + t('All done this week: +{0} pts', W.bonus) : t('Finish all {0} for +{1} pts', W.missions.length, W.bonus)}
+          </div>
+        </>}
+      <button type="button" className="lv-how small" aria-expanded={open} onClick={() => setOpen(o => !o)}>
+        {t('How the Carga works')} <Icon name={open ? 'chevronUp' : 'chevronDown'} />
+      </button>
+      {open && <div className="lv-rules small">
+        <ul>
+          <li>{t('Each mission is worth a little; finishing all of the week’s is worth a lot.')}</li>
+          <li>{t('Weeks with every mission done in a row multiply the bonus, up to {0}.', multText(STREAK_MAX))}</li>
+          <li>{t('All three monthly challenges: +{0} pts.', monthAllPts(L.rank))} {t('Each workout +{0}, each new PR +{1}.', PTS.workout, PTS.pr)}</li>
+          <li>{t('Every week your Carga loses {0}% of itself. Training earns more than that; stopping lets it drain, and the card can go back a rank.', Math.round(DECAY * 100))}</li>
+          <li>{t('Each rank brings more missions, and harder ones.')}</li>
+        </ul>
+        {!L.pause && <button type="button" className="lv-pausebtn" disabled={!L.canPause}
+          onClick={() => update(s => { startPause(s, today) })}>
+          {t('Pause for {0} days (injury or holiday)', PAUSE_DAYS)}
+        </button>}
+        {!L.pause && !L.canPause && <div className="muted">{t('One pause every three months.')}</div>}
+      </div>}
+    </div>
+    {rankUp && <RankUp from={rankUp.from} to={rankUp.to} down={rankUp.down} level={L.level} name={name} xp={xp} stats={L.stats} numbers={numbers} onClose={closeRankUp} />}
+    {viewing && !rankUp && <CardView rank={L.rank} level={L.level} name={name} xp={xp} stats={L.stats} risk={L.risk} number={numbers?.[L.rank]} onClose={closeView} />}
+  </>
 }
