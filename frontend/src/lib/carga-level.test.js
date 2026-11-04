@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { levelFor, stepFor, xpOf, weekFacts, weekPicks, weekProgress, levelCard, XP_WORKOUT, XP_SET, XP_PR, XP_WEEKLY, XP_MONTHLY, XP_GOLD, TIERS } from './carga-level.js'
+import {
+  levelFor, stepFor, replay, levelCard, weekPicks, dayFacts, startPause, endPause, canPause, pauseNow,
+  MISSIONS_PER_RANK, PTS, missionPts, TIERS, isFlashDay, flashOf,
+} from './carga-level.js'
 
 let seq = 0
 const wo = (d, entries, extra = {}) => ({ id: 'w' + (++seq), d, start: new Date(d + 'T18:00:00').getTime(), end: new Date(d + 'T19:00:00').getTime(), entries, ...extra })
@@ -7,65 +10,95 @@ const wo = (d, entries, extra = {}) => ({ id: 'w' + (++seq), d, start: new Date(
 const sets = n => Array.from({ length: n }, () => ({ w: 60, r: 8, done: true }))
 const squat = n => ({ id: '0043', sets: sets(n) })
 const bench = n => ({ id: '0025', sets: sets(n) })
+const at = iso => new Date(iso + 'T12:00:00')
+const addDays = (iso, n) => new Date(Date.parse(iso + 'T12:00:00Z') + n * 86400000).toISOString().slice(0, 10)
+// four workouts a week, legs included, for `weeks` weeks from a Monday
+const trained = (from, weeks) => {
+  const list = []
+  for (let w = 0; w < weeks; w++) for (const d of [0, 1, 3, 4]) list.push(wo(addDays(from, 7 * w + d), [squat(5), bench(5)], d === 0 ? { prs: ['0043'] } : {}))
+  return list
+}
 
 describe('carga-level', () => {
   it('climbs a little slower every level and names every five', () => {
-    expect(levelFor(0)).toMatchObject({ level: 1, into: 0, step: stepFor(1), sub: 'I' })
-    expect(levelFor(stepFor(1) - 1).level).toBe(1)
+    expect(levelFor(0)).toMatchObject({ level: 1, rank: 0, into: 0, step: stepFor(1), sub: 'I' })
     expect(levelFor(stepFor(1)).level).toBe(2)
-    expect(levelFor(stepFor(1) + stepFor(2)).level).toBe(3)
     let xp = 0
     for (let n = 1; n < 6; n++) xp += stepFor(n)
-    expect(levelFor(xp)).toMatchObject({ level: 6, sub: 'I' })
-    expect(levelFor(xp).tier.id).toBe(TIERS[1].id)
+    expect(levelFor(xp)).toMatchObject({ level: 6, rank: 1, sub: 'I' })
     expect(levelFor(10_000_000).tier.id).toBe('max')
   })
 
-  it('gives XP for each workout, its sets and its records', () => {
-    const S = { workouts: [wo('2026-10-05', [bench(3)], { prs: ['0025'] })] }
-    const { parts } = xpOf(S)
-    expect(parts.workouts).toBe(XP_WORKOUT)
-    expect(parts.sets).toBe(3 * XP_SET)
-    expect(parts.prs).toBe(XP_PR)
+  it('gives more missions as the rank climbs, always one about training often', () => {
+    const { days } = dayFacts({ workouts: trained('2026-09-07', 4) })
+    for (const r of [0, 3, 6]) {
+      const picks = weekPicks(days, '2026-10-05', r)
+      expect(picks).toHaveLength(MISSIONS_PER_RANK[r])
+      expect(picks[0].id).toBe('workouts')
+    }
+    expect(weekPicks(days, '2026-10-05', 0)).toEqual(weekPicks(days, '2026-10-05', 0))
   })
 
-  it('caps the set bonus so one marathon session is not worth a week', () => {
-    const S = { workouts: [wo('2026-10-05', [bench(100)])] }
-    expect(xpOf(S).parts.sets).toBe(30)
+  it('grows with training and drains slowly when it stops', () => {
+    const S = { workouts: trained('2026-08-03', 8) }
+    const active = replay(S, at('2026-09-27')).carga
+    expect(active).toBeGreaterThan(0)
+    const later = replay(S, at('2026-11-08')).carga
+    expect(later).toBeLessThan(active)
+    // slowly: six idle weeks keep most of it
+    expect(later).toBeGreaterThan(active * 0.75)
   })
 
-  it('counts monthly challenges and a gold month', () => {
-    const S = { workouts: [], challenges: { '2026-10': { picked: [{ id: 'a' }, { id: 'b' }, { id: 'c' }], done: ['a', 'b', 'c'] }, '2026-09': { picked: [{ id: 'a' }, { id: 'b' }, { id: 'c' }], done: ['a'] } } }
-    const { parts } = xpOf(S)
-    expect(parts.monthly).toBe(4 * XP_MONTHLY)
-    expect(parts.gold).toBe(XP_GOLD)
+  it('keeps the best rank ever reached even after the Carga falls', () => {
+    const S = { workouts: trained('2025-01-06', 40) }
+    const peak = replay(S, at('2025-10-12'))
+    const long = replay(S, at('2027-06-06'))
+    expect(long.carga).toBeLessThan(peak.carga)
+    expect(long.best).toBeGreaterThanOrEqual(peak.best)
+    expect(levelFor(long.carga).rank).toBeLessThan(long.best)
   })
 
-  it('picks the same two weekly challenges every time, one habit and one to vary', () => {
-    const S = { workouts: [wo('2026-10-05', [squat(3)]), wo('2026-10-12', [bench(3)])] }
-    const f = weekFacts(S)
-    const a = weekPicks(f, '2026-10-19'), b = weekPicks(f, '2026-10-19')
-    expect(a).toEqual(b)
-    expect(a.map(p => p.kind)).toEqual(['habit', 'vary'])
-    expect(a[0].n).toBeGreaterThanOrEqual(1)
+  it('freezes the Carga during a pause', () => {
+    const S = { workouts: trained('2026-08-03', 8) }
+    // Monday: the last trained week has closed and paid its decay
+    const before = replay(S, at('2026-09-28')).carga
+    const paused = { ...S, cargaPauses: [{ from: '2026-09-28', to: '2026-10-25' }] }
+    expect(replay(paused, at('2026-10-25')).carga).toBe(before)
+    expect(replay(S, at('2026-10-25')).carga).toBeLessThan(before)
   })
 
-  it('turns a weekly challenge done into XP', () => {
-    // a week with a leg day: whichever two are picked, the legs one (if picked) is done
-    const workouts = []
-    for (const d of ['2026-09-07', '2026-09-14', '2026-09-21', '2026-09-28']) workouts.push(wo(d, [bench(3)]))
-    for (const d of ['2026-10-05', '2026-10-06', '2026-10-07', '2026-10-08']) workouts.push(wo(d, [squat(5), bench(5)]))
-    const S = { workouts }
-    const f = weekFacts(S)
-    const done = weekProgress(f, '2026-10-05').filter(p => p.done).length
-    expect(done).toBeGreaterThan(0)
-    expect(xpOf(S).parts.weekly).toBeGreaterThanOrEqual(done * XP_WEEKLY)
+  it('starts a pause, ends it, and allows one every three months', () => {
+    const s = {}
+    startPause(s, '2026-11-03')
+    expect(pauseNow(s, '2026-11-10')).toBeTruthy()
+    endPause(s, '2026-11-10')
+    expect(pauseNow(s, '2026-11-10')).toBe(null)
+    expect(canPause(s, '2026-11-20')).toBe(false)
+    expect(canPause(s, '2027-02-05')).toBe(true)
   })
 
-  it('shows a level card for someone who has not trained yet', () => {
-    const L = levelCard({ workouts: [] }, new Date('2026-11-03T12:00:00'))
-    expect(L.level).toBe(1)
-    expect(L.week).toHaveLength(2)
-    expect(L.week.every(p => p.have === 0 && !p.done)).toBe(true)
+  it('pays a little per mission and a lot for all of them', () => {
+    const S = { workouts: trained('2026-10-05', 1) }
+    const L = levelCard(S, at('2026-10-11'))
+    expect(L.week.missions.length).toBe(MISSIONS_PER_RANK[L.week.rank])
+    expect(L.week.missionPts).toBe(missionPts(L.week.rank))
+    expect(L.week.bonus).toBeGreaterThan(L.week.missionPts * L.week.missions.length)
+  })
+
+  it('shows flash missions on some days only, the same on every device', () => {
+    const days = Array.from({ length: 30 }, (_, i) => addDays('2026-11-01', i))
+    const flash = days.filter(isFlashDay)
+    expect(flash.length).toBeGreaterThan(3)
+    expect(flash.length).toBeLessThan(20)
+    const f = flashOf({}, flash[0], 2)
+    expect(f).toMatchObject({ have: 0, done: false })
+    expect(PTS.flash).toBeGreaterThan(PTS.daily)
+  })
+
+  it('starts someone who has not trained yet at rank E with missions to do', () => {
+    const L = levelCard({ workouts: [] }, at('2026-11-03'))
+    expect(L).toMatchObject({ level: 1, rank: 0, carga: 0 })
+    expect(L.week.missions).toHaveLength(MISSIONS_PER_RANK[0])
+    expect(L.tier).toBe(TIERS[0])
   })
 })

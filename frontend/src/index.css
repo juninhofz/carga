@@ -3423,3 +3423,20 @@ button.wl-summary{width:100%;padding:0 0 10px;text-align:start;border-radius:var
 .rankup-hint{font-size:13px;color:#a3a3a3}
 .rankup-ok{border:0;border-radius:12px;padding:12px 28px;background:#ff6b00;color:#fff;font:600 16px/1 inherit;cursor:pointer}
 @media (prefers-reduced-motion:reduce){.rc *,.rc,.rankup *{animation:none!important;transition:none!important}}
+
+/* The Carga (components/LevelCard.jsx): risk, the bonus line, today's missions, the pause */
+.rc.risk{filter:saturate(.35) brightness(.85)}
+.rc.risk .rc-in::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;opacity:.55;
+  background:linear-gradient(118deg,transparent 46%,rgba(255,255,255,.5) 46.4%,transparent 47%),linear-gradient(64deg,transparent 58%,rgba(255,255,255,.4) 58.3%,transparent 58.8%),linear-gradient(150deg,transparent 30%,rgba(255,255,255,.35) 30.3%,transparent 30.8%)}
+.rankup.down .rankup-flash{background:radial-gradient(circle at 50% 42%,rgba(60,60,60,.9),transparent 60%)}
+.rankup.down .rankup-sys small{color:#9aa0a8}
+.level-card .lv-best{color:var(--label2,#a3a3a3)}
+.level-card .lv-streak{color:var(--accent);font-weight:600}
+.level-card .lv-risk{margin-top:8px;padding:8px 10px;border-radius:10px;background:rgba(255,59,59,.12);color:#ff8a8a}
+.level-card .lv-bonus{margin-top:8px;color:var(--label2,#a3a3a3)}
+.level-card .lv-bonus.done{color:var(--accent);font-weight:600}
+.level-card .lv-tag{display:inline-block;margin-right:6px;padding:1px 6px;border-radius:6px;font-size:11px;font-weight:600;background:rgba(255,107,0,.14);color:var(--accent);vertical-align:1px}
+.level-card .lv-pause{margin-top:12px;padding:10px 12px;border-radius:12px;background:rgba(63,169,255,.12);display:grid;gap:4px}
+.level-card .lv-rules ul{margin:6px 0 10px;padding-left:18px;display:grid;gap:4px}
+.level-card .lv-pausebtn{border:0;border-radius:10px;padding:10px 14px;background:var(--surface-2,#232323);color:inherit;font:inherit;font-weight:600;cursor:pointer}
+.level-card .lv-pausebtn:disabled{opacity:.45;cursor:default}

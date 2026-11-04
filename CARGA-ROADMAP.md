@@ -16,6 +16,38 @@ Legenda: [x] feito · [ ] a fazer
 - [x] Mídias da Gym visual retiradas (licença)
 - [x] Animações próprias: boneco laranja com mapa de calor em todos os exercícios
 
+## Sistema de Carga (ranks e missões) — planejado em 03/11/2026
+
+Já feito: XP calculado do histórico, 2 desafios por semana + 3 por mês, carta de rank com 10 ranks
+(E até Carga Máxima, nomes ainda provisórios), animação de subir de rank, carta grande ao tocar.
+
+**A regra nova: a carta mostra como você está agora, não aonde já chegou.**
+
+- [x] **Carga atual × histórico**: a Carga (pontos) sobe e desce e define nível e carta; o
+      histórico (treinos, recordes, melhor rank já alcançado) nunca cai. A carta mostra um selo
+      "melhor: Rank X".
+- [x] **Queda lenta e proporcional**: toda semana a Carga perde uma pequena parte do que a pessoa
+      tem na carta (ex.: 3%). Quem tem mais pontos perde mais em número, mas sempre devagar; quem
+      treina normalmente ganha mais do que perde. Aviso na carta antes de cair de rank (rachada,
+      sem brilho, "risco de cair para o Rank C").
+- [x] **Cair de rank**: animação ao contrário ("SISTEMA · SUA CARGA CAIU") e a carta volta para
+      o rank anterior.
+- [x] **Modo pausa**: lesão ou férias congelam a Carga por até 4 semanas.
+- [x] **Missões valem pouco, completar tudo vale muito**: cada missão 20–40 pontos; todas da
+      semana = bônus grande; todas do mês = bônus maior; semanas completas seguidas multiplicam
+      (×1,1, ×1,2… até ×1,5).
+- [x] **Mais missões e mais difíceis a cada rank**: E 2 por semana, fáceis → S e acima 5,
+      pesadas. Sempre medidas pelo histórico da própria pessoa.
+- [x] **Tipos de missão**: constância, força (subir carga, recorde, volume), corrida e cardio
+      (completas com o GPS da Fase 4), variedade (exercício novo, músculo esquecido),
+      mobilidade, corpo (peso, medidas, foto) e, depois, em grupo.
+- [x] **Missão diária opcional**: pequena, poucos pontos, para manter o hábito.
+- [x] **Missão relâmpago**: aparece de surpresa e vale só por 24 horas.
+- [ ] **Número exclusivo da carta**: o primeiro a chegar no Rank B no app inteiro é o "Nº 1" do
+      Rank B, o segundo é o Nº 2, e assim por diante, para cada rank. O número é seu para sempre,
+      mesmo se cair e voltar. Precisa de contas e servidor (Fase 2): até lá a carta mostra "Nº —".
+- Decidido não ter: Exame de Rank (sobe só por pontos) e títulos permanentes por enquanto.
+
 ## Fase 1 — Arrumar a casa (curta, e a primeira obrigação legal)
 
 - [x] **Código aberto no GitHub**: https://github.com/juninhofz/carga (público, AGPL), sem as
