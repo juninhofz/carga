@@ -1,3 +1,4 @@
+import ProfilePhoto from './ProfilePhoto.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { create } from 'zustand'
 import { useStore } from '../store/useStore.js'
@@ -76,6 +77,12 @@ export function CloudSync() {
     if (!user || !R || !RANK_NUMBERS_ON) return
     claimRanks(R.best).then(numbers => useCloud.setState({ numbers }))
   }, [user?.id, R?.best]) // eslint-disable-line react-hooks/exhaustive-deps
+  // the photo goes to the profile too: challenge mates see it on the leaderboard and the feed
+  useEffect(() => {
+    if (!user) return undefined
+    const tm = setTimeout(() => saveProfile({ name: useCloud.getState().profile?.name, avatar: S.avatar || null }), 1500)
+    return () => clearTimeout(tm)
+  }, [user?.id, S.avatar]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!user || !R) return
     const tm = setTimeout(() => saveProfile({ name: useCloud.getState().profile?.name, rank: Math.min(9, Math.max(0, levelRank(R.carga))), best: R.best, level: levelOf(R.carga), carga: R.carga }), 3000)
@@ -108,6 +115,7 @@ export function CloudAccountSection() {
   if (user) {
     const shown = profile?.name || user.user_metadata?.name || user.email
     return <Section title={t('Your CARGA account')} footer={t('Your workouts are saved in the cloud and merged across your devices. Sign in with the same e-mail on another phone or computer.')}>
+      <div className="cloud-photo"><ProfilePhoto size={72} /><span><b>Sua foto</b><small>Toque nela para trocar. Ela aparece no seu cartão e para os amigos nos desafios.</small></span></div>
       {editName == null
         ? <Row icon="personCircle" iconTint="var(--accent)" title={shown} subtitle={user.email} accessory="chevron" onClick={() => setEditName(shown || '')} />
         : <div className="cloud-form">

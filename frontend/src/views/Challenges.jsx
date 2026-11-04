@@ -5,6 +5,7 @@ import Icon from '../components/Icon.jsx'
 import { useCloud } from '../components/CloudAccount.jsx'
 import { CLOUD_ON } from '../lib/cloud.js'
 import { StatusBadge } from '../components/StatusReveal.jsx'
+import { PersonPhoto } from '../components/ProfilePhoto.jsx'
 import { LEVELS, runStatus, workoutStatus } from '../lib/activity-status.js'
 import { sessionVolume } from '../lib/history.js'
 import {
@@ -37,9 +38,11 @@ function useMyName() {
   return profile?.name || user?.user_metadata?.name || (user?.email || '').split('@')[0] || ''
 }
 
-function Avatar({ name, size = 30 }) {
-  return <span className="cg-av" style={{ width: size, height: size, fontSize: size * 0.4 }}>{initials(name)}</span>
+/** Someone in a challenge: their profile photo and rank when their profile is visible, else initials. */
+function Avatar({ name, person, size = 30 }) {
+  return <PersonPhoto name={person?.name || name} avatar={person?.avatar} rank={person ? person.rank : null} size={size} />
 }
+const nameOf = (people, m) => people?.[m.user_id]?.name || m.name || 'Sem nome'
 
 function Header({ title, back, right }) {
   const nav = useNavigate()
@@ -111,7 +114,7 @@ function ChallengeCard({ c, today }) {
   return <button type="button" className="cg-card" onClick={() => nav('/desafios/' + c.id)}>
     <span className="cg-cover" style={{ background: coverCss(c.cover) }}><b>{c.name}</b></span>
     <span className="cg-meta">
-      <span className="cg-avs">{c.members.slice(0, 5).map(m => <Avatar key={m.user_id} name={m.name} size={26} />)}<span className="small muted">{c.members.length} {c.members.length === 1 ? 'pessoa' : 'pessoas'}</span></span>
+      <span className="cg-avs">{c.members.slice(0, 5).map(m => <Avatar key={m.user_id} name={m.name} person={c.people?.[m.user_id]} size={26} />)}<span className="small muted">{c.members.length} {c.members.length === 1 ? 'pessoa' : 'pessoas'}</span></span>
       <span className={'lv-chip ' + (p.over ? '' : 'hot')}>{p.over ? 'encerrado' : !p.started ? 'começa ' + shortDate(c.starts) : p.left === 0 ? 'último dia' : 'faltam ' + p.left + ' dias'}</span>
     </span>
   </button>
@@ -182,7 +185,8 @@ export function ChallengePage() {
   const user = useCloud(s => s.user)
   const [data, setData] = useState(null)
   const [err, setErr] = useState('')
-  const [tab, setTab] = useState('ranking')
+  const [tab, setTab] = useState('feed')
+  const myPhoto = useStore(s => s.S.avatar)
   const [menu, setMenu] = useState(false)
   const reload = () => loadChallenge(id).then(d => (d ? setData(d) : setErr('Desafio não encontrado.')), e => setErr(e.message))
   useEffect(() => { if (user) reload() }, [user?.id, id])
@@ -204,32 +208,47 @@ export function ChallengePage() {
     if (!window.confirm(mine ? 'Apagar este desafio para todos?' : 'Sair deste desafio?')) return
     try { await (mine ? deleteChallenge(c.id) : leaveChallenge(c.id)); nav('/desafios', { replace: true }) } catch (e) { alert(e.message) }
   }
+  const meRow = rows.find(r => r.user_id === data.me)
+  const leader = rows[0] && rows[0].score > 0 ? rows[0] : null
+  const unit = SCORING[c.scoring].unit
+  // my own photo straight from this device: it shows at once, before the profile has it
+  const people = { ...(data.people || {}), [data.me]: { ...((data.people || {})[data.me] || { rank: null }), ...(myPhoto ? { avatar: myPhoto } : {}) } }
+  const tie = leader && meRow && leader.user_id !== data.me && meRow.place === 1
   return <div className="narrow cg">
-    <div className="hdr">
+    <div className="cg-top">
       <button className="iconbtn" onClick={() => nav('/desafios')} aria-label="Voltar"><Icon name="chevronLeft" /></button>
-      <div style={{ flex: 1 }} />
+      <div className="cg-top-t"><b>{c.name}</b><small>{p.over ? 'Encerrado' : !p.started ? 'Começa ' + shortDate(c.starts) : `Dia ${p.day} de ${p.total}`} · {members.length} {members.length === 1 ? 'pessoa' : 'pessoas'}</small></div>
       <button className="iconbtn" onClick={invite} aria-label="Convidar"><Icon name="share" /></button>
       <button className="iconbtn" onClick={() => setMenu(m => !m)} aria-label="Mais"><Icon name="more" /></button>
     </div>
-    {menu && <div className="card cg-menu"><button type="button" onClick={leave}>{mine ? 'Apagar desafio' : 'Sair do desafio'}</button></div>}
-    <div className="cg-hero" style={{ background: coverCss(c.cover) }}>
-      <b>{c.name}</b>
-      <div className="cg-hero-row"><span>{p.over ? 'Encerrado' : !p.started ? 'Começa ' + shortDate(c.starts) : `Dia ${p.day} de ${p.total}`} · {members.length} {members.length === 1 ? 'pessoa' : 'pessoas'}</span><button type="button" onClick={invite}>código {c.code}</button></div>
-      <div className="cg-bar"><i style={{ width: Math.round((p.day / p.total) * 100) + '%' }} /></div>
-      <small>{SCORING[c.scoring].name}{c.photo_required ? ' · foto obrigatória' : ''}{c.teams ? ' · em equipes' : ''}</small>
-    </div>
+    <div className="cg-line" style={{ background: coverCss(c.cover) }}><i style={{ width: Math.round((p.day / p.total) * 100) + '%' }} /></div>
+    {menu && <div className="card cg-menu">
+      <button type="button" className="plain" onClick={invite}>Convidar · código {c.code}</button>
+      <button type="button" onClick={leave}>{mine ? 'Apagar desafio' : 'Sair do desafio'}</button>
+    </div>}
     {loc.state?.created && <div className="card cg-created"><b>Desafio criado!</b><p className="muted small">Mande o código <b>{c.code}</b> ou o link para os amigos entrarem.</p><button type="button" className="cg-btn" onClick={invite}><Icon name="share" />Convidar</button></div>}
+    <div className="cg-stats">
+      <div><b>{meRow ? meRow.place + 'º' : '–'}</b><span>sua posição</span></div>
+      <div><b>{meRow ? fmtScore(meRow.score, c.scoring) : 0}</b><span>{c.scoring === 'days' ? 'dias ativos' : SCORING[c.scoring].name.toLowerCase()}</span></div>
+      <div><b>{p.over ? 0 : p.left}</b><span>{p.left === 1 ? 'dia restante' : 'dias restantes'}</span></div>
+    </div>
+    {leader && <button type="button" className="cg-leader" onClick={() => setTab('ranking')} style={{ '--cv': coverCss(c.cover) }}>
+      <Avatar name={leader.name} person={people[leader.user_id]} size={62} />
+      <span className="t"><small>{leader.user_id === data.me ? 'Você está na liderança' : tie ? 'Empatados na liderança' : 'Na liderança'}</small><b>{leader.user_id === data.me ? 'Você' : nameOf(people, leader)}</b>
+        <em>{fmtScore(leader.score, c.scoring)} {unit(leader.score)}{tie ? ' · com você' : meRow && leader.user_id !== data.me ? ' · você está a ' + fmtScore(leader.score - meRow.score, c.scoring) + ' ' + unit(leader.score - meRow.score) : ''}</em></span>
+      <span className="cg-crown"><Icon name="crown" /></span>
+    </button>}
     <button type="button" className="cg-btn" onClick={() => nav('/desafios/postar', { state: { only: c.id } })}><Icon name="camera" />Postar uma atividade</button>
     <div className="cg-seg" role="tablist">
-      {[['ranking', 'Ranking'], ['feed', 'Feed'], ['chat', 'Chat']].map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}
+      {[['feed', 'Feed'], ['ranking', 'Ranking'], ['chat', 'Chat']].map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}
     </div>
-    {tab === 'ranking' && <Ranking c={c} rows={rows} me={data.me} />}
-    {tab === 'feed' && <Feed data={data} reload={reload} />}
-    {tab === 'chat' && <Chat c={c} members={members} me={data.me} />}
+    {tab === 'feed' && <Feed data={data} people={people} reload={reload} />}
+    {tab === 'ranking' && <Ranking c={c} rows={rows} me={data.me} people={people} />}
+    {tab === 'chat' && <Chat c={c} members={members} me={data.me} people={people} />}
   </div>
 }
 
-function Ranking({ c, rows, me }) {
+function Ranking({ c, rows, me, people }) {
   const unit = SCORING[c.scoring].unit
   const top = rows.slice(0, 3)
   const order = [top[1], top[0], top[2]]
@@ -242,15 +261,15 @@ function Ranking({ c, rows, me }) {
     </div>}
     {rows.length >= 3 && <div className="cg-podium">
       {order.map((r, i) => r ? <div key={r.user_id} className={'p' + r.place}>
-        <Avatar name={r.name} size={i === 1 ? 56 : 44} />
-        <span className="small">{r.user_id === me ? 'Você' : r.name.split(' ')[0]}</span>
+        <Avatar name={r.name} person={people[r.user_id]} size={i === 1 ? 60 : 46} />
+        <span className="small">{r.user_id === me ? 'Você' : nameOf(people, r).split(' ')[0]}</span>
         <div className="stand"><b>{r.place}</b><small>{fmtScore(r.score, c.scoring)} {unit(r.score)}</small></div>
       </div> : <div key={i} />)}
     </div>}
     <div className="card cg-rows">
       {rows.map(r => <div key={r.user_id} className={'cg-row' + (r.user_id === me ? ' me' : '')}>
-        <span className="n">{r.place}</span><Avatar name={r.name} />
-        <span className="t"><b>{r.user_id === me ? 'Você' : r.name}{c.teams && r.team != null ? <i className={'cg-team t' + r.team} /> : null}</b><small className="muted">{r.last ? 'última ' + ago(r.last) : 'ainda não postou'}</small></span>
+        <span className="n">{r.place}</span><Avatar name={r.name} person={people[r.user_id]} size={38} />
+        <span className="t"><b>{r.user_id === me ? 'Você' : nameOf(people, r)}{c.teams && r.team != null ? <i className={'cg-team t' + r.team} /> : null}</b><small className="muted">{r.last ? 'última ' + ago(r.last) : 'ainda não postou'}</small></span>
         <span className="pts">{fmtScore(r.score, c.scoring)}<small>{unit(r.score)}</small></span>
       </div>)}
     </div>
@@ -272,9 +291,10 @@ function MiniRoute({ points }) {
 const KIND_NAME = { gym: 'Academia', run: 'Corrida', walk: 'Caminhada', ride: 'Pedal', sport: 'Aula' }
 const REACT_ICON = { fire: 'flame', strong: 'arm', clap: 'sparkles' }
 
-function Feed({ data, reload }) {
+function Feed({ data, people: given, reload }) {
   const { checkins, members, reactions, comments, me } = data
-  const names = Object.fromEntries(members.map(m => [m.user_id, m.name || 'Sem nome']))
+  const people = given || data.people || {}
+  const names = Object.fromEntries(members.map(m => [m.user_id, nameOf(people, m)]))
   const [open, setOpen] = useState({})
   const [draft, setDraft] = useState({})
   if (!checkins.length) return <div className="card"><p className="muted" style={{ margin: 0 }}>Ninguém postou ainda. Termine um treino e poste aqui!</p></div>
@@ -298,7 +318,7 @@ function Feed({ data, reload }) {
         c.stats?.volume ? (c.stats.volume >= 1000 ? (c.stats.volume / 1000).toFixed(1).replace('.', ',') + ' t' : c.stats.volume + ' kg') : null,
         c.stats?.sets ? c.stats.sets + ' séries' : null].filter(Boolean)
       return <article key={c.id} className="cg-post">
-        <div className="cg-post-top"><Avatar name={names[c.user_id]} />
+        <div className="cg-post-top"><Avatar name={names[c.user_id]} person={people[c.user_id]} size={38} />
           <span className="t"><b>{c.user_id === me ? 'Você' : names[c.user_id]}</b><small className="muted">{ago(c.created_at)} · {c.title || KIND_NAME[c.kind]}</small></span>
           {st && <StatusBadge status={st} />}
           {c.user_id === me && <button type="button" className="iconbtn cg-del" onClick={() => remove(c)} aria-label="Apagar"><Icon name="trash" /></button>}
@@ -324,11 +344,11 @@ function Feed({ data, reload }) {
   </div>
 }
 
-function Chat({ c, members, me }) {
+function Chat({ c, members, me, people = {} }) {
   const [msgs, setMsgs] = useState(null)
   const [text, setText] = useState('')
   const end = useRef(null)
-  const names = Object.fromEntries(members.map(m => [m.user_id, m.name || 'Sem nome']))
+  const names = Object.fromEntries(members.map(m => [m.user_id, nameOf(people, m)]))
   const load = () => loadMessages(c.id).then(setMsgs, () => setMsgs([]))
   useEffect(() => { load(); return watchChallenge(c.id, load) }, [c.id])
   useEffect(() => { end.current?.scrollIntoView({ block: 'end' }) }, [msgs?.length])

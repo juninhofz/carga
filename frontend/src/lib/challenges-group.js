@@ -116,7 +116,8 @@ export async function myChallenges() {
   const list = (data || []).map(r => ({ ...r.challenges, team: r.team })).filter(c => c.id)
   if (!list.length) return []
   const { data: mem } = await db().from('challenge_members').select('challenge_id, user_id, name').in('challenge_id', list.map(c => c.id))
-  return list.map(c => ({ ...c, members: (mem || []).filter(m => m.challenge_id === c.id) })).sort((a, b) => (a.ends < b.ends ? 1 : -1))
+  const people = await peopleOf((mem || []).map(m => m.user_id))
+  return list.map(c => ({ ...c, people, members: (mem || []).filter(m => m.challenge_id === c.id) })).sort((a, b) => (a.ends < b.ends ? 1 : -1))
 }
 
 export async function createChallenge({ name, cover, starts, ends, scoring, photo, teams, memberName }) {
@@ -139,6 +140,14 @@ export async function leaveChallenge(id) {
 export async function deleteChallenge(id) {
   const { error } = await db().from('challenges').delete().eq('id', id)
   if (error) fail(error)
+}
+
+/** The profiles of these people that I may see (mine and my challenge mates'): { [id]: { name, rank, avatar } }. */
+export async function peopleOf(ids) {
+  const uniq = [...new Set(ids.filter(Boolean))]
+  if (!uniq.length) return {}
+  const { data } = await db().from('profiles').select('id, name, rank, avatar').in('id', uniq)
+  return Object.fromEntries((data || []).map(p => [p.id, p]))
 }
 
 /** Everything a challenge's page shows: { challenge, members, checkins (with photo urls), reactions, comments }. */
@@ -168,7 +177,8 @@ export async function loadChallenge(id) {
     const { data } = await db().storage.from('checkins').createSignedUrls(paths, 3600)
     for (const u of data || []) if (u.signedUrl) urls[u.path] = u.signedUrl
   }
-  return { challenge: c.data, members: m.data || [], checkins: checkins.map(x => ({ ...x, photo_url: x.photo_path ? urls[x.photo_path] || null : null })), reactions, comments, me: await me() }
+  const people = await peopleOf((m.data || []).map(x => x.user_id))
+  return { challenge: c.data, people, members: m.data || [], checkins: checkins.map(x => ({ ...x, photo_url: x.photo_path ? urls[x.photo_path] || null : null })), reactions, comments, me: await me() }
 }
 
 /** A photo as a smaller JPEG (at most 1280 px across) for the upload. */

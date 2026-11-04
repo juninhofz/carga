@@ -3,6 +3,7 @@ import { useStore } from '../store/useStore.js'
 import { t, tn } from '../lib/i18n.js'
 import { fmtNum, isoOf } from '../lib/format.js'
 import Icon from './Icon.jsx'
+import ProfilePhoto from './ProfilePhoto.jsx'
 import { RankCard, RankUp, CardView } from './RankCard.jsx'
 import { useCloud } from './CloudAccount.jsx'
 import { PartyBanner, PARTY_MS } from './Streak.jsx'
@@ -74,31 +75,6 @@ function MissionRow({ icon, title, have, n, done, pts, tag }) {
   </div>
 }
 
-/** The person's photo by their name, kept small in S.avatar; a tap picks a new one. */
-function Avatar() {
-  const src = useStore(s => s.S.avatar)
-  const pick = e => {
-    const f = e.target.files?.[0]
-    e.target.value = ''
-    if (!f) return
-    const img = new Image()
-    img.onload = () => {
-      const n = 160, c = document.createElement('canvas')
-      c.width = c.height = n
-      const k = Math.min(img.width, img.height)
-      c.getContext('2d').drawImage(img, (img.width - k) / 2, (img.height - k) / 2, k, k, 0, 0, n, n)
-      const url = c.toDataURL('image/jpeg', 0.82)
-      URL.revokeObjectURL(img.src)
-      useStore.getState().update(s => { s.avatar = url })
-    }
-    img.src = URL.createObjectURL(f)
-  }
-  return <label className="lv-avatar" title="Trocar foto">
-    {src ? <img src={src} alt="" /> : <Icon name="person" />}
-    <input type="file" accept="image/*" onChange={pick} hidden />
-  </label>
-}
-
 export function LevelCard({ S, now, after = null }) {
   const sandbox = useStore(s => s.tourSandbox)
   const cloudName = useCloud(c => c.profile?.name || '')
@@ -150,7 +126,7 @@ export function LevelCard({ S, now, after = null }) {
         <div className="lv-who">
           <span className="lv-chip hot">{t('Rank {0}', L.tier.r)}</span>
           <div className="lv-title">{levelName(L)}</div>
-          <div className="lv-person"><Avatar /><span className="small"><b>{name || t('You')}</b>{t('Level {0}', L.level)}</span></div>
+          <div className="lv-person"><ProfilePhoto className="lv-avatar" /><span className="small"><b>{name || t('You')}</b>{t('Level {0}', L.level)}</span></div>
           <div className="pbar lv-bar" role="progressbar" aria-label={t('To the next level')} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct * 100)}>
             <i style={{ '--p': pct }} />
           </div>

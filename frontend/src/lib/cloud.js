@@ -76,7 +76,7 @@ export const onAuth = fn => {
 export async function loadProfile() {
   const user = await currentUser()
   if (!user) return null
-  const { data } = await cloud().from('profiles').select('name, rank, best, level, carga').eq('id', user.id).maybeSingle()
+  const { data } = await cloud().from('profiles').select('name, rank, best, level, carga, avatar').eq('id', user.id).maybeSingle()
   return data || { name: user.user_metadata?.name || '', rank: 0, best: 0, level: 1, carga: 0 }
 }
 export async function saveProfile(fields) {
