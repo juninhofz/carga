@@ -4104,3 +4104,7 @@ body:has(.run-live) #tabbar{display:none}
 .cg-disc-btn svg{width:14px;height:14px}
 .cg-cover .cg-ev{position:absolute;right:12px;top:12px;font-style:normal;font:800 11px/1 "Barlow Condensed","Arial Narrow",Impact,sans-serif;letter-spacing:.1em;text-transform:uppercase;background:rgba(0,0,0,.35);padding:5px 9px;border-radius:999px}
 .cg-cover{position:relative}
+/* CARGA: the shipped media are 180 px; shown at 320 px they blur. Close to their own size they stay sharp */
+.exmedia:not(.own) img,.exmedia:not(.own) video{height:210px!important;object-fit:contain}
+.exmedia.compact:not(.own) img,.exmedia.compact:not(.own) video{height:120px!important}
+.exmedia.mini:not(.own) img,.exmedia.mini:not(.own) video{height:84px!important}
