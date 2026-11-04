@@ -59,7 +59,7 @@ Já feito: XP calculado do histórico, 2 desafios por semana + 3 por mês, carta
 - [x] Aula do esporte vira atividade na agenda e conta como cardio nas missões
 - [x] Vários métodos guardados; trocar de método muda a semana
 - [ ] Missões ligadas ao esporte (ex.: "vá às 3 aulas de jiu-jitsu")
-- [ ] Registro rápido da aula (foi/não foi, intensidade) e ajuste do treino do dia seguinte
+- [x] Registro rápido da aula (foi/não foi, intensidade) e ajuste do treino do dia seguinte
 - [ ] "Trocar o treino de hoje" com sugestões do método (rápido, só cardio, mobilidade)
 - [ ] Fases até uma data (competição/viagem) e semanas leves automáticas
 - [ ] Enviar as respostas e a observação livre para a nuvem (com conta) para analisarmos
@@ -79,9 +79,9 @@ Já feito: XP calculado do histórico, 2 desafios por semana + 3 por mês, carta
 
 Hoje os dados ficam só no aparelho. Para ter amigos e desafios, cada pessoa precisa de uma conta.
 
-- [ ] Criar conta e entrar (e-mail, Google)
-- [ ] Treinos, planos e medidas salvos na nuvem e sincronizados entre celular e computador
-- [ ] Perfil: nome, foto, academia, público ou privado
+- [x] Criar conta e entrar (e-mail, Google)
+- [x] Treinos, planos e medidas salvos na nuvem e sincronizados entre celular e computador
+- [x] Perfil: nome, foto, academia, público ou privado
 - [ ] Continuar funcionando sem internet (sincroniza quando voltar)
 - [ ] Exportar e apagar a conta (LGPD)
 
@@ -90,10 +90,10 @@ Hoje os dados ficam só no aparelho. Para ter amigos e desafios, cada pessoa pre
 ## Fase 3 — Social e desafios (ideias do GymRats e do Rivlo)
 
 - [ ] Seguir amigos e ver os treinos deles
-- [ ] **Check-in com foto** do treino do dia, com os números por cima (cartão de compartilhar)
-- [ ] **Grupos** por link de convite (turma, família, academia), até 50 pessoas
-- [ ] **Pontos**: por treino feito, sequência de dias, recordes e volume levantado
-- [ ] **Ranking** do grupo, semanal e mensal
+- [x] **Check-in com foto** do treino do dia, com os números por cima (cartão de compartilhar)
+- [x] **Grupos** por link de convite (turma, família, academia), até 50 pessoas
+- [x] **Pontos**: por treino feito, sequência de dias, recordes e volume levantado
+- [x] **Ranking** do grupo, semanal e mensal
 - [ ] **Botão de cutucar** o amigo que ainda não treinou hoje
 - [ ] **Guerra de grupos**: um grupo desafia outro por uma semana, com placar ao vivo
 - [ ] **Ligas por temporada**: Bronze → Prata → Ouro → Diamante → Lenda
@@ -104,9 +104,9 @@ Hoje os dados ficam só no aparelho. Para ter amigos e desafios, cada pessoa pre
 
 ## Fase 4 — Corrida (ideias do Strava)
 
-- [ ] Gravar corrida e caminhada com GPS: distância, ritmo, tempo, parciais, mapa do percurso
+- [x] Gravar corrida e caminhada com GPS: distância, ritmo, tempo, parciais, mapa do percurso
 - [ ] Na web com a tela ligada; no app Android também com a tela desligada
-- [ ] Corridas contam pontos nos grupos e nas guerras
+- [x] Corridas contam pontos nos grupos e nas guerras
 - [ ] Ranking de corrida separado (distância da semana)
 - [ ] Importar do Health Connect (Android) e do Apple Saúde
 
@@ -133,3 +133,14 @@ Hoje os dados ficam só no aparelho. Para ter amigos e desafios, cada pessoa pre
 
 Ordem sugerida: 1 → 2 → 3 → 4 → 5 → 6. A Fase 1 vem primeiro porque o app já está no ar e a
 licença pede o código público.
+
+## Feito em 4 de novembro de 2026
+
+- [x] Visual fosco: tema claro F e escuro K, barra de vidro, logo e foto do usuário
+- [x] Corrida, caminhada e pedal com GPS, pace, parciais, mapa, voz e notificação na tela de bloqueio (web)
+- [x] Menu do Começar: academia, GPS ou esporte com cronômetro (jiu-jitsu, muay thai...)
+- [x] Status da atividade com animação (Pena, Firme, Pesado, Brutal, Carga Máxima)
+- [x] Telas de compartilhar: mapa, escuro, laranja, com foto e adesivo
+- [x] Ranks: sem perda em E e D, perda de 2% do C para cima, congelamento de 1 semana por mês
+- [x] Desafios em grupo: criar, código e link, feed com fotos, reações, comentários, chat, ranking, equipes,
+      post só com foto valendo metade, selo CARGA, 1º lugar com coroa e carta, foto e rank de cada pessoa
