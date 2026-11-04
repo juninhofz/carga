@@ -429,7 +429,8 @@ export function ChallengePage() {
   // my own photo straight from this device: it shows at once, before the profile has it
   const people = { ...(data.people || {}), [data.me]: { ...((data.people || {})[data.me] || { rank: null }), ...(myPhoto ? { avatar: myPhoto } : {}) } }
   const tie = leader && meRow && leader.user_id !== data.me && meRow.place === 1
-  const coverPhoto = checkins.find(x => x.photo_url)?.photo_url
+  // the cover is the challenge's colour only (the photos stay in the feed); a photo per challenge may come later
+  const coverPhoto = null
   const allIn = c.event && members.length > 1 && rows.every(r => r.score > 0)
   const finished = p.over || allIn
   const counts = disputed(rows)
