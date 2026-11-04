@@ -136,8 +136,9 @@ export async function myChallenges() {
   return list.map(c => ({ ...c, people, members: (mem || []).filter(m => m.challenge_id === c.id) })).sort((a, b) => (a.ends < b.ends ? 1 : -1))
 }
 
-export async function createChallenge({ name, cover, starts, ends, scoring, photo, teams, memberName }) {
-  const { data, error } = await db().rpc('create_challenge', { p_name: name, p_cover: cover, p_starts: starts, p_ends: ends, p_scoring: scoring, p_photo: photo, p_teams: teams, p_member_name: memberName })
+// always all ten arguments: the database also keeps an older 8-argument version of this function
+export async function createChallenge({ name, cover, starts, ends, scoring, photo, teams, memberName, targetKm = null, event = false }) {
+  const { data, error } = await db().rpc('create_challenge', { p_name: name, p_cover: cover, p_starts: starts, p_ends: ends, p_scoring: scoring, p_photo: photo, p_teams: teams, p_member_name: memberName, p_target_km: targetKm, p_event: event })
   if (error) fail(error)
   return data
 }
