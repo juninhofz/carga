@@ -5,6 +5,8 @@ import StatusReveal, { StatusBadge } from '../components/StatusReveal.jsx'
 import { runStatus } from '../lib/activity-status.js'
 import ShareActivity, { runShareData } from '../components/ShareActivity.jsx'
 import { useUI } from '../store/useUI.js'
+import { useCloud } from '../components/CloudAccount.jsx'
+import { runActivity } from '../lib/challenges-group.js'
 import { useStore } from '../store/useStore.js'
 import Icon from '../components/Icon.jsx'
 import RunMap from '../components/RunMap.jsx'
@@ -244,6 +246,7 @@ function RunDetail({ id }) {
   const run = useStore(s => (s.S.runs || []).find(r => r.id === id))
   const runs = useStore(s => s.S.runs)
   const fresh = !!useLocation().state?.fresh
+  const signedIn = !!useCloud(s => s.user)
   const status = useMemo(() => (run ? runStatus(runs, run) : null), [run?.id, runs?.length])
   const [editing, setEditing] = useState(false)
   const pts = useMemo(() => (run ? pointsOf(run) : []), [run?.trk])
@@ -265,7 +268,10 @@ function RunDetail({ id }) {
       <button className="iconbtn" onClick={() => nav('/corrida')} aria-label="Fechar"><Icon name="xmark" /></button></div>
 
     {fresh && status && <div className="card run-status"><StatusReveal status={status} /></div>}
-    <button type="button" className="sha-go run-share" onClick={share}><Icon name="share" />Compartilhar</button>
+    <div className="run-acts">
+      {signedIn && <button type="button" className="sha-go" onClick={() => nav('/desafios/postar', { state: { activity: runActivity(run, status) } })}><Icon name="trophy" />Postar nos desafios</button>}
+      <button type="button" className={'sha-go' + (signedIn ? ' ghost' : '')} onClick={share}><Icon name="share" />Compartilhar</button>
+    </div>
 
     <div className="card run-detail-head">
       {!fresh && status && <div className="run-status-chip"><StatusBadge status={status} /></div>}

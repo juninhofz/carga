@@ -60,6 +60,7 @@ import Home from './views/Home.jsx'
 import Plan from './views/Plan.jsx'
 import Personal from './views/Personal.jsx'
 import Run, { useRunLive } from './views/Run.jsx'
+import { ChallengesHome, CreateChallenge, JoinByLink, ChallengePage, PostCheckin } from './views/Challenges.jsx'
 import Workout from './views/Workout.jsx'
 import { ENGLISH_NAME_HINT } from './lib/brand.js'
 
@@ -346,6 +347,11 @@ function Shell() {
       <Route path="/personal" element={<Personal />} />
       <Route path="/corrida" element={<Run />} />
       <Route path="/corrida/:id" element={<Run />} />
+      <Route path="/desafios" element={<ChallengesHome />} />
+      <Route path="/desafios/novo" element={<CreateChallenge />} />
+      <Route path="/desafios/postar" element={<PostCheckin />} />
+      <Route path="/desafios/entrar/:code" element={<JoinByLink />} />
+      <Route path="/desafios/:id" element={<ChallengePage />} />
       <Route path="/plan/r/:id" element={<RoutineEdit />} />
       <Route path="/plan/programmes" element={<Programmes />} />
       <Route path="/plan/prog/:id" element={<ProgrammeEdit />} />

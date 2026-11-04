@@ -2,6 +2,7 @@ import { Fragment, useDeferredValue, useEffect, useMemo, useRef, useState } from
 import StatusReveal from './components/StatusReveal.jsx'
 import { workoutStatus } from './lib/activity-status.js'
 import ShareActivity from './components/ShareActivity.jsx'
+import { useCloud } from './components/CloudAccount.jsx'
 import { useStore } from './store/useStore.js'
 import { exView, exUnitPin, exUnitOf, exUnitTag, withExUnit, profileUnit, viewTarget, storedTarget, storedBar, viewEntry, viewRow, shownWeight } from './lib/ex-unit.js'
 import { useUI } from './store/useUI.js'
@@ -4039,6 +4040,7 @@ function gymShareData(st, w, status) {
 
 function FinishSummary({ w, prs, e1prs = [], additions = [], close }) {
   const st = useStore(s => s.S)
+  const signedIn = !!useCloud(s => s.user)
   return <div style={{ textAlign: 'center', padding: '8px 0' }}>
     {/* Sticky, so the summary can be left from the top however far it has been scrolled. */}
     <div className="fin-x"><button type="button" className="iconbtn" aria-label={t('Close')} onClick={() => closeThenNav(close, '/home')}><Icon name="xmark" /></button></div>
@@ -4062,6 +4064,8 @@ function FinishSummary({ w, prs, e1prs = [], additions = [], close }) {
       <Button variant="primary" onClick={() => closeThenNav(close, '/home')}>{t('Nice!')}</Button>
       {/* The workout as a picture for a Story or a chat (components/ShareCard.jsx), the same
           card History's Share as image makes. */}
+      {/* CARGA: post it to the group challenges (views/Challenges.jsx picks the newest activity) */}
+      {signedIn && <Button variant="tinted" icon="trophy" onClick={() => closeThenNav(close, '/desafios/postar')}>Postar nos desafios</Button>}
       {/* CARGA: the workout as one of the activity pictures (components/ShareActivity.jsx) */}
       <Button variant="tinted" icon="share" data-fin-share onClick={() => ui().openSheet(close2 => <ShareActivity data={gymShareData(st, S().workouts.find(x => x.id === w.id) || w, workoutStatus(st.workouts, w, x => sessionVolume(x, st), prs))} name={'carga-treino-' + (w.d || 'hoje') + '.png'} close={close2} />)}>{t('Share')}</Button>
     </div>
