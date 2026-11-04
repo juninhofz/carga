@@ -30,7 +30,6 @@ import { WrappedHomeCard } from '../components/WrappedEntry.jsx'
 import RecoveryHint from '../components/RecoveryHint.jsx'
 import { ChallengesCard } from '../components/Challenges.jsx'
 import { LevelCard } from '../components/LevelCard.jsx'
-import GlassField from '../components/GlassField.jsx'
 import { isOn } from '../lib/modules.js'
 import { APP_NAME } from '../lib/brand.js'
 
@@ -126,8 +125,7 @@ export default function Home() {
   const progChip = programmeChip(S)
   const onQueueStart = id => { if (S.active) nav('/workout'); else startFlow([id]) }
 
-  return <div className="narrow home-glass">
-    <GlassField />
+  return <div className="narrow">
     <div className="hdr">
       <SeasonDeco spot="header-bats" />
       <div><h1>{user ? t('Hi {0}', user.name) : APP_NAME}</h1><div className="sub">{today.toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
