@@ -1,5 +1,8 @@
 # Third-party notices
 
+CARGA — Copyright (C) 2026 Anderson Murilo. CARGA is a free, non-commercial fork of openGym and,
+like it, is licensed under the GNU AGPL v3.0.
+
 openGym — Copyright (C) 2026 Duarte Santos.
 openGym's own code is licensed under the **GNU AGPL v3.0** (see [LICENSE](LICENSE)).
 

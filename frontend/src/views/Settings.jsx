@@ -1183,9 +1183,11 @@ export default function Settings({ page = null, find = null, via = null, entryKe
       <div className="dim small sp-version">
         {APP_NAME} v{__APP_VERSION__} · {t('free & open source (AGPL v3)')}<br />
         <a href={SOURCE_URL} target="_blank" rel="noopener">{t('Source code')}</a><br />
-        {/* The AGPL keeps the original's copyright notice: CARGA is built on openGym. This build ships
-            none of openGym's licensed exercise media, so their attribution is not here. */}
-        openGym © 2026 Duarte Santos
+        {/* CARGA's own author first; the AGPL keeps the original's copyright notice (CARGA is built on
+            openGym), and the Gym visual media this free build ships need their attribution. */}
+        {APP_NAME} © 2026 Anderson Murilo<br />
+        Baseado no openGym © 2026 Duarte Santos<br />
+        Animações de exercícios © Aliaksandr Makatserchyk, Gym visual, gymvisual.com
       </div>
     </>,
 
