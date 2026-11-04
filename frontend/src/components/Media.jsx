@@ -9,6 +9,7 @@ import { youtubeId, youtubeLinks } from '../lib/youtube.js'
 import { useAnimSources } from './Animations.jsx'
 import ExerciseFigure from './ExerciseFigure.jsx'
 import { OWN_FIGURES } from '../lib/brand.js'
+import { hasFrames, frameSrc, FRAME_ORDER, FRAME_MS } from '../lib/carga-frames.js'
 
 // An exercise's picture, wherever one shows. A custom exercise goes to CustomMedia.jsx — its own
 // photo, GIF, video or link, from the local media store — and never through imgSrc/gifSrc, which
@@ -19,7 +20,7 @@ export default function Media(p) {
   const custom = isCustomEx(p.ex)
   const links = youtubeLinks(p.notes).filter(url => !custom || youtubeId(url) !== youtubeId(p.ex?.url))
   return <>
-    {custom ? <CustomMedia {...p} /> : OWN_FIGURES ? <OwnMedia {...p} /> : <BuiltinMedia {...p} />}
+    {custom ? <CustomMedia {...p} /> : hasFrames(p.ex) ? <FramesMedia {...p} /> : OWN_FIGURES ? <OwnMedia {...p} /> : <BuiltinMedia {...p} />}
     {(!p.minimizable || size !== 'off') && links.map(url => <LinkCard key={url} url={url} compact={p.compact} mini={p.minimizable && size === 'mini'} />)}
   </>
 }
@@ -42,6 +43,40 @@ function OwnMedia({ ex, id, compact, minimizable }) {
         </button>
       )}
       {!mini && (
+        <span className="gifhint">
+          <Icon name={playing ? 'pause' : 'play'} />{playing ? t('tap to pause') : t('tap to play')}
+        </span>
+      )}
+    </div>
+  )
+}
+
+// CARGA's character in three frames (lib/carga-frames.js): the same card, tap to pause and
+// minimize control as BuiltinMedia below; the frames are swapped on a timer.
+function FramesMedia({ ex, id, compact, minimizable }) {
+  const [playing, setPlaying] = useState(true)
+  const [step, setStep] = useState(0)
+  const gifSize = useStore(s => s.S.gifSize)
+  const update = useStore(s => s.update)
+  const still = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+  useEffect(() => {
+    if (!playing || still) return
+    const t = setInterval(() => setStep(n => n + 1), FRAME_MS)
+    return () => clearInterval(t)
+  }, [playing, still])
+  if (minimizable && gifSize === 'off') return null
+  const mini = minimizable && gifSize === 'mini'
+  const toggleSize = e => { e.stopPropagation(); update(s => { s.gifSize = mini ? 'full' : 'mini' }) }
+  const shown = still ? 2 : FRAME_ORDER[step % FRAME_ORDER.length]
+  return (
+    <div className={'exmedia own frames' + (compact ? ' compact' : '') + (mini ? ' mini' : '')} id={id} onClick={() => setPlaying(v => !v)}>
+      {[0, 1, 2].map(i => <img key={i} decoding="async" draggable={false} src={frameSrc(ex, i)} alt={i === shown ? exerciseNameFor(ex) : ''} className={i === shown ? 'on' : ''} />)}
+      {minimizable && (
+        <button className="giftoggle" onClick={toggleSize}>
+          <Icon name={mini ? 'expand' : 'minimize'} />{mini ? t('Expand') : t('Minimize')}
+        </button>
+      )}
+      {!mini && !still && (
         <span className="gifhint">
           <Icon name={playing ? 'pause' : 'play'} />{playing ? t('tap to pause') : t('tap to play')}
         </span>
@@ -202,7 +237,7 @@ export function autoplayClip(el) {
 // broken-image glyph in a list of them (#281). The failure is remembered per image, so a list
 // that re-renders does not ask again; a new exercise in the same slot tries its own.
 export function Thumb(p) {
-  return isCustomEx(p.ex) ? <CustomThumb {...p} /> : OWN_FIGURES ? <OwnThumb {...p} /> : <BuiltinThumb {...p} />
+  return isCustomEx(p.ex) ? <CustomThumb {...p} /> : hasFrames(p.ex) ? <img className="thumb" loading="lazy" decoding="async" draggable={false} src={frameSrc(p.ex, 0)} alt="" /> : OWN_FIGURES ? <OwnThumb {...p} /> : <BuiltinThumb {...p} />
 }
 function OwnThumb({ ex }) {
   return <div className="thumb thumb-x thumb-own"><ExerciseFigure ex={ex} className="exfig-thumb" /></div>

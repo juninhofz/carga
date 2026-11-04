@@ -4108,3 +4108,10 @@ body:has(.run-live) #tabbar{display:none}
 .exmedia:not(.own) img,.exmedia:not(.own) video{height:210px!important;object-fit:contain}
 .exmedia.compact:not(.own) img,.exmedia.compact:not(.own) video{height:120px!important}
 .exmedia.mini:not(.own) img,.exmedia.mini:not(.own) video{height:84px!important}
+
+/* CARGA: the character's three frames stacked; only the current one shows */
+.exmedia.frames{position:relative;display:grid;background:#fff}
+.exmedia.frames img{grid-area:1/1;width:100%;height:300px!important;object-fit:contain;opacity:0}
+.exmedia.frames img.on{opacity:1}
+.exmedia.frames.compact img{height:170px!important}
+.exmedia.frames.mini img{height:96px!important}
