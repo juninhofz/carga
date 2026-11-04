@@ -16,6 +16,22 @@ export const medalKind = scoring => (scoring === 'km' || scoring === 'race' ? 'r
 export const medalName = kind => KIND[kind]?.name || 'Academia'
 
 const hex = (r, cy = 92) => [-90, -30, 30, 90, 150, 210].map(t => `${(60 + r * Math.cos(t * Math.PI / 180)).toFixed(1)},${(cy + r * Math.sin(t * Math.PI / 180)).toFixed(1)}`).join(' ')
+/**
+ * How many 1st, 2nd and 3rd places, each shown as the kind it was won in most (5 golds in runs and 2
+ * at the gym show a run gold): [{ place, n, kind }]. A tie goes to the kind with more medals overall.
+ */
+export function medalSummary(medals) {
+  const all = Array.isArray(medals) ? medals : []
+  const total = k => all.filter(m => m.kind === k).length
+  return [1, 2, 3].map(place => {
+    const here = all.filter(m => m.place === place)
+    const by = ['run', 'gym', 'carga'].map(k => [k, here.filter(m => m.kind === k).length])
+    by.sort((x, y) => y[1] - x[1] || total(y[0]) - total(x[0]))
+    const kind = here.length ? by[0][0] : (['run', 'gym', 'carga'].sort((x, y) => total(y) - total(x))[0] || 'carga')
+    return { place, n: here.length, kind }
+  })
+}
+
 let n = 0
 /** The medal as SVG markup. */
 export function medalSVG(kind, place) {

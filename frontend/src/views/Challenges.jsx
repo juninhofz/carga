@@ -14,7 +14,7 @@ import { TIERS, levelFor } from '../lib/carga-level.js'
 import { t } from '../lib/i18n.js'
 import { createPortal } from 'react-dom'
 import { useUI } from '../store/useUI.js'
-import { medalSVG, medalKind, medalName } from '../lib/medals.js'
+import { medalSVG, medalKind, medalName, medalSummary } from '../lib/medals.js'
 import { LEVELS, runStatus, workoutStatus } from '../lib/activity-status.js'
 import { sessionVolume } from '../lib/history.js'
 import { EXIDX } from '../lib/exercises.js'
@@ -102,7 +102,7 @@ function PersonSheet({ uid, person, name, close }) {
   const rank = person?.rank ?? 0, level = person?.level || 1
   const L = levelFor(Number(person?.carga) || 0)
   const tier = TIERS[Math.max(0, Math.min(TIERS.length - 1, rank))]
-  const counts = [1, 2, 3].map(pl => (items || []).filter(h => h.medal?.place === pl).length)
+  const summary = medalSummary((items || []).filter(h => h.medal).map(h => h.medal))
   return <div className="pf">
     <div className="pf-h"><button type="button" className="iconbtn" onClick={close} aria-label="Fechar"><Icon name="xmark" /></button></div>
     {/* the Home's orange card */}
@@ -117,7 +117,7 @@ function PersonSheet({ uid, person, name, close }) {
       </div>
     </div>
     {/* how many 1st, 2nd and 3rd places */}
-    <div className="pf-counts">{[1, 2, 3].map((pl, i) => <div key={pl}><span dangerouslySetInnerHTML={{ __html: medalSVG('carga', pl) }} /><b>{counts[i]}</b><small>{pl}º lugar</small></div>)}</div>
+    <div className="pf-counts">{summary.map(m => <div key={m.place}><span dangerouslySetInnerHTML={{ __html: medalSVG(m.kind, m.place) }} /><b>{m.n}</b><small>{m.place}º lugar</small></div>)}</div>
     {/* every challenge, newest first, with the medal and the result */}
     <div className="pf-k">Desafios</div>
     {items === null ? <p className="muted small">Carregando…</p> : !items.length ? <p className="muted small">Nenhum desafio em comum ainda.</p>

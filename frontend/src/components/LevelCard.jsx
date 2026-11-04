@@ -6,6 +6,7 @@ import Icon from './Icon.jsx'
 import { useNavigate } from 'react-router-dom'
 import { setPrefs, startRun, lockOn } from '../lib/run-recorder.js'
 import ProfilePhoto from './ProfilePhoto.jsx'
+import { medalSVG, medalSummary } from '../lib/medals.js'
 import { RankCard, RankUp, CardView } from './RankCard.jsx'
 import { useCloud } from './CloudAccount.jsx'
 import { PartyBanner, PARTY_MS } from './Streak.jsx'
@@ -62,6 +63,28 @@ const multText = m => '×' + m.toFixed(1).replace('.', ',')
 const SEEN = 'carga.level.seen'
 const readSeen = () => { try { return JSON.parse(localStorage.getItem(SEEN) || 'null') } catch { return null } }
 const writeSeen = v => { try { localStorage.setItem(SEEN, JSON.stringify(v)) } catch { /* private mode */ } }
+
+const MEDALS_KEY = 'carga.medals.mine'
+/** The 1st, 2nd and 3rd places from the group challenges, on the card (signed in, once there is one). */
+function MedalCounts() {
+  const user = useCloud(s => s.user)
+  const [sum, setSum] = useState(() => { try { return JSON.parse(localStorage.getItem(MEDALS_KEY) || 'null') } catch { return null } })
+  useEffect(() => {
+    if (!user) return
+    let alive = true
+    import('../views/Challenges.jsx').then(m => m.medalsOf(user.id)).then(list => {
+      if (!alive) return
+      const s = medalSummary(list)
+      setSum(s)
+      try { localStorage.setItem(MEDALS_KEY, JSON.stringify(s)) } catch { /* fine */ }
+    }).catch(() => {})
+    return () => { alive = false }
+  }, [user?.id])
+  if (!user || !sum || !sum.some(m => m.n > 0)) return null
+  return <div className="lv-medals" aria-label="Medalhas dos desafios">{sum.map(m => <span key={m.place} className={m.n ? '' : 'none'}>
+    <i dangerouslySetInnerHTML={{ __html: medalSVG(m.kind, m.place) }} /><b>{m.n}</b>
+  </span>)}</div>
+}
 
 /** The daily mission's button: the walk, the stretch timer, or "Fiz!". */
 function DailyGo({ daily, today }) {
@@ -141,6 +164,8 @@ export function LevelCard({ S, now, after = null }) {
             <i style={{ '--p': pct }} />
           </div>
           <div className="lv-next small muted">{fmtNum(L.carga)} {t('pts')} · {t('{0} to go', fmtNum(left))}</div>
+          {/* CARGA: the challenge medals won, each place in the kind most won (views/Challenges.jsx medalsOf) */}
+          <MedalCounts />
           {L.best > L.rank && <span className="lv-chip">{t('Best: Rank {0}', TIERS[L.best].r)}</span>}
         </div>
       </div>

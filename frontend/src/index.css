@@ -4087,3 +4087,11 @@ body:has(.run-live) #tabbar{display:none}
 .pf-t em{font-style:normal;font-size:13px;font-weight:700;color:#ff8a3d}
 
 .cg-nocontest{display:grid;gap:2px;margin-bottom:12px}.cg-nocontest small{color:var(--label-2)}
+
+/* the medals on the Home's orange card */
+.lv-medals{display:flex;gap:12px;align-items:center;margin-top:2px}
+.lv-medals span{display:inline-flex;align-items:center;gap:3px}
+.lv-medals i{display:inline-block;width:24px;line-height:0}
+.lv-medals i .medal{width:100%;height:auto;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+.lv-medals b{font:900 17px/1 "Barlow Condensed","Arial Narrow",Impact,sans-serif;color:#1a0b00}
+.lv-medals .none{opacity:.45}
