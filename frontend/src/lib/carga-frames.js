@@ -24,6 +24,7 @@ export const FRAMES = {
   '0200': FULL, // cable pushdown (with rope attachment)
   '0652': ENDS, // pull-up
   '0313': ENDS, // dumbbell hammer curl
+  '0319': ENDS, // dumbbell incline fly
 }
 export const FRAME_MS = 520
 const BASE = (import.meta.env?.BASE_URL || '/') + 'carga-frames/'
