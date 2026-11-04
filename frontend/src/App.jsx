@@ -60,6 +60,7 @@ import PermissionSteps from './views/PermissionSteps.jsx'
 import Home from './views/Home.jsx'
 import Plan from './views/Plan.jsx'
 import Personal from './views/Personal.jsx'
+import Run, { useRunLive } from './views/Run.jsx'
 import Workout from './views/Workout.jsx'
 import { ENGLISH_NAME_HINT } from './lib/brand.js'
 
@@ -283,7 +284,9 @@ function Shell() {
     return () => window.cancelAnimationFrame(frame)
   }, [loc.pathname, navType])
   // bound to the workout, not to the route — checking Stats mid-session keeps the screen on
-  useWakeLock(!!S.active && !S.active.editingWorkoutId && S.keepAwake !== false)
+  // CARGA: a run being recorded keeps the screen on too (the browser stops the GPS when it locks)
+  const runLive = useRunLive()
+  useWakeLock((!!S.active && !S.active.editingWorkoutId && S.keepAwake !== false) || runLive)
   // A running workout has the whole screen (v1.3.11): no tab bar, and the rest bar docks to the
   // bottom edge in its place. Its header's ⌄ goes back to the app, where the tab bar's Resume
   // brings it back. Finishing stays in the workout's own header and list, not in a bottom button
@@ -342,6 +345,8 @@ function Shell() {
       {isOn(S, 'checkin') && <Route path="/checkin" element={<CheckIn />} />}
       <Route path="/plan" element={<Plan />} />
       <Route path="/personal" element={<Personal />} />
+      <Route path="/corrida" element={<Run />} />
+      <Route path="/corrida/:id" element={<Run />} />
       <Route path="/plan/r/:id" element={<RoutineEdit />} />
       <Route path="/plan/programmes" element={<Programmes />} />
       <Route path="/plan/prog/:id" element={<ProgrammeEdit />} />

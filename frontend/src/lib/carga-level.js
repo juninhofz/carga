@@ -84,6 +84,7 @@ const rankOf = points => levelFor(points).rank
 const DAY = 86400000
 const dayAt = iso => Date.parse(iso + 'T12:00:00Z')
 const isoAt = ms => new Date(ms).toISOString().slice(0, 10)
+const localIso = ms => { const d = new Date(ms); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') }
 const addDays = (iso, n) => isoAt(dayAt(iso) + n * DAY)
 const dayIndex = iso => Math.round(dayAt(iso) / DAY)
 const weekIndex = key => Math.floor(dayIndex(key) / 7)
@@ -136,6 +137,13 @@ export function dayFacts(S) {
   }
   for (const b of Array.isArray(S?.bodyweight) ? S.bodyweight : []) {
     if (b && typeof b.d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(b.d) && Number(b.w) > 0) at(b.d).weigh = 1
+  }
+  // CARGA runs (views/Run.jsx): a run, walk or ride counts as a workout and as its cardio minutes
+  for (const r of Array.isArray(S?.runs) ? S.runs : []) {
+    if (!r || !Number.isFinite(r.start) || !(r.movingSec >= 300 || r.distM >= 1000)) continue
+    const d = at(localIso(r.start))
+    d.workouts++
+    d.cardioMin += r.movingSec / 60
   }
   const all = Object.keys(days).sort()
   return { days, first: all[0] || null }

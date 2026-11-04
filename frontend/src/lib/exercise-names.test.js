@@ -131,7 +131,8 @@ const LANGS = {
       [/kettlebell/iu, /kettlebell/iu],
       [/smith/iu, /smith/iu],
       [/stability ball/iu, /bola de estabilidade/iu],
-      [/medicine ball/iu, /bola medicinal/iu],
+      // CARGA: Brazilian gyms say "medicine ball" (scripts/catalogue/pt-br-gym-names.mjs)
+      [/medicine ball/iu, /(?:bola medicinal|medicine ball)/iu],
     ],
   },
   // European Portuguese and Swedish came in v1.4.4 for the whole catalogue at once, so their

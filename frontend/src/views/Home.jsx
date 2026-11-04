@@ -28,6 +28,7 @@ import { programmeChip } from '../lib/programmes.js'
 import { SeasonDeco } from '../components/Seasonal.jsx'
 import { WrappedHomeCard } from '../components/WrappedEntry.jsx'
 import RecoveryHint from '../components/RecoveryHint.jsx'
+import { RunCard } from './Run.jsx'
 import { ChallengesCard } from '../components/Challenges.jsx'
 import { LevelCard } from '../components/LevelCard.jsx'
 import { isOn } from '../lib/modules.js'
@@ -207,7 +208,7 @@ export default function Home() {
         </div>}
         <SeasonDeco spot="home-hero" />
       </div>
-
+      <RunCard />
     </>} />
     <ChallengesCard S={S} />
 
