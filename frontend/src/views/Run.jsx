@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import StatusReveal, { StatusBadge } from '../components/StatusReveal.jsx'
 import { runStatus } from '../lib/activity-status.js'
+import ShareActivity, { runShareData } from '../components/ShareActivity.jsx'
+import { useUI } from '../store/useUI.js'
 import { useStore } from '../store/useStore.js'
 import Icon from '../components/Icon.jsx'
 import RunMap from '../components/RunMap.jsx'
@@ -255,6 +257,7 @@ function RunDetail({ id }) {
   const slowest = run.splits?.length ? Math.max(...run.splits) : 0
   const rename = name => useStore.getState().update(s => { const r = (s.runs || []).find(x => x.id === id); if (r && name.trim()) { r.name = name.trim().slice(0, 80); r._ts = Date.now() } })
   const remove = () => { if (window.confirm('Apagar esta atividade?')) { useStore.getState().update(s => { s.runs = (s.runs || []).filter(x => x.id !== id) }); nav('/corrida', { replace: true }) } }
+  const share = () => useUI.getState().openSheet(close => <ShareActivity data={runShareData(run, status)} name={'carga-' + run.type + '-' + runDay(run) + '.png'} close={close} />)
   const restKm = run.distM - (run.splits?.length || 0) * 1000
   const restSec = run.movingSec - (run.splits || []).reduce((a, b) => a + b, 0)
   return <div className="narrow run">
@@ -262,6 +265,7 @@ function RunDetail({ id }) {
       <button className="iconbtn" onClick={() => nav('/corrida')} aria-label="Fechar"><Icon name="xmark" /></button></div>
 
     {fresh && status && <div className="card run-status"><StatusReveal status={status} /></div>}
+    <button type="button" className="sha-go run-share" onClick={share}><Icon name="share" />Compartilhar</button>
 
     <div className="card run-detail-head">
       {!fresh && status && <div className="run-status-chip"><StatusBadge status={status} /></div>}

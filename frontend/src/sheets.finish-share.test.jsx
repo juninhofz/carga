@@ -52,7 +52,9 @@ describe('finish summary: Share', () => {
     expect(host.querySelector('.bodymap, [data-keep-in-routine]')?.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy()
   })
 
-  it('opens the picture sheet for the saved workout: story or square, dark or light', async () => {
+  // CARGA: Share opens the activity pictures (components/ShareActivity.jsx); a workout has no
+  // route, so no map model
+  it('opens the picture sheet for the saved workout with the CARGA models', async () => {
     act(() => finishWorkoutNow())
     renderTopSheet()
     await settle()
@@ -61,8 +63,8 @@ describe('finish summary: Share', () => {
     expect(useUI.getState().sheets.length).toBe(before + 1)
     renderTopSheet()
     await settle()
-    expect(host.querySelector('h3').textContent).toBe('Share workout')
-    const labels = [...host.querySelectorAll('.share-opts button')].map(b => b.textContent)
-    expect(labels).toEqual(['Story 9:16', 'Square 1:1', 'Dark', 'Light'])
+    expect(host.querySelector('.sha-h b').textContent).toBe('Compartilhar')
+    const labels = [...host.querySelectorAll('.sha-m')].map(b => b.textContent)
+    expect(labels).toEqual(['Escuro', 'Laranja', 'Com foto', 'Adesivo'])
   })
 })

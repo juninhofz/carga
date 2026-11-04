@@ -1,6 +1,7 @@
 import { Fragment, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import StatusReveal from './components/StatusReveal.jsx'
 import { workoutStatus } from './lib/activity-status.js'
+import ShareActivity from './components/ShareActivity.jsx'
 import { useStore } from './store/useStore.js'
 import { exView, exUnitPin, exUnitOf, exUnitTag, withExUnit, profileUnit, viewTarget, storedTarget, storedBar, viewEntry, viewRow, shownWeight } from './lib/ex-unit.js'
 import { useUI } from './store/useUI.js'
@@ -4017,6 +4018,25 @@ function KeepInRoutine({ additions }) {
   </div>
 }
 
+/** CARGA: what a gym workout shows on its share picture (components/ShareActivity.jsx). */
+function gymShareData(st, w, status) {
+  const done = e => (e.sets || []).filter(s => s && s.done && !isWarmupRow(s))
+  const list = (w.entries || []).filter(e => done(e).length).map(e => {
+    const sets = done(e), top = Math.max(0, ...sets.map(s => Number(s.w) || 0)), reps = Math.round(Number(sets[0]?.r) || 0)
+    const ex = EXIDX[e.id]
+    const nm = ex ? exerciseNameFor(ex) : String(e.id)
+    return [nm.charAt(0).toUpperCase() + nm.slice(1), sets.length + '×' + (reps || '–') + (top > 0 ? ' · ' + fmtNum(top) + ' ' + st.unit : '')]
+  })
+  const min = Math.max(1, Math.round((w.end - w.start) / 60000))
+  const vol = sessionVolume(w, st)
+  return {
+    title: w.name || 'Treino', status, statusLabel: status ? status.name : '',
+    big: min >= 60 ? { v: Math.floor(min / 60) + ':' + String(min % 60).padStart(2, '0'), u: 'h' } : { v: String(min), u: 'min' },
+    stats: [['Volume', vol >= 1000 ? (vol / 1000).toFixed(1).replace('.', ',') + ' t' : Math.round(vol) + ' ' + st.unit], ['Séries', String(list.reduce((n, x) => n + Number(x[1].split('×')[0]), 0))], ['Exerc.', String(list.length)]],
+    segments: null, list,
+  }
+}
+
 function FinishSummary({ w, prs, e1prs = [], additions = [], close }) {
   const st = useStore(s => s.S)
   return <div style={{ textAlign: 'center', padding: '8px 0' }}>
@@ -4042,7 +4062,8 @@ function FinishSummary({ w, prs, e1prs = [], additions = [], close }) {
       <Button variant="primary" onClick={() => closeThenNav(close, '/home')}>{t('Nice!')}</Button>
       {/* The workout as a picture for a Story or a chat (components/ShareCard.jsx), the same
           card History's Share as image makes. */}
-      {isOn(st, 'motivation') && <Button variant="tinted" icon="share" data-fin-share onClick={() => shareWorkoutSheet(S().workouts.find(x => x.id === w.id) || w)}>{t('Share')}</Button>}
+      {/* CARGA: the workout as one of the activity pictures (components/ShareActivity.jsx) */}
+      <Button variant="tinted" icon="share" data-fin-share onClick={() => ui().openSheet(close2 => <ShareActivity data={gymShareData(st, S().workouts.find(x => x.id === w.id) || w, workoutStatus(st.workouts, w, x => sessionVolume(x, st), prs))} name={'carga-treino-' + (w.d || 'hoje') + '.png'} close={close2} />)}>{t('Share')}</Button>
     </div>
     <div style={{ height: 14 }} />
     <h4 className="sec" style={{ textAlign: 'start' }}>{t('What you just trained')}</h4>

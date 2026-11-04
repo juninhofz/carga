@@ -3705,3 +3705,22 @@ body:has(.run-live) #tabbar{display:none}
 .run-live.nogps .run-big.main b{font-size:88px}
 .run-status{padding:10px 8px 16px}
 .run-status-chip{margin-bottom:8px}
+
+/* sharing an activity (components/ShareActivity.jsx) */
+.sha{display:grid;gap:12px}
+.sha-h{display:flex;justify-content:space-between;align-items:center}
+.sha-h b{font-size:20px;font-weight:800}
+.sha-models{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
+.sha-m{flex:none;border:1px solid transparent;border-radius:999px;padding:8px 14px;background:var(--surface-2);color:inherit;font:inherit;font-weight:600;font-size:14px;cursor:pointer}
+.sha-m.on{border-color:#ff6b00;color:#ff6b00;background:rgba(255,107,0,.1)}
+.sha-prev{justify-self:center;width:min(62vw,280px);aspect-ratio:9/16;border-radius:16px;overflow:hidden;background:#111}
+.sha-prev.clear{background:repeating-conic-gradient(#2a2a2a 0 25%,#202020 0 50%) 0 0/16px 16px}
+.sha-prev img{width:100%;height:100%;display:block;transition:opacity .2s}
+.sha-prev img.loading{opacity:.5}
+.sha-ph{width:100%;height:100%;background:var(--surface-2)}
+.sha-photo,.sha-go{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border-radius:14px;border:0;font:inherit;font-weight:700;cursor:pointer}
+.sha-photo{background:var(--surface-2);color:inherit}
+.sha-go{background:#ff6b00;color:#1a0b00;font-size:16px}
+.sha-go:disabled{opacity:.5}
+.sha-photo svg,.sha-go svg{width:20px;height:20px}
+.run-share{margin:0 0 12px}
