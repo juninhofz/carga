@@ -9,7 +9,7 @@ import { youtubeId, youtubeLinks } from '../lib/youtube.js'
 import { useAnimSources } from './Animations.jsx'
 import ExerciseFigure from './ExerciseFigure.jsx'
 import { OWN_FIGURES } from '../lib/brand.js'
-import { hasFrames, frameSrc, FRAME_ORDER, FRAME_MS } from '../lib/carga-frames.js'
+import { hasFrames, frameSrc, frameOrder, FRAME_MS } from '../lib/carga-frames.js'
 
 // An exercise's picture, wherever one shows. A custom exercise goes to CustomMedia.jsx — its own
 // photo, GIF, video or link, from the local media store — and never through imgSrc/gifSrc, which
@@ -61,13 +61,14 @@ function FramesMedia({ ex, id, compact, minimizable }) {
   const still = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
   useEffect(() => {
     if (!playing || still) return
-    const t = setInterval(() => setStep(n => n + 1), FRAME_MS)
+    const t = setInterval(() => setStep(n => n + 1), frameOrder(ex).length === 2 ? FRAME_MS * 1.5 : FRAME_MS)
     return () => clearInterval(t)
-  }, [playing, still])
+  }, [playing, still, ex])
   if (minimizable && gifSize === 'off') return null
   const mini = minimizable && gifSize === 'mini'
   const toggleSize = e => { e.stopPropagation(); update(s => { s.gifSize = mini ? 'full' : 'mini' }) }
-  const shown = still ? 2 : FRAME_ORDER[step % FRAME_ORDER.length]
+  const order = frameOrder(ex)
+  const shown = still ? 2 : order[step % order.length]
   return (
     <div className={'exmedia own frames' + (compact ? ' compact' : '') + (mini ? ' mini' : '')} id={id} onClick={() => setPlaying(v => !v)}>
       {[0, 1, 2].map(i => <img key={i} decoding="async" draggable={false} src={frameSrc(ex, i)} alt={i === shown ? exerciseNameFor(ex) : ''} className={i === shown ? 'on' : ''} />)}
