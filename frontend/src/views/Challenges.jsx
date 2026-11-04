@@ -10,14 +10,18 @@ import { NotesBell } from '../components/Notes.jsx'
 import { poke } from '../lib/notifications.js'
 import CargaMark from '../components/CargaMark.jsx'
 import { RankCard } from '../components/RankCard.jsx'
+import { TIERS, levelFor } from '../lib/carga-level.js'
+import { t } from '../lib/i18n.js'
 import { createPortal } from 'react-dom'
 import { useUI } from '../store/useUI.js'
 import { medalSVG, medalKind, medalName } from '../lib/medals.js'
 import { LEVELS, runStatus, workoutStatus } from '../lib/activity-status.js'
 import { sessionVolume } from '../lib/history.js'
+import { EXIDX } from '../lib/exercises.js'
+import { exerciseNameFor } from '../lib/i18n.js'
 import {
   COVERS, coverCss, SCORING, REACTIONS, leaderboard, teamScores, progressOf, runActivity, workoutActivity, myChallenges,
-  createChallenge, joinChallenge, manualActivity, leaveChallenge, deleteChallenge, loadChallenge, postCheckin, deleteCheckin, setReaction,
+  createChallenge, joinChallenge, manualActivity, DUEL_LIFTS, liftsOf, liftBoards, leaveChallenge, deleteChallenge, loadChallenge, postCheckin, deleteCheckin, setReaction,
   addComment, loadMessages, sendMessage, watchChallenge, shrinkPhoto, routeOf,
 } from '../lib/challenges-group.js'
 
@@ -56,42 +60,67 @@ function Avatar({ name, person, size = 30, uid }) {
 
 /* ---------- a person's profile: their card and their medals ---------- */
 
-// the finished challenges I am in, with their leaderboards, read once per visit
-let finishedCache = null
-async function finishedBoards() {
-  if (finishedCache) return finishedCache
-  const today = todayIso()
-  const done = (await myChallenges()).filter(c => c.ends < today)
+// every challenge I am in, with its leaderboard, read once per visit (the profiles' feed)
+let boardsCache = null
+async function allBoards() {
+  if (boardsCache) return boardsCache
   const boards = []
-  for (const c of done.slice(0, 30)) {
-    try { const d = await loadChallenge(c.id); if (d) boards.push({ c: d.challenge, rows: leaderboard(d.challenge, d.members, d.checkins) }) } catch { /* skip */ }
+  for (const c of (await myChallenges()).slice(0, 30)) {
+    try { const d = await loadChallenge(c.id); if (d) boards.push({ c: d.challenge, rows: leaderboard(d.challenge, d.members, d.checkins), count: d.members.length }) } catch { /* skip */ }
   }
-  finishedCache = boards
+  boardsCache = boards
+  setTimeout(() => { boardsCache = null }, 60000)
   return boards
 }
-/** The medals someone took in the finished challenges I can see: [{ kind, place, name, ends }]. */
-export async function medalsOf(uid) {
+/** Someone's challenges that I can see, newest first: [{ c, row, count, over, medal }]. */
+export async function historyOf(uid) {
+  const today = todayIso()
   const out = []
-  for (const { c, rows } of await finishedBoards()) {
-    const r = rows.find(x => x.user_id === uid)
-    if (r && r.place <= 3 && r.score > 0) out.push({ kind: medalKind(c.scoring), place: r.place, name: c.name, ends: c.ends })
+  for (const { c, rows, count } of await allBoards()) {
+    const row = rows.find(x => x.user_id === uid)
+    if (!row) continue
+    const over = c.ends < today
+    out.push({ c, row, count, over, medal: over && row.place <= 3 && row.score > 0 ? { kind: medalKind(c.scoring), place: row.place } : null })
   }
-  return out.sort((a, b) => (a.ends < b.ends ? 1 : -1))
+  return out.sort((x, y) => (x.c.ends < y.c.ends ? 1 : -1))
+}
+/** The medals someone took in the finished challenges I can see. */
+export async function medalsOf(uid) {
+  return (await historyOf(uid)).filter(h => h.medal).map(h => ({ ...h.medal, name: h.c.name, ends: h.c.ends }))
 }
 
+const ROMAN = ['I', 'II', 'III', 'IV', 'V']
 function PersonSheet({ uid, person, name, close }) {
-  const [medals, setMedals] = useState(null)
-  useEffect(() => { medalsOf(uid).then(setMedals, () => setMedals([])) }, [uid])
+  const [items, setItems] = useState(null)
+  useEffect(() => { historyOf(uid).then(setItems, () => setItems([])) }, [uid])
   const shown = person?.name || name || 'Sem nome'
-  return <div className="cg-person">
-    <div className="cg-person-h"><button type="button" className="iconbtn" onClick={close} aria-label="Fechar"><Icon name="xmark" /></button></div>
-    <PersonPhoto name={shown} avatar={person?.avatar} rank={person ? person.rank : null} letter={false} size={92} />
-    <b className="cg-person-n">{shown}</b>
-    {person?.rank != null && <div className="cg-person-card"><RankCard rank={person.rank} level={person.level || 1} name={shown} size="sm" /></div>}
-    <div className="cg-person-k">Medalhas{medals ? ' · ' + medals.length : ''}</div>
-    {medals === null ? <p className="muted small">Carregando…</p>
-      : !medals.length ? <p className="muted small">Ainda sem medalhas nos desafios que vocês fizeram juntos.</p>
-        : <div className="cg-medals">{medals.map((m, i) => <div key={i}><span dangerouslySetInnerHTML={{ __html: medalSVG(m.kind, m.place) }} /><small>{m.name}</small></div>)}</div>}
+  const rank = person?.rank ?? 0, level = person?.level || 1
+  const L = levelFor(Number(person?.carga) || 0)
+  const tier = TIERS[Math.max(0, Math.min(TIERS.length - 1, rank))]
+  const counts = [1, 2, 3].map(pl => (items || []).filter(h => h.medal?.place === pl).length)
+  return <div className="pf">
+    <div className="pf-h"><button type="button" className="iconbtn" onClick={close} aria-label="Fechar"><Icon name="xmark" /></button></div>
+    {/* the Home's orange card */}
+    <div className="pf-hero">
+      <RankCard rank={rank} level={level} name={shown} size="sm" />
+      <div className="pf-info">
+        <span className="pf-chip">Rank {tier.r}</span>
+        <b className="pf-tier">{t(tier.name)} {ROMAN[(level - 1) % 5]}</b>
+        <div className="pf-who"><PersonPhoto name={shown} avatar={person?.avatar} rank={null} size={34} /><span><b>{shown}</b>Nível {level}</span></div>
+        {person?.carga != null && <><div className="pf-bar"><i style={{ width: Math.round(Math.min(1, L.into / L.step) * 100) + '%' }} /></div>
+          <span className="pf-pts">{Number(person.carga).toLocaleString('pt-BR')} pts</span></>}
+      </div>
+    </div>
+    {/* how many 1st, 2nd and 3rd places */}
+    <div className="pf-counts">{[1, 2, 3].map((pl, i) => <div key={pl}><span dangerouslySetInnerHTML={{ __html: medalSVG('carga', pl) }} /><b>{counts[i]}</b><small>{pl}º lugar</small></div>)}</div>
+    {/* every challenge, newest first, with the medal and the result */}
+    <div className="pf-k">Desafios</div>
+    {items === null ? <p className="muted small">Carregando…</p> : !items.length ? <p className="muted small">Nenhum desafio em comum ainda.</p>
+      : <div className="pf-feed">{items.map(h => <div key={h.c.id} className="pf-item">
+        <span className="pf-med">{h.medal ? <span dangerouslySetInnerHTML={{ __html: medalSVG(h.medal.kind, h.medal.place) }} /> : <span className="pf-cov" style={{ background: coverCss(h.c.cover) }}><Icon name={h.c.scoring === 'km' || h.c.scoring === 'race' ? 'cargaRun' : 'trophy'} /></span>}</span>
+        <span className="pf-t"><b>{h.c.name}</b><small>{h.over ? 'Encerrado' : 'Em andamento'} · {shortDate(h.c.starts)}{h.c.ends !== h.c.starts ? ' a ' + shortDate(h.c.ends) : ''}</small>
+          <em>{h.row.score > 0 ? h.row.place + 'º de ' + h.count + ' · ' + fmtScore(h.row.score, h.c.scoring) + ' ' + SCORING[h.c.scoring].unit(h.row.score) : 'Ainda sem resultado'}</em></span>
+      </div>)}</div>}
   </div>
 }
 function openPerson(uid, person, name) {
@@ -232,14 +261,15 @@ export function CreateChallenge() {
   const [err, setErr] = useState('')
   if (!user) return <div className="narrow cg"><Header title="Criar desafio" back="/desafios" /><NeedAccount /></div>
   const set = patch => setF(p => ({ ...p, ...patch }))
-  const ok = f.name.trim() && f.ends >= f.starts && (f.scoring !== 'race' || Number(String(f.km).replace(',', '.')) > 0)
+  const ok = f.name.trim() && f.ends >= f.starts && (f.scoring !== 'race' || Number(String(f.km).replace(',', '.')) > 0) && (f.scoring !== 'lifts' || (f.lifts || []).length > 0)
   const setEvent = ev => set(ev ? { event: true, ends: f.starts, scoring: 'race', photo: false } : { event: false, ends: addDays(f.starts, 29), scoring: 'days', photo: true })
-  const scorings = f.event ? ['race', 'km', 'minutes', 'workouts'].map(k => [k, SCORING[k]]) : Object.entries(SCORING).filter(([k]) => k !== 'race')
+  const scorings = f.event ? ['race', 'lifts', 'km', 'minutes', 'workouts'].map(k => [k, SCORING[k]]) : Object.entries(SCORING).filter(([k]) => k !== 'race')
   const go = async () => {
     setBusy(true); setErr('')
     try {
       const km = Number(String(f.km).replace(',', '.'))
-      const id = await createChallenge({ ...f, ends: f.event ? f.starts : f.ends, name: f.name.trim(), memberName: myName, targetKm: f.scoring === 'race' && km > 0 ? km : null, event: f.event })
+      const rules = f.scoring === 'lifts' ? { lifts: (f.lifts || []).map(l => ({ id: l.id, name: l.name, pts: Math.max(1, Math.min(20, Number(l.pts) || 1)) })) } : null
+      const id = await createChallenge({ ...f, ends: f.event ? f.starts : f.ends, name: f.name.trim(), memberName: myName, targetKm: f.scoring === 'race' && km > 0 ? km : null, event: f.event, rules })
       nav('/desafios/' + id, { replace: true, state: { created: true } })
     }
     catch (e) { setErr(e.message); setBusy(false) }
@@ -251,7 +281,7 @@ export function CreateChallenge() {
         <button type="button" role="radio" aria-checked={!f.event} className={!f.event ? 'on' : ''} onClick={() => setEvent(false)}><b>Desafio longo</b><small>Dias ou semanas de treino</small></button>
         <button type="button" role="radio" aria-checked={f.event} className={f.event ? 'on' : ''} onClick={() => setEvent(true)}><b>Evento de um dia</b><small>Uma corrida, um treino, um dia</small></button>
       </div>
-      <label className="cg-f"><span>Nome</span><input className="cg-in" maxLength={60} placeholder={f.event ? 'Corrida Visão Nordeste' : 'Novembro Sem Desculpa'} value={f.name} onChange={e => set({ name: e.target.value })} /></label>
+      <label className="cg-f"><span>Nome</span><input className="cg-in" maxLength={60} placeholder={f.event ? 'Corrida de rua do bairro' : 'Novembro Sem Desculpa'} value={f.name} onChange={e => set({ name: e.target.value })} /></label>
       <div className="cg-f"><span>Capa</span><div className="cg-covers">{COVERS.map((_, i) => <button key={i} type="button" aria-label={'Capa ' + (i + 1)} className={f.cover === i ? 'on' : ''} style={{ background: coverCss(i) }} onClick={() => set({ cover: i })} />)}</div></div>
       {f.event ? <div className="cg-two">
         <label className="cg-f"><span>Dia do evento</span><input type="date" className="cg-in" value={f.starts} onChange={e => set({ starts: e.target.value, ends: e.target.value })} /></label>
@@ -264,11 +294,37 @@ export function CreateChallenge() {
         {scorings.map(([k, s]) => <button key={k} type="button" role="radio" aria-checked={f.scoring === k} className={f.scoring === k ? 'on' : ''} onClick={() => set({ scoring: k })}>
           <i className="cg-dot" /><span><b>{s.name}</b><small>{s.help}</small></span></button>)}
       </div></div>
+      {f.scoring === 'lifts' && <LiftPicker value={f.lifts || []} onChange={lifts => set({ lifts })} />}
       <label className="cg-tog"><span><b>Foto obrigatória</b><small>Cada check-in precisa de uma foto</small></span><input type="checkbox" checked={f.photo} onChange={e => set({ photo: e.target.checked })} /></label>
       <label className="cg-tog"><span><b>Em equipes</b><small>Divide o grupo em dois times</small></span><input type="checkbox" checked={f.teams} onChange={e => set({ teams: e.target.checked })} /></label>
       {err && <p className="cg-err">{err}</p>}
       <button type="button" className="cg-btn" disabled={!ok || busy} onClick={go}>{busy ? 'Criando…' : 'Criar e convidar'}</button>
     </div>
+  </div>
+}
+
+const exName = id => { const ex = EXIDX[id]; const n = ex ? exerciseNameFor(ex) : id; return n.charAt(0).toUpperCase() + n.slice(1) }
+
+/** A lifting duel's exercises: the usual ones as chips, a search for the rest, the points of each. */
+function LiftPicker({ value, onChange }) {
+  const [q, setQ] = useState('')
+  const has = id => value.some(l => l.id === id)
+  const toggle = id => onChange(has(id) ? value.filter(l => l.id !== id) : [...value, { id, name: exName(id), pts: 3 }])
+  const found = useMemo(() => {
+    const t = q.trim().toLowerCase()
+    if (t.length < 3) return []
+    return Object.keys(EXIDX).filter(id => exName(id).toLowerCase().includes(t)).slice(0, 8)
+  }, [q])
+  return <div className="cg-f"><span>Exercícios do duelo</span>
+    <div className="cg-kinds">{DUEL_LIFTS.filter(id => EXIDX[id]).map(id => <button key={id} type="button" className={'lv-chip' + (has(id) ? ' hot' : '')} onClick={() => toggle(id)}>{exName(id)}</button>)}</div>
+    <input className="cg-in" placeholder="Buscar outro exercício…" value={q} onChange={e => setQ(e.target.value)} />
+    {found.length > 0 && <div className="cg-kinds">{found.map(id => <button key={id} type="button" className={'lv-chip' + (has(id) ? ' hot' : '')} onClick={() => { toggle(id); setQ('') }}>{exName(id)}</button>)}</div>}
+    {value.length > 0 && <div className="cg-lifts">{value.map(l => <div key={l.id}>
+      <span>{l.name}</span>
+      <label>vale <input className="cg-in" type="number" inputMode="numeric" min="1" max="20" value={l.pts} onChange={e => onChange(value.map(x => (x.id === l.id ? { ...x, pts: e.target.value } : x)))} /> pts</label>
+      <button type="button" className="iconbtn" aria-label={'Tirar ' + l.name} onClick={() => toggle(l.id)}><Icon name="xmark" /></button>
+    </div>)}</div>}
+    <small className="muted">Vale o peso mais alto de cada um nos treinos gravados pelo app durante o desafio.</small>
   </div>
 }
 
@@ -365,13 +421,14 @@ export function ChallengePage() {
       {[['feed', 'Feed'], ['ranking', 'Ranking'], ['chat', 'Chat']].map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}
     </div>
     {tab === 'feed' && <Feed data={data} people={people} reload={reload} />}
-    {tab === 'ranking' && <Ranking c={c} rows={rows} me={data.me} people={people} />}
+    {tab === 'ranking' && <Ranking c={c} rows={rows} me={data.me} people={people} members={members} checkins={checkins} />}
     {tab === 'chat' && <Chat c={c} members={members} me={data.me} people={people} />}
   </div>
 }
 
-function Ranking({ c, rows, me, people }) {
+function Ranking({ c, rows, me, people, members = [], checkins = [] }) {
   const unit = SCORING[c.scoring].unit
+  const boards = c.scoring === 'lifts' ? liftBoards(c, members, checkins) : null
   const top = rows.slice(0, 3)
   const order = [top[1], top[0], top[2]]
   const teams = c.teams ? teamScores(rows) : null
@@ -388,6 +445,13 @@ function Ranking({ c, rows, me, people }) {
         <div className="stand"><b>{r.place}</b><small>{fmtScore(r.score, c.scoring)} {unit(r.score)}</small></div>
       </div> : <div key={i} />)}
     </div>}
+    {boards && <div className="cg-duel">{boards.map(b => <div key={b.id} className="card">
+      <div className="cg-duel-h"><b>{b.name}</b><span className="lv-chip hot">{b.pts} pts</span></div>
+      {!b.rows.length ? <p className="muted small" style={{ margin: 0 }}>Ninguém registrou ainda.</p>
+        : b.rows.slice(0, 3).map((x, i) => <div key={x.user_id} className={'cg-duel-r' + (i === 0 ? ' win' : '')}>
+          <span className="n">{i === 0 ? <Icon name="crown" /> : i + 1}</span><Avatar name={nameOf(people, x)} person={people[x.user_id]} size={28} />
+          <span>{x.user_id === me ? 'Você' : nameOf(people, x)}</span><b>{String(x.kg).replace('.', ',')} kg</b></div>)}
+    </div>)}</div>}
     <div className="card cg-rows">
       {rows.map(r => <div key={r.user_id} className={'cg-row' + (r.user_id === me ? ' me' : '')}>
         <span className="n">{r.place}</span><Avatar name={r.name} person={people[r.user_id]} size={38} uid={r.user_id} />
@@ -508,7 +572,7 @@ function useRecentActivities() {
       out.push({ at: w.start, label: w.name || 'Treino', act: () => {
         const st = workoutStatus(S.workouts, w, x => sessionVolume(x, S), Array.isArray(w.prs) ? w.prs : [])
         const sets = (w.entries || []).reduce((n, e) => n + (e.sets || []).filter(s => s && s.done).length, 0)
-        return workoutActivity(w, st, { volume: sessionVolume(w, S), sets })
+        return workoutActivity(w, st, { volume: sessionVolume(w, S), sets, lifts: liftsOf(w, S.unit) })
       } })
     }
     return out.sort((a, b) => b.at - a.at)
@@ -546,7 +610,7 @@ export function PostCheckin() {
     }, e => setErr(e.message))
   }, [user?.id])
   if (!user) return <div className="narrow cg"><Header title="Postar" back /><NeedAccount /></div>
-  const fits = c => !((c.scoring === 'km' && !['run', 'walk', 'ride'].includes(activity?.kind)) || (c.scoring === 'race' && !['run', 'walk'].includes(activity?.kind)))
+  const fits = c => !((c.scoring === 'km' && !['run', 'walk', 'ride'].includes(activity?.kind)) || (c.scoring === 'race' && !['run', 'walk'].includes(activity?.kind)) || (c.scoring === 'lifts' && (activity?.kind !== 'gym' || activity?.verified === false)))
   const targets = (list || []).filter(c => chosen[c.id] && fits(c))
   // a photo-only check-in always needs its photo: it is the only proof
   const needsPhoto = (mode === 'photo' || targets.some(c => c.photo_required)) && !photo

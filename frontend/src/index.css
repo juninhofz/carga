@@ -4041,3 +4041,47 @@ body:has(.run-live) #tabbar{display:none}
 .cg-poke:disabled{color:var(--label-2);cursor:default}
 
 .cloud-delete{display:block;margin:6px auto 4px;padding:8px;border:0;background:none;color:var(--label-3);font:inherit;font-size:12.5px;text-decoration:underline;cursor:pointer}
+
+/* a lifting duel */
+.cg-lifts{display:grid;gap:6px}
+.cg-lifts>div{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;background:var(--surface-2);border-radius:12px;padding:6px 6px 6px 12px;font-size:14px}
+.cg-lifts label{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--label-2)}
+.cg-lifts input{width:56px;padding:6px 8px;text-align:center}
+.cg-lifts .iconbtn{width:30px;height:30px}
+.cg-duel{display:grid;gap:10px;margin-bottom:12px}
+.cg-duel .card{margin:0;display:grid;gap:6px}
+.cg-duel-h{display:flex;justify-content:space-between;align-items:center}
+.cg-duel-h b{font-size:16px}
+.cg-duel-r{display:grid;grid-template-columns:22px auto 1fr auto;gap:10px;align-items:center;font-size:14px}
+.cg-duel-r .n{display:grid;place-items:center;color:var(--label-2);font-weight:800}
+.cg-duel-r .n svg{width:18px;height:18px;color:#e0a800;fill:currentColor}
+.cg-duel-r b{font:900 20px "Barlow Condensed","Arial Narrow",Impact,sans-serif}
+.cg-duel-r.win b{color:#ff8a3d}
+
+/* a person's profile (views/Challenges.jsx PersonSheet): the Home's card, the medal counts, the challenges */
+.pf{display:grid;gap:12px}
+.pf-h{justify-self:end}
+.pf-hero{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center;padding:14px;border-radius:20px;background:linear-gradient(135deg,#ff7a1a,#ff5a00);color:#1a0b00}
+.pf-hero .rc-sm{font-size:7.5px}
+.pf-info{display:grid;gap:5px;min-width:0}
+.pf-chip{justify-self:start;font-weight:700;font-size:11.5px;padding:4px 10px;border-radius:999px;background:rgba(0,0,0,.14)}
+.pf-tier{font-weight:800;font-size:22px;line-height:1.05}
+.pf-who{display:flex;align-items:center;gap:8px}.pf-who span{display:grid;line-height:1.2;font-size:12.5px}
+.pf-who .pp-face{border:2px solid #fff}
+.pf-bar{height:7px;border-radius:7px;background:rgba(0,0,0,.16);overflow:hidden}.pf-bar i{display:block;height:100%;background:#1a0b00}
+.pf-pts{font-size:12px;color:rgba(26,11,0,.72)}
+.pf-counts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pf-counts>div{display:grid;justify-items:center;gap:1px;background:var(--surface-2);border-radius:16px;padding:10px 4px}
+.pf-counts .medal{width:40px;height:auto}
+.pf-counts b{font:900 26px/1 "Barlow Condensed","Arial Narrow",Impact,sans-serif}
+.pf-counts small{font-size:11px;color:var(--label-2)}
+.pf-k{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--label-2)}
+.pf-feed{display:grid;gap:8px}
+.pf-item{display:grid;grid-template-columns:52px 1fr;gap:12px;align-items:center;background:var(--surface-2);border-radius:16px;padding:10px 12px}
+.pf-med .medal{width:46px;height:auto;display:block}
+.pf-cov{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;color:#fff}
+.pf-cov svg{width:22px;height:22px}
+.pf-t{display:grid;gap:1px;min-width:0}
+.pf-t b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pf-t small{font-size:12px;color:var(--label-2)}
+.pf-t em{font-style:normal;font-size:13px;font-weight:700;color:#ff8a3d}

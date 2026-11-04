@@ -69,3 +69,21 @@ describe('a one-day race', () => {
     expect(rows[0].score).toBe(3100)
   })
 })
+
+import { liftsOf, liftBoards } from './challenges-group.js'
+describe('a lifting duel', () => {
+  const duel = { starts: '2026-11-08', ends: '2026-11-08', scoring: 'lifts', rules: { lifts: [{ id: '0025', name: 'Supino reto', pts: 3 }, { id: '0047', name: 'Supino inclinado', pts: 2 }] } }
+  const ms = [{ user_id: 'a', name: 'Ana' }, { user_id: 'b', name: 'Bia' }]
+  const gym = (user_id, lifts, extra = {}) => ({ user_id, day: '2026-11-08', created_at: '2026-11-08T19:00:00Z', kind: 'gym', stats: { lifts }, ...extra })
+  it('reads the heaviest working set of each exercise, in kg', () => {
+    const w = { entries: [{ id: '0025', sets: [{ w: 60, r: 10, done: true }, { w: 80, r: 6, done: true }, { w: 100, r: 1, done: false }] }, { id: '0047', sets: [{ w: 100, r: 5, done: true }] }] }
+    expect(liftsOf(w)).toEqual({ '0025': 80, '0047': 100 })
+    expect(liftsOf(w, 'lb')['0047']).toBeCloseTo(45.4, 1)
+  })
+  it('gives each exercise\'s points to the heaviest, and ignores photo-only posts', () => {
+    const cks = [gym('a', { '0025': 80, '0047': 50 }), gym('b', { '0025': 75, '0047': 60 }), gym('b', { '0025': 120 }, { verified: false })]
+    const rows = leaderboard(duel, ms, cks)
+    expect(rows.map(r => [r.name, r.score])).toEqual([['Ana', 3], ['Bia', 2]])
+    expect(liftBoards(duel, ms, cks)[0].rows.map(x => x.kg)).toEqual([80, 75])
+  })
+})

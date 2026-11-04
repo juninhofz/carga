@@ -4,6 +4,7 @@
 // challenge's scoring. Reactions, comments and a chat sit around them. The database lets only the
 // members of a challenge see anything of it (the tables and functions are in the Supabase project).
 import { cloud, currentUser } from './cloud.js'
+import { isWarmupRow } from './workout-model.js'
 import { SPORTS, hasGps, pointsOf, encodeRows, fmtPace, paceOf } from './run-track.js'
 
 export const COVERS = [
@@ -19,6 +20,38 @@ export const SCORING = {
   km: { name: 'Quilômetros', help: 'Só corrida, caminhada e pedal.', unit: () => 'km' },
   carga: { name: 'Pontos CARGA', help: 'Pelo status: Pena 1, Firme 2, Pesado 3, Brutal 4, Carga Máxima 5.', unit: () => 'pts' },
   race: { name: 'Menor tempo', help: 'Vence quem fizer a distância mais rápido.', unit: () => '' },
+  lifts: { name: 'Duelo de carga', help: 'Escolha os exercícios: quem levantar mais peso em cada um leva os pontos dele.', unit: () => 'pts' },
+}
+// the exercises a lifting duel offers first (Brazilian gym names, lib/exercise-names)
+export const DUEL_LIFTS = ['0025', '0047', '0289', '0314', '0043', '0032', '0739', '1162', '2330', '0027', '0861', '0031', '0085', '0241']
+
+/** The heaviest set of each exercise in a workout, in kg: { [exercise id]: kg }. */
+export function liftsOf(w, unit = 'kg') {
+  const k = unit === 'lb' ? 0.45359237 : 1
+  const out = {}
+  for (const e of Array.isArray(w?.entries) ? w.entries : []) {
+    if (typeof e?.id !== 'string') continue
+    const top = Math.max(0, ...(Array.isArray(e.sets) ? e.sets : []).filter(s => s && s.done && !isWarmupRow(s) && Number(s.r) > 0).map(s => Number(s.w) || 0))
+    if (top > 0) out[e.id] = Math.max(out[e.id] || 0, Math.round(top * k * 10) / 10)
+  }
+  return out
+}
+
+/** A lifting duel, exercise by exercise: [{ id, name, pts, rows: [{ user_id, kg }] heaviest first }]. */
+export function liftBoards(challenge, members, checkins) {
+  const lifts = Array.isArray(challenge?.rules?.lifts) ? challenge.rules.lifts : []
+  const ids = new Set(members.map(m => m.user_id))
+  const inRange = c => c.day >= challenge.starts && c.day <= challenge.ends && c.verified !== false && ids.has(c.user_id)
+  return lifts.map(l => {
+    const best = new Map()
+    for (const c of checkins) {
+      if (!inRange(c)) continue
+      const kg = Number(c?.stats?.lifts?.[l.id]) || 0
+      if (kg > (best.get(c.user_id) || 0)) best.set(c.user_id, kg)
+    }
+    const rows = [...best.entries()].map(([user_id, kg]) => ({ user_id, kg })).sort((a, b) => b.kg - a.kg)
+    return { id: l.id, name: l.name, pts: Number(l.pts) || 1, rows }
+  })
 }
 /** A check-in's time in seconds (a run keeps its exact moving time; otherwise its minutes). */
 export const checkinSeconds = c => Number(c?.stats?.sec) > 0 ? Number(c.stats.sec) : (Number(c?.minutes) || 0) * 60
@@ -58,6 +91,16 @@ export function leaderboard(challenge, members, checkins) {
     else { const s = checkinScore(c, challenge.scoring); if (s > 0) { r.score += s; r.reachedAt = Date.parse(c.created_at) } }
   }
   if (challenge.scoring === 'race') return raceBoard(challenge, rows, sorted)
+  if (challenge.scoring === 'lifts') {
+    // each exercise's points to whoever lifted the most in it (a tie shares them whole)
+    for (const r of rows.values()) { r.score = 0; r.count = 0; r.last = null }
+    for (const c of sorted) { const r = rows.get(c.user_id); if (r) { r.count++; r.last = !r.last || c.created_at > r.last ? c.created_at : r.last } }
+    for (const b of liftBoards(challenge, members, checkins)) {
+      const top = b.rows[0]?.kg || 0
+      if (!top) continue
+      for (const x of b.rows) if (x.kg === top) { const r = rows.get(x.user_id); r.score += b.pts; r.reachedAt = r.reachedAt || 1 }
+    }
+  }
   const list = [...rows.values()].map(r => ({ ...r, score: Math.round(r.score * 100) / 100, days: r.days.size }))
   list.sort((a, b) => b.score - a.score || (a.reachedAt || Infinity) - (b.reachedAt || Infinity) || a.name.localeCompare(b.name))
   let place = 0, prev = null
@@ -137,11 +180,11 @@ export function manualActivity({ title, kind = 'other', minutes = 0, km = 0, tim
 }
 
 /** A gym workout as a check-in. */
-export function workoutActivity(w, status, { volume = 0, sets = 0 } = {}) {
+export function workoutActivity(w, status, { volume = 0, sets = 0, lifts = {} } = {}) {
   return {
     activity_id: 'w' + (w.id ?? w.start), day: w.d || localDay(w.start), kind: 'gym', title: w.name || 'Treino',
     minutes: Math.max(1, Math.round(((w.end || 0) - (w.start || 0)) / 60000)), km: 0, status: status?.id || null,
-    stats: { volume: Math.round(volume), sets },
+    stats: { volume: Math.round(volume), sets, ...(Object.keys(lifts).length ? { lifts } : {}) },
   }
 }
 
@@ -165,9 +208,11 @@ export async function myChallenges() {
 }
 
 // always all ten arguments: the database also keeps an older 8-argument version of this function
-export async function createChallenge({ name, cover, starts, ends, scoring, photo, teams, memberName, targetKm = null, event = false }) {
+export async function createChallenge({ name, cover, starts, ends, scoring, photo, teams, memberName, targetKm = null, event = false, rules = null }) {
   const { data, error } = await db().rpc('create_challenge', { p_name: name, p_cover: cover, p_starts: starts, p_ends: ends, p_scoring: scoring, p_photo: photo, p_teams: teams, p_member_name: memberName, p_target_km: targetKm, p_event: event })
   if (error) fail(error)
+  // a lifting duel's exercises and points
+  if (rules) { const r = await db().from('challenges').update({ rules }).eq('id', data); if (r.error) fail(r.error) }
   return data
 }
 
@@ -191,7 +236,7 @@ export async function deleteChallenge(id) {
 export async function peopleOf(ids) {
   const uniq = [...new Set(ids.filter(Boolean))]
   if (!uniq.length) return {}
-  const { data } = await db().from('profiles').select('id, name, rank, level, avatar').in('id', uniq)
+  const { data } = await db().from('profiles').select('id, name, rank, level, carga, avatar').in('id', uniq)
   return Object.fromEntries((data || []).map(p => [p.id, p]))
 }
 
