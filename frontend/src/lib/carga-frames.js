@@ -20,6 +20,8 @@ export const FRAMES = {
   '0585': FULL, // lever leg extension
   '2267': FULL, // lever seated leg press
   '0032': ENDS, // barbell deadlift
+  '0025': FULL, // barbell bench press
+  '0200': FULL, // cable pushdown (with rope attachment)
 }
 export const FRAME_MS = 520
 const BASE = (import.meta.env?.BASE_URL || '/') + 'carga-frames/'
