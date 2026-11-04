@@ -27,6 +27,8 @@ const P = {
   /* ---- training ---- */
   dumbbell: <><rect x="5.9" y="7.9" width="3.2" height="8.2" rx="1.3" /><rect x="14.9" y="7.9" width="3.2" height="8.2" rx="1.3" /><path d="M9.1 12h5.8M3.6 9.9v4.2M20.4 9.9v4.2" /></>,
   barbell: <path d="M2.9 12h18.2M7.4 7.4v9.2M9.8 9.3v5.4M16.6 7.4v9.2M14.2 9.3v5.4" />,
+  // CARGA's runner: leaning into the stride, two speed lines behind (the run, the Start menu)
+  cargaRun: <><circle cx="15.6" cy="4.6" r="1.9" /><path d="M14.2 8.2 11.4 13.2M14.2 8.2l2.4 2.2 2.2-1M14.2 8.2l-3 .4-1.8 2.4M11.4 13.2l3.2 2-.8 4.6h1.8M11.4 13.2l-1.8 3.4-3.8.8M2.8 9.6h3.4M2.2 12.6h3.2" /></>,
   figureRun: <><circle cx="14.2" cy="4.9" r="1.9" /><path d="M13.4 9.1 9.6 11.4l1.7 3.3-2.4 5.4M13.4 9.1l3.4 1.5 1.4 3.4M11.3 14.7l4.3.9 1.5 4.5M9.6 11.4 6 10.2" /></>,
   figureStrength: <><circle cx="12" cy="5.2" r="2" /><path d="M12 8.4v5.6M12 14 9.2 20.5M12 14l2.8 6.5M8 10.6h8M5.4 9.1v3M18.6 9.1v3" /></>,
   scale: <><rect x="3.4" y="4.4" width="17.2" height="16.2" rx="3.4" /><path d="M8.3 9.2a3.9 3.9 0 0 1 7.4 0" /><path d="M12 9.2v2.5M8.9 16.2h6.2" /></>,

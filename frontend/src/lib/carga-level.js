@@ -8,7 +8,8 @@
 //
 // THE CARD SHOWS WHERE YOU ARE NOW, NOT THE BEST YOU EVER WERE
 //   Every closed week the Carga loses DECAY of itself (a share of what is on the card, so it
-//   always drains slowly and a bigger Carga loses more), unless the week was paused. Training
+//   always drains slowly and a bigger Carga loses more), unless the week was paused, and only from
+//   Rank C (DECAY_FROM) up: E and D never lose, so a beginner is never set back. Training
 //   earns more than that; stopping lets it run down until the card drops a rank. The best rank
 //   ever reached is kept apart (`best`) and never falls.
 //
@@ -40,14 +41,15 @@ export const weekAllPts = r => 200 + 100 * r
 export const monthAllPts = r => 400 + 100 * r
 export const STREAK_STEP = 0.1
 export const STREAK_MAX = 1.5
-export const DECAY = 0.03
+export const DECAY = 0.02
+// the first rank whose Carga drains (C); below it a card only grows
+export const DECAY_FROM = 2
 export const MISSIONS_PER_RANK = [2, 3, 3, 4, 4, 5, 5, 5, 5, 5]
-export const PAUSE_DAYS = 28
-// a pause can start again only this long after the last one began
-export const PAUSE_EVERY_DAYS = 90
+// a freeze holds one week (the one it starts in), and one may start each calendar month
+export const PAUSES_PER_MONTH = 1
 
 /** Points from level n to n + 1. */
-export const stepFor = n => 200 + 50 * (Math.max(1, n) - 1)
+export const stepFor = n => 100 + 40 * (Math.max(1, n) - 1)
 
 // The ranks of the rank card (components/RankCard.jsx), five levels each; past the last one the
 // levels go on under its name. `r` is the letter on the card, `c` and `c2` the two colours of its
@@ -257,16 +259,16 @@ export function pausesOf(S) {
 const pausedOn = (pauses, iso) => pauses.some(p => iso >= p.from && iso <= p.to)
 /** The pause running on `today`, if any. */
 export const pauseNow = (S, today) => pausesOf(S).find(p => today >= p.from && today <= p.to) || null
-/** Whether a new pause may start on `today`: none running and the last began PAUSE_EVERY_DAYS ago. */
+/** Whether a freeze may start on `today`: none running and none started yet this calendar month. */
 export function canPause(S, today) {
-  const list = pausesOf(S)
-  const last = list[list.length - 1]
-  return !pauseNow(S, today) && (!last || dayIndex(today) - dayIndex(last.from) >= PAUSE_EVERY_DAYS)
+  const month = today.slice(0, 7)
+  return !pauseNow(S, today) && pausesOf(S).filter(p => p.from.slice(0, 7) === month).length < PAUSES_PER_MONTH
 }
-/** Starts a pause of PAUSE_DAYS on a store draft. */
+/** Freezes the week `today` is in (to its last day) on a store draft. */
 export function startPause(s, today) {
   if (!canPause(s, today)) return
-  s.cargaPauses = [...pausesOf(s), { from: today, to: addDays(today, PAUSE_DAYS - 1) }].slice(-PAUSES_KEPT)
+  const to = addDays(weekKey(today, weekStartOf(s)), 6)
+  s.cargaPauses = [...pausesOf(s), { from: today, to }].slice(-PAUSES_KEPT)
 }
 /** Ends the running pause yesterday (today counts again). */
 export function endPause(s, today) {
@@ -334,7 +336,8 @@ export function replay(S, now = new Date()) {
     carga += earned
     const paused = [0, 1, 2, 3, 4, 5, 6].some(i => pausedOn(pauses, addDays(key, i)))
     if (closed) {
-      if (!paused) carga -= Math.round(carga * DECAY)
+      // ranks E and D never lose: the drain starts at Rank C (DECAY_FROM)
+      if (!paused && rankOf(carga) >= DECAY_FROM) carga -= Math.round(carga * DECAY)
       streak = allDone ? streak + 1 : paused ? streak : 0
       lastNet = carga - start
     } else {

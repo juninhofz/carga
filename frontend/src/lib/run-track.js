@@ -14,7 +14,7 @@
 // anchors delta-encoded like a Google polyline, with seconds and metres of altitude alongside.
 
 export const SPORTS = {
-  run: { name: 'Corrida', verb: 'Correr', icon: 'figureRun', q: 3, max: 9, kcalKgKm: 1.0 },
+  run: { name: 'Corrida', verb: 'Correr', icon: 'cargaRun', q: 3, max: 9, kcalKgKm: 1.0 },
   walk: { name: 'Caminhada', verb: 'Caminhar', icon: 'steps', q: 2, max: 4.5, kcalKgKm: 0.53 },
   ride: { name: 'Pedal', verb: 'Pedalar', icon: 'bike', q: 8, max: 25, met: 7.5 },
   // the sports without GPS: only the clock runs (a class, a game, a swim)

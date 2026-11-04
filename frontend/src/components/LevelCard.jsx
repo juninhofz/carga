@@ -7,7 +7,7 @@ import { RankCard, RankUp, CardView } from './RankCard.jsx'
 import { useCloud } from './CloudAccount.jsx'
 import { PartyBanner, PARTY_MS } from './Streak.jsx'
 import {
-  levelCard, TIERS, PTS, PAUSE_DAYS, DECAY, STREAK_MAX, monthAllPts, startPause, endPause,
+  levelCard, TIERS, PTS, DECAY, STREAK_MAX, monthAllPts, startPause, endPause,
 } from '../lib/carga-level.js'
 
 /* CARGA's level (lib/carga-level.js) on Home, as glass cards: the rank card and the Carga (with
@@ -200,14 +200,14 @@ export function LevelCard({ S, now, after = null }) {
           <li>{t('Each mission is worth a little; finishing all of the week’s is worth a lot.')}</li>
           <li>{t('Weeks with every mission done in a row multiply the bonus, up to {0}.', multText(STREAK_MAX))}</li>
           <li>{t('All three monthly challenges: +{0} pts.', monthAllPts(L.rank))} {t('Each workout +{0}, each new PR +{1}.', PTS.workout, PTS.pr)}</li>
-          <li>{t('Every week your Carga loses {0}% of itself. Training earns more than that; stopping lets it drain, and the card can go back a rank.', Math.round(DECAY * 100))}</li>
+          <li>{t('From Rank C up, every week your Carga loses {0}% of itself. Training earns more than that; stopping lets it drain, and the card can go back a rank. Ranks E and D never lose.', Math.round(DECAY * 100))}</li>
           <li>{t('Each rank brings more missions, and harder ones.')}</li>
         </ul>
         {!L.pause && <button type="button" className="lv-pausebtn" disabled={!L.canPause}
           onClick={() => update(s => { startPause(s, today) })}>
-          {t('Pause for {0} days (injury or holiday)', PAUSE_DAYS)}
+          {t('Freeze this week (injury or holiday)')}
         </button>}
-        {!L.pause && !L.canPause && <div className="muted">{t('One pause every three months.')}</div>}
+        {!L.pause && !L.canPause && <div className="muted">{t('One frozen week a month.')}</div>}
       </div>}
     </div>
     {rankUp && <RankUp from={rankUp.from} to={rankUp.to} down={rankUp.down} level={L.level} name={name} xp={xp} stats={L.stats} numbers={numbers} onClose={closeRankUp} />}

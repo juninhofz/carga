@@ -40,7 +40,7 @@ export function RouteThumb({ run, size = 64 }) {
     return pts.map((p, i) => (i === 0 || cuts.has(i) ? 'M' : 'L') + (ox + (xs[i] - x0) * s).toFixed(1) + ' ' + (oy + (ys[i] - y0) * s).toFixed(1)).join('')
   }, [run.trk, size])
   return <svg className="run-thumb" viewBox={`0 0 ${size} ${size}`} width={size} height={size} aria-hidden="true">
-    {d ? <path d={d} fill="none" stroke="var(--run-acc)" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" /> : <Icon name={SPORTS[run.type]?.icon || 'figureRun'} />}
+    {d ? <path d={d} fill="none" stroke="var(--run-acc)" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" /> : <Icon name={SPORTS[run.type]?.icon || 'cargaRun'} />}
   </svg>
 }
 
@@ -330,7 +330,7 @@ export function RunCard() {
     <span className="lv-chip hot">Voltar</span>
   </button>
   return <button type="button" className="card run-card" onClick={() => nav('/corrida')}>
-    <span className="run-card-ic"><Icon name={SPORTS[type]?.icon || 'figureRun'} /></span>
+    <span className="run-card-ic"><Icon name={SPORTS[type]?.icon || 'cargaRun'} /></span>
     <span className="run-card-t"><b>Corrida, caminhada ou pedal</b>
       <small>{last ? `Última: ${fmtKm(last.distM)} km em ${fmtClock(last.movingSec * 1000)} · ${new Date(last.start).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}` : 'Grave com o GPS: pace, parciais e mapa'}</small></span>
     <Icon name="chevronRight" />

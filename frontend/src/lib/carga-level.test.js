@@ -39,11 +39,12 @@ describe('carga-level', () => {
     expect(weekPicks(days, '2026-10-05', 0)).toEqual(weekPicks(days, '2026-10-05', 0))
   })
 
-  it('grows with training and drains slowly when it stops', () => {
-    const S = { workouts: trained('2026-08-03', 8) }
-    const active = replay(S, at('2026-09-27')).carga
-    expect(active).toBeGreaterThan(0)
-    const later = replay(S, at('2026-11-08')).carga
+  it('grows with training and drains slowly when it stops, from Rank C up', () => {
+    // 26 weeks of training: well into Rank C, where the drain starts
+    const S = { workouts: trained('2026-03-02', 26) }
+    const active = replay(S, at('2026-08-30')).carga
+    expect(levelFor(active).rank).toBeGreaterThanOrEqual(2)
+    const later = replay(S, at('2026-10-11')).carga
     expect(later).toBeLessThan(active)
     // slowly: six idle weeks keep most of it
     expect(later).toBeGreaterThan(active * 0.75)
@@ -59,22 +60,30 @@ describe('carga-level', () => {
   })
 
   it('freezes the Carga during a pause', () => {
-    const S = { workouts: trained('2026-08-03', 8) }
+    const S = { workouts: trained('2026-03-02', 26) }
     // Monday: the last trained week has closed and paid its decay
-    const before = replay(S, at('2026-09-28')).carga
-    const paused = { ...S, cargaPauses: [{ from: '2026-09-28', to: '2026-10-25' }] }
-    expect(replay(paused, at('2026-10-25')).carga).toBe(before)
-    expect(replay(S, at('2026-10-25')).carga).toBeLessThan(before)
+    const before = replay(S, at('2026-08-31')).carga
+    const paused = { ...S, cargaPauses: [{ from: '2026-08-31', to: '2026-09-06' }] }
+    expect(replay(paused, at('2026-09-07')).carga).toBe(before)
+    expect(replay(S, at('2026-09-07')).carga).toBeLessThan(before)
   })
 
-  it('starts a pause, ends it, and allows one every three months', () => {
+  it('freezes the week it starts in, ends early, and allows one frozen week a month', () => {
     const s = {}
     startPause(s, '2026-11-03')
-    expect(pauseNow(s, '2026-11-10')).toBeTruthy()
-    endPause(s, '2026-11-10')
+    expect(pauseNow(s, '2026-11-05')).toBeTruthy()
     expect(pauseNow(s, '2026-11-10')).toBe(null)
+    endPause(s, '2026-11-05')
+    expect(pauseNow(s, '2026-11-05')).toBe(null)
     expect(canPause(s, '2026-11-20')).toBe(false)
-    expect(canPause(s, '2027-02-05')).toBe(true)
+    expect(canPause(s, '2026-12-01')).toBe(true)
+  })
+
+  it('never drains ranks E and D', () => {
+    const S = { workouts: trained('2026-08-03', 2) }
+    const after = replay(S, at('2026-08-17')).carga
+    expect(levelFor(after).rank).toBeLessThan(2)
+    expect(replay(S, at('2026-12-28')).carga).toBe(after)
   })
 
   it('pays a little per mission and a lot for all of them', () => {
