@@ -5,6 +5,12 @@ import pt from './pt.js'
 
 export const PT_BR_OVERRIDES = {
   // CARGA's level and weekly challenges (components/LevelCard.jsx)
+  "level {0}": "nível {0}",
+  "records": "recordes",
+  "weeks": "semanas",
+  "Drag across the card · tap it": "Arraste o dedo na carta · toque nela",
+  "Your rank card": "Sua carta de rank",
+  "Open your rank card": "Abrir sua carta de rank",
   "Dormant": "Adormecido",
   "Spark": "Faísca",
   "Ember": "Brasa",

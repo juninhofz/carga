@@ -41,7 +41,7 @@ export const stepFor = n => 200 + 50 * (Math.max(1, n) - 1)
 // frame and aura, `fx` how fine the frame is (sparks, a foil sheen, holographic, living fire).
 // The names are provisional: they are i18n keys, so renaming one is a change to the locales.
 export const TIERS = [
-  { id: 'dormant', r: 'E', name: 'Dormant', c: '#8a8f98', c2: '#3f4247', fx: '' },
+  { id: 'dormant', r: 'E', name: 'Dormant', c: '#9aa0a8', c2: '#3f4247', fx: '' },
   { id: 'spark', r: 'D', name: 'Spark', c: '#e9edf2', c2: '#7d8590', fx: 'sparks' },
   { id: 'ember', r: 'C', name: 'Ember', c: '#ffd23f', c2: '#8a6500', fx: 'sparks' },
   { id: 'flame', r: 'B', name: 'Flame', c: '#ff6b00', c2: '#7a2f00', fx: 'sparks' },
@@ -190,5 +190,16 @@ export function xpOf(S) {
 export function levelCard(S, today = new Date()) {
   const { total, parts, facts } = xpOf(S)
   const key = thisWeek(S, today)
-  return { ...levelFor(total), parts, week: weekProgress(facts, key), weekKey: key }
+  return { ...levelFor(total), parts, week: weekProgress(facts, key), weekKey: key, stats: statsOf(S, facts) }
+}
+
+/** The numbers on the rank card: workouts done, records hit, weeks with at least one workout. */
+export function statsOf(S, facts = weekFacts(S)) {
+  let workouts = 0, prs = 0
+  for (const w of Array.isArray(S?.workouts) ? S.workouts : []) {
+    if (!w || !workoutDay(w)) continue
+    workouts++
+    prs += new Set(Array.isArray(w.prs) ? w.prs.filter(id => typeof id === 'string') : []).size
+  }
+  return { workouts, prs, weeks: Object.keys(facts).length }
 }

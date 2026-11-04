@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore.js'
 import { t, tn } from '../lib/i18n.js'
 import { fmtNum } from '../lib/format.js'
 import Icon from './Icon.jsx'
-import { RankCard, RankUp } from './RankCard.jsx'
+import { RankCard, RankUp, CardView } from './RankCard.jsx'
 import { PartyBanner, PARTY_MS } from './Streak.jsx'
 import { levelCard, TIERS, XP_WEEKLY, XP_WORKOUT, XP_PR, XP_MONTHLY, XP_GOLD } from '../lib/carga-level.js'
 
@@ -39,9 +39,12 @@ export function LevelCard({ S, now }) {
   const [open, setOpen] = useState(false)
   const [party, setParty] = useState(null)
   const [rankUp, setRankUp] = useState(null)
+  const [viewing, setViewing] = useState(false)
   const name = useStore(s => s.user?.name || '')
   const closeParty = useCallback(() => setParty(null), [])
   const closeRankUp = useCallback(() => setRankUp(null), [])
+  const closeView = useCallback(() => setViewing(false), [])
+  const xp = { into: L.into, step: L.step }
   const doneNow = L.week.filter(p => p.done).map(p => L.weekKey + '|' + p.id)
 
   useEffect(() => {
@@ -68,7 +71,9 @@ export function LevelCard({ S, now }) {
   const left = L.step - L.into
   return <div className={'card level-card' + (L.tier.id === 'max' ? ' max' : '')} data-level>
     <div className="lv-top">
-      <RankCard rank={L.rank} level={L.level} name={name} />
+      <button type="button" className="lv-card" onClick={() => setViewing(true)} aria-label={t('Open your rank card')}>
+        <RankCard rank={L.rank} level={L.level} name={name} />
+      </button>
       <div className="lv-who">
         <div className="lv-eyebrow">{t('Rank {0}', L.tier.r)} · {fmtNum(L.total)} XP</div>
         <div className="lv-title">{levelName(L)}</div>
@@ -109,7 +114,8 @@ export function LevelCard({ S, now }) {
       <li><b>+{XP_GOLD}</b> {t('a gold month (all three monthly challenges)')}</li>
       <li className="muted">{t('Every five levels your card climbs a rank: {0}.', LADDER())}</li>
     </ul>}
-    {rankUp && <RankUp from={rankUp.from} to={rankUp.to} level={L.level} name={name} onClose={closeRankUp} />}
+    {rankUp && <RankUp from={rankUp.from} to={rankUp.to} level={L.level} name={name} xp={xp} stats={L.stats} onClose={closeRankUp} />}
+    {viewing && !rankUp && <CardView rank={L.rank} level={L.level} name={name} xp={xp} stats={L.stats} onClose={closeView} />}
     {party && <PartyBanner text={party.text} icon={<span className="lv-party-icon">{party.icon}</span>} className={'lv-party ' + party.kind} onClose={closeParty} />}
   </div>
 }

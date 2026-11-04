@@ -1,6 +1,12 @@
 // Portuguese UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
   // CARGA's level and weekly challenges (components/LevelCard.jsx)
+  "level {0}": "nível {0}",
+  "records": "recordes",
+  "weeks": "semanas",
+  "Drag across the card · tap it": "Arrasta o dedo na carta · toca nela",
+  "Your rank card": "A tua carta de rank",
+  "Open your rank card": "Abrir a tua carta de rank",
   "Dormant": "Adormecido",
   "Spark": "Faísca",
   "Ember": "Brasa",
