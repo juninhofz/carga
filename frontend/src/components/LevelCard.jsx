@@ -3,12 +3,14 @@ import { useStore } from '../store/useStore.js'
 import { t, tn } from '../lib/i18n.js'
 import { fmtNum, isoOf } from '../lib/format.js'
 import Icon from './Icon.jsx'
+import { useNavigate } from 'react-router-dom'
+import { setPrefs, startRun, lockOn } from '../lib/run-recorder.js'
 import ProfilePhoto from './ProfilePhoto.jsx'
 import { RankCard, RankUp, CardView } from './RankCard.jsx'
 import { useCloud } from './CloudAccount.jsx'
 import { PartyBanner, PARTY_MS } from './Streak.jsx'
 import {
-  levelCard, TIERS, PTS, DECAY, STREAK_MAX, monthAllPts, startPause, endPause,
+  levelCard, TIERS, PTS, DECAY, tickDaily, STREAK_MAX, monthAllPts, startPause, endPause,
 } from '../lib/carga-level.js'
 
 /* CARGA's level (lib/carga-level.js) on Home, as glass cards: the rank card and the Carga (with
@@ -34,7 +36,7 @@ export function weeklyTitle(p) {
     default: return t('Challenges')
   }
 }
-const dailyTitle = d => ({ train: t('Train today'), mobility: t('Stretch or do mobility today'), core: t('Train your core today'), weigh: t('Log your weight today') }[d.id] || t('Train today'))
+const dailyTitle = d => d.title || t('Train today')
 const flashTitle = f => ({
   pushups: tn('{0} push-up today', '{0} push-ups today', f.n),
   cardio: tn('{0} minute of cardio today', '{0} minutes of cardio today', f.n),
@@ -61,6 +63,14 @@ const SEEN = 'carga.level.seen'
 const readSeen = () => { try { return JSON.parse(localStorage.getItem(SEEN) || 'null') } catch { return null } }
 const writeSeen = v => { try { localStorage.setItem(SEEN, JSON.stringify(v)) } catch { /* private mode */ } }
 
+/** The daily mission's button: the walk, the stretch timer, or "Fiz!". */
+function DailyGo({ daily, today }) {
+  const nav = useNavigate()
+  if (daily.how === 'walk') return <button type="button" className="lv-go" onClick={() => { setPrefs({ type: 'walk' }); nav('/corrida') }}><Icon name="steps" />Caminhar agora</button>
+  if (daily.how === 'stretch') return <button type="button" className="lv-go" onClick={() => { lockOn(); startRun('stretch'); nav('/corrida') }}><Icon name="stopwatch" />Alongar agora</button>
+  return <button type="button" className="lv-go" onClick={() => useStore.getState().update(s => { tickDaily(s, today, daily.id) })}><Icon name="check" />Fiz!</button>
+}
+
 function MissionRow({ icon, title, have, n, done, pts, tag }) {
   const frac = Math.min(1, n ? have / n : 0)
   return <div className={'ch-row' + (done ? ' done' : '')}>
@@ -80,7 +90,7 @@ export function LevelCard({ S, now, after = null }) {
   const cloudName = useCloud(c => c.profile?.name || '')
   const numbers = useCloud(c => c.numbers)
   const name = useStore(s => s.user?.name || '') || cloudName
-  const L = useMemo(() => levelCard(S, now || new Date()), [S.workouts, S.challenges, S.weekStart, S.bodyweight, S.cargaPauses]) // eslint-disable-line react-hooks/exhaustive-deps
+  const L = useMemo(() => levelCard(S, now || new Date()), [S.workouts, S.challenges, S.weekStart, S.bodyweight, S.cargaPauses, S.runs, S.dailyDone, S.methods, S.activeMethod]) // eslint-disable-line react-hooks/exhaustive-deps
   const [open, setOpen] = useState(false)
   const [party, setParty] = useState(null)
   const [rankUp, setRankUp] = useState(null)
@@ -163,6 +173,8 @@ export function LevelCard({ S, now, after = null }) {
           <div className="ch-list">
             {W.missions.map(p => <MissionRow key={p.id} icon={p.icon} title={weeklyTitle(p)} have={p.have} n={p.n} done={p.done} pts={W.missionPts} />)}
             <MissionRow icon={L.daily.icon} title={dailyTitle(L.daily)} have={L.daily.done ? 1 : 0} n={1} done={L.daily.done} pts={PTS.daily} tag={t('today · optional')} />
+            {/* CARGA: the daily mission is simple, and one tap starts it (or ticks it) */}
+            {!L.daily.done && <DailyGo daily={L.daily} today={today} />}
           </div>
           <div className={'lv-bonus small' + (W.allDone ? ' done' : '')}>
             {W.allDone ? '⚡ ' + t('All done this week: +{0} pts', W.bonus) : t('Finish all {0} for +{1} pts', W.missions.length, W.bonus)}

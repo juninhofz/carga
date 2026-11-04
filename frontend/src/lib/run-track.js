@@ -24,6 +24,8 @@ export const SPORTS = {
   football: { name: 'Futebol', icon: 'figureRun', gps: false, met: 7 },
   swim: { name: 'Natação', icon: 'swim', gps: false, met: 7 },
   other: { name: 'Outra atividade', icon: 'stopwatch', gps: false, met: 5 },
+  stretch: { name: 'Alongamento', icon: 'stretch', gps: false, met: 2.5 },
+  home: { name: 'Treino em casa', icon: 'figureStrength', gps: false, met: 5 },
 }
 export const hasGps = type => SPORTS[type]?.gps !== false
 export const MAX_ACC = 35

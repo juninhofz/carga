@@ -101,7 +101,7 @@ const PUSHUP = /push-?\s?ups?\b|press-?\s?ups?\b/
 const cardioMin = e => workRows(e).reduce((n, s) => n + (!doneUnits(s) ? 0 : Number(s.min) > 0 ? Number(s.min) : isCardio(e?.id) && Number(s.sec) > 0 ? Number(s.sec) / 60 : 0), 0)
 const prsOf = w => new Set(Array.isArray(w?.prs) ? w.prs.filter(id => typeof id === 'string') : []).size
 
-const emptyDay = () => ({ workouts: 0, sets: 0, prs: 0, pushups: 0, cardioMin: 0, legs: 0, core: 0, mobility: 0, weigh: 0, volumeKg: 0, newEx: 0, groups: new Set() })
+const emptyDay = () => ({ workouts: 0, sets: 0, prs: 0, pushups: 0, cardioMin: 0, legs: 0, core: 0, mobility: 0, weigh: 0, volumeKg: 0, newEx: 0, groups: new Set(), walkMin: 0, stretchMin: 0, checks: new Set() })
 
 /** Everything the missions read, per day: { [iso]: facts }, and the first day anything happened. */
 export function dayFacts(S) {
@@ -140,12 +140,23 @@ export function dayFacts(S) {
   for (const b of Array.isArray(S?.bodyweight) ? S.bodyweight : []) {
     if (b && typeof b.d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(b.d) && Number(b.w) > 0) at(b.d).weigh = 1
   }
-  // CARGA runs (views/Run.jsx): a run, walk or ride counts as a workout and as its cardio minutes
+  // CARGA runs (views/Run.jsx): a run, ride or class counts as a workout and as its cardio minutes; a
+  // walk only from 20 minutes (a short one is the daily mission, not a workout); a stretch is mobility
   for (const r of Array.isArray(S?.runs) ? S.runs : []) {
-    if (!r || !Number.isFinite(r.start) || !(r.movingSec >= 300 || r.distM >= 1000)) continue
+    if (!r || !Number.isFinite(r.start)) continue
     const d = at(localIso(r.start))
+    const min = (Number(r.movingSec) || 0) / 60
+    if (r.type === 'stretch') { d.stretchMin += min; if (min >= 3) d.mobility++; continue }
+    if (r.type === 'walk' || r.type === 'run') d.walkMin += min
+    if (!(r.movingSec >= 300 || r.distM >= 1000) || (r.type === 'walk' && min < 20)) continue
     d.workouts++
-    d.cardioMin += r.movingSec / 60
+    d.cardioMin += min
+  }
+  // the daily missions ticked by hand ("Fiz!"): S.dailyDone = { [iso]: [mission ids] }
+  for (const [iso, ids] of Object.entries(S?.dailyDone && typeof S.dailyDone === 'object' ? S.dailyDone : {})) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(iso) || !Array.isArray(ids)) continue
+    const d = at(iso)
+    for (const id of ids) if (typeof id === 'string') d.checks.add(id)
   }
   const all = Object.keys(days).sort()
   return { days, first: all[0] || null }
@@ -219,16 +230,57 @@ export function weekProgress(days, key, rank) {
 }
 
 // The optional daily mission, one a day, turning with the date.
-export const DAILY = [
-  { id: 'train', icon: 'dumbbell', done: d => d.workouts > 0 },
-  { id: 'mobility', icon: 'heart', done: d => d.mobility > 0 },
-  { id: 'core', icon: 'figureStrength', done: d => d.core > 0 },
-  { id: 'weigh', icon: 'scale', done: d => d.weigh > 0 },
-]
-export const dailyOf = (days, iso) => {
-  const m = DAILY[((dayIndex(iso) % DAILY.length) + DAILY.length) % DAILY.length]
+// The daily mission (optional, small points): something simple anyone can do every day, without a
+// gym, chosen by the person's goal (the active Personal method's answers). `how` is how it gets
+// done: 'walk' with the GPS walk (or any run), 'stretch' with the stretch timer, 'check' by hand
+// ("Fiz!"). A workout logged that day does the gym-ish ones too.
+const M = {
+  walk10: { title: 'Caminhe 10 minutos', icon: 'steps', how: 'walk', done: d => d.walkMin >= 10 },
+  walk20: { title: 'Caminhe ou corra 20 minutos', icon: 'cargaRun', how: 'walk', done: d => d.walkMin >= 20 },
+  stretch5: { title: 'Alongue-se 5 minutos', icon: 'stretch', how: 'stretch', done: d => d.stretchMin >= 5 || d.mobility > 0 },
+  squats20: { title: 'Faça 20 agachamentos', icon: 'legs', how: 'check', done: (d, id) => d.checks.has(id) || d.legs > 0 },
+  pushups10: { title: 'Faça 10 flexões', icon: 'arm', how: 'check', done: (d, id) => d.checks.has(id) || d.pushups >= 10 },
+  pushups20: { title: 'Faça 20 flexões', icon: 'arm', how: 'check', done: (d, id) => d.checks.has(id) || d.pushups >= 20 },
+  plank: { title: 'Segure a prancha por 1 minuto', icon: 'abs', how: 'check', done: (d, id) => d.checks.has(id) || d.core > 0 },
+  shake: { title: 'Tome seu shake ou vitamina', icon: 'flame', how: 'check', done: (d, id) => d.checks.has(id) },
+  water: { title: 'Beba 2 litros de água', icon: 'heart', how: 'check', done: (d, id) => d.checks.has(id) },
+  jacks: { title: 'Faça 50 polichinelos', icon: 'bolt', how: 'check', done: (d, id) => d.checks.has(id) },
+  stairs: { title: 'Suba escadas por 5 minutos', icon: 'steps', how: 'check', done: (d, id) => d.checks.has(id) },
+  sleep: { title: 'Durma 8 horas hoje', icon: 'moon', how: 'check', done: (d, id) => d.checks.has(id) },
+}
+export const DAILY_BY_GOAL = {
+  fatloss: ['walk20', 'stretch5', 'water', 'walk10', 'jacks', 'stairs', 'squats20'],
+  hypertrophy: ['shake', 'pushups20', 'stretch5', 'squats20', 'sleep', 'plank', 'walk10'],
+  strength: ['plank', 'pushups20', 'stretch5', 'squats20', 'sleep', 'shake', 'walk10'],
+  conditioning: ['walk20', 'jacks', 'stretch5', 'stairs', 'plank', 'walk10', 'water'],
+  health: ['walk10', 'stretch5', 'water', 'squats20', 'sleep', 'plank', 'walk20'],
+  sport: ['stretch5', 'plank', 'walk10', 'jacks', 'sleep', 'pushups10', 'water'],
+  default: ['walk10', 'stretch5', 'squats20', 'pushups10', 'plank', 'water', 'walk20'],
+}
+export const DAILY = Object.entries(M).map(([id, m]) => ({ id, ...m }))
+/** The person's goal from the active Personal method (or the last one), or null. */
+export function goalOf(S) {
+  const list = Array.isArray(S?.methods) ? S.methods : []
+  const m = list.find(x => x && x.id === S?.activeMethod) || list[list.length - 1]
+  return m?.answers?.goal || null
+}
+export const dailyOf = (days, iso, goal = null) => {
+  const pool = DAILY_BY_GOAL[goal] || DAILY_BY_GOAL.default
+  const id = pool[((dayIndex(iso) % pool.length) + pool.length) % pool.length]
+  const m = M[id]
   const d = days[iso] || emptyDay()
-  return { id: m.id, icon: m.icon, done: m.done(d) }
+  return { id, icon: m.icon, title: m.title, how: m.how, done: m.done(d, id) }
+}
+/** Ticks (or unticks) a hand-done daily mission on a store draft. */
+export function tickDaily(s, iso, id, on = true) {
+  const all = s.dailyDone && typeof s.dailyDone === 'object' ? { ...s.dailyDone } : {}
+  const ids = new Set(Array.isArray(all[iso]) ? all[iso] : [])
+  if (on) ids.add(id); else ids.delete(id)
+  all[iso] = [...ids]
+  // keep the last 60 days
+  const keys = Object.keys(all).sort()
+  for (const k of keys.slice(0, Math.max(0, keys.length - 60))) delete all[k]
+  s.dailyDone = all
 }
 
 // Flash missions show on about three days in ten and last that day only; harder with the rank.
@@ -301,6 +353,7 @@ export function replay(S, now = new Date()) {
   const { days, first } = dayFacts(S)
   const pauses = pausesOf(S)
   const months = monthsOf(S)
+  const goal = goalOf(S)
   const current = weekKey(today, ws)
   let carga = 0, best = 0, streak = 0, lastNet = 0
   let week = null
@@ -320,7 +373,7 @@ export function replay(S, now = new Date()) {
     for (let i = 0; i < 7; i++) {
       const iso = addDays(key, i)
       if (iso > today) break
-      if (dailyOf(days, iso).done) earned += PTS.daily
+      if (dailyOf(days, iso, goal).done) earned += PTS.daily
       const fl = flashOf(days, iso, rank)
       if (fl && fl.done) earned += PTS.flash
     }
@@ -348,7 +401,7 @@ export function replay(S, now = new Date()) {
   const L = levelFor(carga)
   return {
     carga, best, streak, lastNet, week,
-    daily: dailyOf(days, today),
+    daily: dailyOf(days, today, goal),
     flash: flashOf(days, today, L.rank),
     pause: pauseNow(S, today),
     canPause: canPause(S, today),

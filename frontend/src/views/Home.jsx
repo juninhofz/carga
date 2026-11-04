@@ -28,7 +28,7 @@ import { programmeChip } from '../lib/programmes.js'
 import { SeasonDeco } from '../components/Seasonal.jsx'
 import { WrappedHomeCard } from '../components/WrappedEntry.jsx'
 import RecoveryHint from '../components/RecoveryHint.jsx'
-import { RunCard } from './Run.jsx'
+import { RunCard, SimpleDay } from './Run.jsx'
 import CargaMark from '../components/CargaMark.jsx'
 import { ChallengesCard } from '../components/Challenges.jsx'
 import { LevelCard } from '../components/LevelCard.jsx'
@@ -207,6 +207,8 @@ export default function Home() {
             {t('Choose a different workout')}
           </Button>
         </div>}
+        {/* CARGA: a day the gym won't happen still gets something simple */}
+        {!S.active && <SimpleDay />}
         <SeasonDeco spot="home-hero" />
       </div>
       <RunCard />

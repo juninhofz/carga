@@ -111,3 +111,30 @@ describe('carga-level', () => {
     expect(L.tier).toBe(TIERS[0])
   })
 })
+
+// CARGA: the daily mission is simple and follows the goal of the active Personal method
+import { dailyOf, goalOf, tickDaily, DAILY_BY_GOAL, dayFacts as facts } from './carga-level.js'
+describe('the daily mission', () => {
+  const day = '2026-11-04'
+  it('comes from the goal, and a general list without one', () => {
+    const S = { methods: [{ id: 'm1', answers: { goal: 'fatloss' } }], activeMethod: 'm1' }
+    expect(goalOf(S)).toBe('fatloss')
+    expect(DAILY_BY_GOAL.fatloss).toContain(dailyOf({}, day, 'fatloss').id)
+    expect(DAILY_BY_GOAL.default).toContain(dailyOf({}, day, null).id)
+  })
+  it('is done by hand with "Fiz!"', () => {
+    const goal = 'hypertrophy'
+    const id = dailyOf({}, day, goal).id
+    const s = {}
+    tickDaily(s, day, id)
+    const { days } = facts(s)
+    // the walking and stretching ones are done by the GPS walk or the stretch timer instead
+    if (!['walk10', 'walk20', 'stretch5'].includes(id)) expect(dailyOf(days, day, goal).done).toBe(true)
+  })
+  it('counts a 10 minute walk, which is not a workout', () => {
+    const start = new Date(day + 'T08:00:00').getTime()
+    const { days } = facts({ runs: [{ id: 'r', type: 'walk', start, movingSec: 660, distM: 900 }] })
+    expect(days[day].walkMin).toBeGreaterThanOrEqual(10)
+    expect(days[day].workouts).toBe(0)
+  })
+})

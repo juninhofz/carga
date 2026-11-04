@@ -153,6 +153,7 @@ function RunLive() {
       {paused && <div className="run-paused">Pausado</div>}
       <span className="run-sport-ic"><Icon name={sport.icon} /></span>
       <div className="run-big main"><span>Tempo</span><b>{fmtClock(elapsedMs(track, now))}</b></div>
+      {guideOf(track.type) && <ol className="run-guide">{guideOf(track.type).map((g, i) => <li key={i}>{g}</li>)}</ol>}
     </div>
     <div className="run-live-bar">
       {!paused && <button type="button" className="run-pause" onClick={() => { lockOn(); pauseRun() }} aria-label="Pausar"><Icon name="pause" /></button>}
@@ -365,6 +366,31 @@ export function StartChooser({ onGym, onClose }) {
     </div>
   </div>, document.body)
 }
+
+/** Home: on a day the workout won't happen, something simple instead (a walk, a stretch, a quick
+    one at home). Each starts at once; the stretch and the home one show what to do as they run. */
+export function SimpleDay() {
+  const nav = useNavigate()
+  const [open, setOpen] = useState(false)
+  const go = type => { setOpen(false); if (hasGps(type)) { setPrefs({ type }); nav('/corrida') } else { lockOn(); startRun(type); nav('/corrida') } }
+  return <div className="simple-day">
+    <button type="button" className="simple-day-btn" onClick={() => setOpen(o => !o)} aria-expanded={open}>Hoje não dá? Faça algo simples <Icon name={open ? 'chevronUp' : 'chevronDown'} /></button>
+    {open && <div className="simple-day-opts">
+      <button type="button" onClick={() => go('walk')}><Icon name="steps" /><b>Caminhada</b><small>15 minutos, com GPS</small></button>
+      <button type="button" onClick={() => go('stretch')}><Icon name="stretch" /><b>Alongamento</b><small>10 minutos guiado</small></button>
+      <button type="button" onClick={() => go('home')}><Icon name="figureStrength" /><b>Treino em casa</b><small>15 minutos, sem aparelho</small></button>
+    </div>}
+  </div>
+}
+
+/** What to do, step by step, in a guided no-GPS activity (the stretch, the quick one at home). */
+const GUIDES = {
+  stretch: ['Pescoço: incline a cabeça para cada lado, 30 s', 'Ombros: cruze o braço no peito, 30 s cada', 'Peito: mãos atrás das costas, abra o peito, 30 s',
+    'Costas: abrace os joelhos sentado, 30 s', 'Posterior: pernas esticadas, alcance os pés, 45 s', 'Quadríceps: em pé, puxe o pé para trás, 30 s cada',
+    'Quadril: afundo baixo, 30 s cada lado', 'Panturrilha: apoie na parede, 30 s cada', 'Respire fundo 5 vezes'],
+  home: ['3 voltas de:', '15 agachamentos', '10 flexões (pode ser com joelho no chão)', '20 polichinelos', '30 s de prancha', '10 afundos de cada perna', 'Descanse 1 minuto entre as voltas'],
+}
+export const guideOf = type => GUIDES[type] || null
 
 /** The run in progress, for App.jsx (screen on) and the Home card. */
 export const useRunLive = () => useRun(s => !!s.track)

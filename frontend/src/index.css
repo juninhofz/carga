@@ -3948,3 +3948,18 @@ body:has(.run-live) #tabbar{display:none}
 .cg-lead .cg-who>b{font:900 17px/1 "Barlow Condensed","Arial Narrow",Impact,sans-serif}
 .cg-lead em{font-style:normal;font-size:11.5px;color:rgba(255,255,255,.75)}
 @media (prefers-reduced-motion:reduce){.cg-lead,.cg-lead::before{animation:none}}
+
+/* the daily mission's button (components/LevelCard.jsx DailyGo) */
+.lv-go{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin:2px 0 8px;padding:10px;border:0;border-radius:12px;background:rgba(255,107,0,.14);color:#ff8a3d;font:inherit;font-weight:800;font-size:14px;cursor:pointer}
+.lv-go svg{width:18px;height:18px}
+
+/* a simple day (views/Run.jsx SimpleDay) and the guide on a guided timer */
+.simple-day{margin-top:6px}
+.simple-day-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:8px;border:0;background:none;color:var(--label-2);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.simple-day-btn svg{width:16px;height:16px}
+.simple-day-opts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+.simple-day-opts button{display:grid;justify-items:center;gap:3px;padding:12px 4px;border:0;border-radius:14px;background:var(--surface-2);color:inherit;font:inherit;text-align:center;cursor:pointer}
+.simple-day-opts svg{width:24px;height:24px;color:#ff6b00}
+.simple-day-opts b{font-size:13.5px}.simple-day-opts small{font-size:11px;color:var(--label-2)}
+.run-live.nogps{grid-template-rows:auto 1fr auto auto;overflow-y:auto}
+.run-guide{margin:14px auto 0;padding:12px 14px 12px 32px;max-width:340px;text-align:start;background:var(--surface);border-radius:14px;display:grid;gap:6px;font-size:14px}
