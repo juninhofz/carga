@@ -8,6 +8,9 @@ import { StatusBadge } from '../components/StatusReveal.jsx'
 import { PersonPhoto } from '../components/ProfilePhoto.jsx'
 import CargaMark from '../components/CargaMark.jsx'
 import { RankCard } from '../components/RankCard.jsx'
+import { createPortal } from 'react-dom'
+import { useUI } from '../store/useUI.js'
+import { medalSVG, medalKind, medalName } from '../lib/medals.js'
 import { LEVELS, runStatus, workoutStatus } from '../lib/activity-status.js'
 import { sessionVolume } from '../lib/history.js'
 import {
@@ -42,8 +45,90 @@ function useMyName() {
 }
 
 /** Someone in a challenge: their profile photo and rank when their profile is visible, else initials. */
-function Avatar({ name, person, size = 30 }) {
-  return <PersonPhoto name={person?.name || name} avatar={person?.avatar} rank={person ? person.rank : null} letter={false} size={size} />
+function Avatar({ name, person, size = 30, uid }) {
+  const photo = <PersonPhoto name={person?.name || name} avatar={person?.avatar} rank={person ? person.rank : null} letter={false} size={size} />
+  if (!uid) return photo
+  return <button type="button" className="cg-face-btn" onClick={e => { e.stopPropagation(); openPerson(uid, person, name) }} aria-label={'Perfil de ' + (person?.name || name)}>{photo}</button>
+}
+
+/* ---------- a person's profile: their card and their medals ---------- */
+
+// the finished challenges I am in, with their leaderboards, read once per visit
+let finishedCache = null
+async function finishedBoards() {
+  if (finishedCache) return finishedCache
+  const today = todayIso()
+  const done = (await myChallenges()).filter(c => c.ends < today)
+  const boards = []
+  for (const c of done.slice(0, 30)) {
+    try { const d = await loadChallenge(c.id); if (d) boards.push({ c: d.challenge, rows: leaderboard(d.challenge, d.members, d.checkins) }) } catch { /* skip */ }
+  }
+  finishedCache = boards
+  return boards
+}
+/** The medals someone took in the finished challenges I can see: [{ kind, place, name, ends }]. */
+export async function medalsOf(uid) {
+  const out = []
+  for (const { c, rows } of await finishedBoards()) {
+    const r = rows.find(x => x.user_id === uid)
+    if (r && r.place <= 3 && r.score > 0) out.push({ kind: medalKind(c.scoring), place: r.place, name: c.name, ends: c.ends })
+  }
+  return out.sort((a, b) => (a.ends < b.ends ? 1 : -1))
+}
+
+function PersonSheet({ uid, person, name, close }) {
+  const [medals, setMedals] = useState(null)
+  useEffect(() => { medalsOf(uid).then(setMedals, () => setMedals([])) }, [uid])
+  const shown = person?.name || name || 'Sem nome'
+  return <div className="cg-person">
+    <div className="cg-person-h"><button type="button" className="iconbtn" onClick={close} aria-label="Fechar"><Icon name="xmark" /></button></div>
+    <PersonPhoto name={shown} avatar={person?.avatar} rank={person ? person.rank : null} letter={false} size={92} />
+    <b className="cg-person-n">{shown}</b>
+    {person?.rank != null && <div className="cg-person-card"><RankCard rank={person.rank} level={person.level || 1} name={shown} size="sm" /></div>}
+    <div className="cg-person-k">Medalhas{medals ? ' · ' + medals.length : ''}</div>
+    {medals === null ? <p className="muted small">Carregando…</p>
+      : !medals.length ? <p className="muted small">Ainda sem medalhas nos desafios que vocês fizeram juntos.</p>
+        : <div className="cg-medals">{medals.map((m, i) => <div key={i}><span dangerouslySetInnerHTML={{ __html: medalSVG(m.kind, m.place) }} /><small>{m.name}</small></div>)}</div>}
+  </div>
+}
+function openPerson(uid, person, name) {
+  useUI.getState().openSheet(close => <PersonSheet uid={uid} person={person} name={name} close={close} />)
+}
+
+/* ---------- the end of a challenge: the podium, then my medal ---------- */
+
+const PODIUM_SEEN = 'carga.podium.'
+const podiumSeen = id => { try { return !!localStorage.getItem(PODIUM_SEEN + id) } catch { return true } }
+const markPodium = id => { try { localStorage.setItem(PODIUM_SEEN + id, '1') } catch { /* fine */ } }
+
+function PodiumReveal({ c, rows, people, me, onClose }) {
+  const top = rows.filter(r => r.score > 0).slice(0, 3)
+  const mine = top.find(r => r.user_id === me)
+  const [step, setStep] = useState('podium')
+  useEffect(() => { if (!mine) return undefined; const t = setTimeout(() => setStep('medal'), 4200); return () => clearTimeout(t) }, [])
+  const unit = SCORING[c.scoring].unit
+  const champ = top[0]
+  const conf = useMemo(() => Array.from({ length: 40 }, (_, i) => ({ x: Math.random() * 100, dx: Math.random() * 80 - 40, r: Math.random() * 720 - 360, d: 1.6 + Math.random() * 0.9, c: ['#ff6b00', '#ffd166', '#fff', '#ff8a3d', '#3fa9ff'][i % 5], w: 5 + Math.random() * 5 })), [])
+  const nm = r => (r.user_id === me ? 'Você' : nameOf(people, r))
+  return createPortal(<div className="pd" role="dialog" aria-label="Resultado do desafio" onClick={onClose}>
+    {step === 'podium' ? <div className="pd-stage go" onClick={e => e.stopPropagation()}>
+      {conf.map((p, i) => <i key={i} className="pd-conf" style={{ left: p.x + '%', '--dx': p.dx + 'px', '--r': p.r + 'deg', '--d': p.d + 's', background: p.c, width: p.w }} />)}
+      <div className="pd-pod">
+        {[top[1], top[0], top[2]].map((r, i) => r ? <div key={r.user_id} className={'pd-col p' + r.place}>
+          {r.place === 1 && <span className="pd-crown"><Icon name="crown" /></span>}
+          <span className="pd-face" style={{ '--d2': [1.0, 1.2, 0.9][i] + 's' }}><PersonPhoto name={nm(r)} avatar={people[r.user_id]?.avatar} rank={people[r.user_id]?.rank ?? null} letter={false} size={r.place === 1 ? 72 : 56} /></span>
+          <div className="pd-stand" style={{ '--d': [0.2, 0.35, 0.1][i] + 's' }}><b>{r.place}</b><small>{nm(r).split(' ')[0]}</small></div>
+        </div> : <div key={i} />)}
+      </div>
+      {champ && <div className="pd-cap"><span>{champ.user_id === me ? 'Você venceu o desafio' : 'Campeão do desafio'}</span><b>{nm(champ)}</b><small>{fmtScore(champ.score, c.scoring)} {unit(champ.score)} · {c.name}</small></div>}
+      <button type="button" className="cg-btn pd-ok" onClick={() => (mine ? setStep('medal') : onClose())}>{mine ? 'Ver minha medalha' : 'Fechar'}</button>
+    </div> : <div className="pd-stage pd-medal go" onClick={e => e.stopPropagation()}>
+      <div className="pd-rays" />
+      <div className="pd-m" dangerouslySetInnerHTML={{ __html: medalSVG(medalKind(c.scoring), mine.place) }} />
+      <div className="pd-cap"><span>Nova medalha!</span><b>{mine.place}º lugar</b><small>{medalName(medalKind(c.scoring))} · {c.name}</small></div>
+      <button type="button" className="cg-btn pd-ok" onClick={onClose}>Guardar no perfil</button>
+    </div>}
+  </div>, document.body)
 }
 /** The person's rank card, tiny, to sit beside their name. */
 function MiniCard({ person, size = 'xs' }) {
@@ -198,6 +283,7 @@ export function ChallengePage() {
   const [data, setData] = useState(null)
   const [err, setErr] = useState('')
   const [tab, setTab] = useState('feed')
+  const [podium, setPodium] = useState(false)
   const myPhoto = useStore(s => s.S.avatar)
   const [menu, setMenu] = useState(false)
   const reload = () => loadChallenge(id).then(d => (d ? setData(d) : setErr('Desafio não encontrado.')), e => setErr(e.message))
@@ -227,6 +313,7 @@ export function ChallengePage() {
   const people = { ...(data.people || {}), [data.me]: { ...((data.people || {})[data.me] || { rank: null }), ...(myPhoto ? { avatar: myPhoto } : {}) } }
   const tie = leader && meRow && leader.user_id !== data.me && meRow.place === 1
   const coverPhoto = checkins.find(x => x.photo_url)?.photo_url
+  const showPodium = podium || (p.over && rows.some(r => r.score > 0) && !podiumSeen(c.id))
   return <div className="narrow cg">
     <div className={'cg-head' + (coverPhoto ? ' photo' : '')} style={{ '--cover': coverPhoto ? `url(${coverPhoto})` : coverCss(c.cover) }}>
       <div className="cg-top">
@@ -247,6 +334,8 @@ export function ChallengePage() {
         <div><b>{p.over ? 0 : p.left}</b><span>{p.left === 1 ? 'dia restante' : 'dias restantes'}</span></div>
       </div>
     </div>
+    {showPodium && <PodiumReveal c={c} rows={rows} people={people} me={data.me} onClose={() => { markPodium(c.id); setPodium(false); setMenu(m => m) ; reload() }} />}
+    {p.over && rows.some(r => r.score > 0) && <button type="button" className="cg-final" onClick={() => setPodium(true)}><Icon name="trophy" /><span><b>Desafio encerrado</b><small>Ver o pódio final</small></span><Icon name="chevronRight" /></button>}
     {menu && <div className="card cg-menu">
       <button type="button" className="plain" onClick={invite}>Convidar · código {c.code}</button>
       <button type="button" onClick={leave}>{mine ? 'Apagar desafio' : 'Sair do desafio'}</button>
@@ -282,7 +371,7 @@ function Ranking({ c, rows, me, people }) {
     </div>}
     <div className="card cg-rows">
       {rows.map(r => <div key={r.user_id} className={'cg-row' + (r.user_id === me ? ' me' : '')}>
-        <span className="n">{r.place}</span><Avatar name={r.name} person={people[r.user_id]} size={38} />
+        <span className="n">{r.place}</span><Avatar name={r.name} person={people[r.user_id]} size={38} uid={r.user_id} />
         <span className="t"><span className="cg-who"><b>{r.user_id === me ? 'Você' : nameOf(people, r)}</b>{c.teams && r.team != null ? <i className={'cg-team t' + r.team} /> : null}<MiniCard person={people[r.user_id]} /></span><small className="muted">{r.last ? 'última ' + ago(r.last) : 'ainda não postou'}</small></span>
         <span className="pts">{fmtScore(r.score, c.scoring)}<small>{unit(r.score)}</small></span>
       </div>)}
@@ -332,7 +421,7 @@ function Feed({ data, people: given, reload }) {
         c.stats?.volume ? (c.stats.volume >= 1000 ? (c.stats.volume / 1000).toFixed(1).replace('.', ',') + ' t' : c.stats.volume + ' kg') : null,
         c.stats?.sets ? c.stats.sets + ' séries' : null].filter(Boolean)
       return <article key={c.id} className="cg-post">
-        <div className="cg-post-top"><Avatar name={names[c.user_id]} person={people[c.user_id]} size={38} />
+        <div className="cg-post-top"><Avatar name={names[c.user_id]} person={people[c.user_id]} size={38} uid={c.user_id} />
           <span className="t"><Who name={c.user_id === me ? 'Você' : names[c.user_id]} person={people[c.user_id]} /><small className="muted">{ago(c.created_at)} · {c.title || KIND_NAME[c.kind]}</small></span>
           {/* the CARGA seal: this one was recorded in the app (a photo alone carries none) */}
           {c.verified !== false && <span className="cg-seal" title="Gravado no CARGA"><CargaMark height={16} />CARGA</span>}
