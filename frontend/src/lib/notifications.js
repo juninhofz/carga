@@ -37,6 +37,8 @@ async function showOnPhone(n) {
   try {
     if (document.visibilityState === 'visible' || !('Notification' in window) || Notification.permission !== 'granted') return
     const reg = await navigator.serviceWorker?.ready
+    // with the app-closed notices on (lib/carga-push.js) the server already sends this one
+    if (await reg?.pushManager?.getSubscription?.()) return
     reg?.showNotification(n.title, { body: n.body || '', tag: 'carga-note-' + n.id, icon: 'icon-512.png', badge: 'icon-180.png', data: { path: n.challenge_id ? '/desafios/' + n.challenge_id : '/desafios' } })
   } catch { /* fine */ }
 }

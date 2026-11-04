@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { pushState, enableNotices, syncNotices } from '../lib/carga-push.js'
 import { createPortal } from 'react-dom'
 import Icon from './Icon.jsx'
 import { useCloud } from './CloudAccount.jsx'
@@ -26,6 +27,7 @@ export function NotesLive() {
   useEffect(() => {
     if (!user) return undefined
     loadNotes()
+    syncNotices()
     return watchNotes(user.id, n => { setBanner(n); setTimeout(() => setBanner(b => (b?.id === n.id ? null : b)), 4500) })
   }, [user?.id])
   if (!banner) return null
@@ -47,12 +49,17 @@ export function NotesBell() {
 export function NotesPage() {
   const nav = useNavigate()
   const { list, loaded } = useNotes()
-  const [ask, setAsk] = useState(() => { try { return 'Notification' in window && Notification.permission === 'default' } catch { return false } })
-  useEffect(() => { loadNotes().then(() => setTimeout(markAllRead, 800)) }, [])
+  const [push, setPush] = useState(null)
+  const [pushErr, setPushErr] = useState('')
+  useEffect(() => { loadNotes().then(() => setTimeout(markAllRead, 800)); pushState().then(setPush, () => setPush('unsupported')) }, [])
+  const turnOn = async () => { setPushErr(''); try { await enableNotices(); setPush('on') } catch (e) { setPushErr(e.message); pushState().then(setPush, () => {}) } }
   return <div className="narrow cg">
-    <div className="hdr"><button className="iconbtn" onClick={() => nav(-1)} aria-label="Voltar"><Icon name="chevronLeft" /></button><div style={{ flex: 1 }}><h1>Avisos</h1></div></div>
-    {ask && <button type="button" className="card note-ask" onClick={() => Notification.requestPermission().finally(() => setAsk(false))}>
-      <Icon name="bell" /><span><b>Receber os avisos no celular</b><small>Quando alguém postar, comentar ou te cutucar.</small></span><Icon name="chevronRight" /></button>}
+    <div className="hdr"><button className="iconbtn" data-back="/desafios" onClick={() => nav(-1)} aria-label="Voltar"><Icon name="chevronLeft" /></button><div style={{ flex: 1 }}><h1>Avisos</h1></div></div>
+    {(push === 'off' || push === 'blocked') && <button type="button" className="card note-ask" onClick={turnOn}>
+      <Icon name="bell" /><span><b>Receber os avisos no celular</b><small>{push === 'blocked' ? 'Os avisos estão bloqueados neste navegador. Libere nos ajustes do site e toque aqui.' : 'Mesmo com o app fechado: quando alguém postar, comentar, reagir ou te cutucar.'}</small></span><Icon name="chevronRight" /></button>}
+    {push === 'install' && <div className="card note-ask"><Icon name="bell" /><span><b>Avisos com o app fechado</b><small>No iPhone, primeiro coloque o CARGA na tela inicial: no Safari, toque em Compartilhar e depois em "Adicionar à Tela de Início". Abra por lá e volte aqui.</small></span></div>}
+    {push === 'on' && <p className="small muted note-on"><Icon name="check" /> Avisos ligados neste celular, mesmo com o app fechado.</p>}
+    {pushErr && <p className="cg-err">{pushErr}</p>}
     {!loaded ? <p className="muted">Carregando…</p> : !list.length ? <div className="card"><p className="muted" style={{ margin: 0 }}>Nenhum aviso ainda. Quando alguém postar, comentar, reagir ou te cutucar nos desafios, aparece aqui.</p></div>
       : <div className="card note-list">{list.map(n => <button key={n.id} type="button" className={'note-row' + (n.read_at ? '' : ' new')} onClick={() => nav(n.challenge_id ? '/desafios/' + n.challenge_id : '/desafios')}>
         <span className="note-ic"><Icon name={ICON[n.kind] || 'bell'} /></span>

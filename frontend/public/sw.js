@@ -211,12 +211,14 @@ self.addEventListener('push', e => {
     // the previous notification with the same tag is closed by hand first.
     const tag = data.tag || 'opengym'
     try { for (const n of await self.registration.getNotifications({ tag })) n.close() } catch {}
-    await self.registration.showNotification(data.title || 'openGym', {
+    await self.registration.showNotification(data.title || 'CARGA', {
       body: data.body || '',
       icon: 'icon-512.png',
       badge: 'icon-180.png',
       tag,
-      renotify: true
+      renotify: true,
+      // CARGA: a challenge notice opens its challenge
+      data: { url: data.url || '' }
     })
   })())
 })
@@ -234,9 +236,12 @@ self.addEventListener('notificationclick', e => {
     return
   }
   e.notification.close()
-  e.waitUntil(self.clients.matchAll({ type: 'window' }).then(clients => {
+  const to = e.notification.data?.url ? '.' + e.notification.data.url : './'
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
     const c = clients.find(c => 'focus' in c)
-    return c ? c.focus() : self.clients.openWindow('./')
+    if (!c) return self.clients.openWindow(to)
+    if (e.notification.data?.url && 'navigate' in c) c.navigate(new URL(to, self.registration.scope).href).catch(() => {})
+    return c.focus()
   }))
 })
 // The push service rotated the subscription (key change, expiry): subscribe again with the same

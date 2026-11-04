@@ -181,7 +181,7 @@ const nameOf = (people, m) => people?.[m.user_id]?.name || m.name || 'Sem nome'
 function Header({ title, back, right }) {
   const nav = useNavigate()
   return <div className="hdr">
-    {back && <button className="iconbtn" onClick={() => nav(back === true ? -1 : back)} aria-label="Voltar"><Icon name="chevronLeft" /></button>}
+    {back && <button className="iconbtn" data-back={back === true ? "/desafios" : back} onClick={() => nav(back === true ? -1 : back)} aria-label="Voltar"><Icon name="chevronLeft" /></button>}
     <div style={{ flex: 1 }}><h1>{title}</h1></div>
     {right}
   </div>
@@ -438,7 +438,7 @@ export function ChallengePage() {
   return <div className="narrow cg">
     <div className={'cg-head' + (coverPhoto ? ' photo' : '')} style={{ '--cover': coverPhoto ? `url(${coverPhoto})` : coverCss(c.cover) }}>
       <div className="cg-top">
-        <button className="iconbtn" onClick={() => nav('/desafios')} aria-label="Voltar"><Icon name="chevronLeft" /></button>
+        <button className="iconbtn" data-back="/desafios" onClick={() => nav('/desafios')} aria-label="Voltar"><Icon name="chevronLeft" /></button>
         <div className="cg-top-t"><b>{c.name}</b><small>{p.over ? 'Encerrado' : !p.started ? 'Começa ' + shortDate(c.starts) : `Dia ${p.day} de ${p.total}`} · {members.length} {members.length === 1 ? 'pessoa' : 'pessoas'}</small></div>
         <button className="iconbtn" onClick={invite} aria-label="Convidar"><Icon name="share" /></button>
         <button className="iconbtn" onClick={() => setMenu(m => !m)} aria-label="Mais"><Icon name="more" /></button>
