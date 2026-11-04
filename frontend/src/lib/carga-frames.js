@@ -25,6 +25,10 @@ export const FRAMES = {
   '0652': ENDS, // pull-up
   '0313': ENDS, // dumbbell hammer curl
   '0319': ENDS, // dumbbell incline fly
+  '0336': FULL, // dumbbell lunge
+  '0605': FULL, // lever standing calf raise
+  '0274': FULL, // crunch floor
+  '0463': FULL, // front plank
 }
 export const FRAME_MS = 520
 const BASE = (import.meta.env?.BASE_URL || '/') + 'carga-frames/'
