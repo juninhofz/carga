@@ -162,7 +162,7 @@ export async function deleteChallenge(id) {
 export async function peopleOf(ids) {
   const uniq = [...new Set(ids.filter(Boolean))]
   if (!uniq.length) return {}
-  const { data } = await db().from('profiles').select('id, name, rank, avatar').in('id', uniq)
+  const { data } = await db().from('profiles').select('id, name, rank, level, avatar').in('id', uniq)
   return Object.fromEntries((data || []).map(p => [p.id, p]))
 }
 

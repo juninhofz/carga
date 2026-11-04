@@ -40,11 +40,11 @@ export default function ProfilePhoto({ size = 34, className = '' }) {
 
 const initials = name => (name || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?'
 
-/** Someone's photo (or initials) with their rank's letter. `rank` is the TIERS index, or null. */
-export function PersonPhoto({ name, avatar, rank, size = 36 }) {
+/** Someone's photo (or initials) ringed in their rank's colour, with its letter unless `letter` is false. `rank` is the TIERS index, or null. */
+export function PersonPhoto({ name, avatar, rank, size = 36, letter = true }) {
   const tier = rank != null ? TIERS[Math.max(0, Math.min(TIERS.length - 1, rank))] : null
   return <span className="pp-person" style={{ width: size, height: size, '--tc': tier?.c || 'transparent' }}>
     <span className={'pp-face' + (tier ? ' ring' : '')} style={{ fontSize: size * 0.38 }}>{avatar ? <img src={avatar} alt="" loading="lazy" /> : initials(name)}</span>
-    {tier && <b className="pp-rank" style={{ fontSize: Math.max(10, size * 0.3) }}>{tier.r}</b>}
+    {tier && letter && <b className="pp-rank" style={{ fontSize: Math.max(10, size * 0.3) }}>{tier.r}</b>}
   </span>
 }

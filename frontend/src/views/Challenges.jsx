@@ -7,6 +7,7 @@ import { CLOUD_ON } from '../lib/cloud.js'
 import { StatusBadge } from '../components/StatusReveal.jsx'
 import { PersonPhoto } from '../components/ProfilePhoto.jsx'
 import CargaMark from '../components/CargaMark.jsx'
+import { RankCard } from '../components/RankCard.jsx'
 import { LEVELS, runStatus, workoutStatus } from '../lib/activity-status.js'
 import { sessionVolume } from '../lib/history.js'
 import {
@@ -42,7 +43,16 @@ function useMyName() {
 
 /** Someone in a challenge: their profile photo and rank when their profile is visible, else initials. */
 function Avatar({ name, person, size = 30 }) {
-  return <PersonPhoto name={person?.name || name} avatar={person?.avatar} rank={person ? person.rank : null} size={size} />
+  return <PersonPhoto name={person?.name || name} avatar={person?.avatar} rank={person ? person.rank : null} letter={false} size={size} />
+}
+/** The person's rank card, tiny, to sit beside their name. */
+function MiniCard({ person, size = 'xs' }) {
+  if (!person || person.rank == null) return null
+  return <span className={'cg-mc ' + size}><RankCard rank={person.rank} level={person.level || 1} size={size} /></span>
+}
+/** A name with the rank card beside it. */
+function Who({ name, person, size }) {
+  return <span className="cg-who"><b>{name}</b><MiniCard person={person} size={size} /></span>
 }
 const nameOf = (people, m) => people?.[m.user_id]?.name || m.name || 'Sem nome'
 
@@ -216,30 +226,32 @@ export function ChallengePage() {
   // my own photo straight from this device: it shows at once, before the profile has it
   const people = { ...(data.people || {}), [data.me]: { ...((data.people || {})[data.me] || { rank: null }), ...(myPhoto ? { avatar: myPhoto } : {}) } }
   const tie = leader && meRow && leader.user_id !== data.me && meRow.place === 1
+  const coverPhoto = checkins.find(x => x.photo_url)?.photo_url
   return <div className="narrow cg">
-    <div className="cg-top">
-      <button className="iconbtn" onClick={() => nav('/desafios')} aria-label="Voltar"><Icon name="chevronLeft" /></button>
-      <div className="cg-top-t"><b>{c.name}</b><small>{p.over ? 'Encerrado' : !p.started ? 'Começa ' + shortDate(c.starts) : `Dia ${p.day} de ${p.total}`} · {members.length} {members.length === 1 ? 'pessoa' : 'pessoas'}</small></div>
-      <button className="iconbtn" onClick={invite} aria-label="Convidar"><Icon name="share" /></button>
-      <button className="iconbtn" onClick={() => setMenu(m => !m)} aria-label="Mais"><Icon name="more" /></button>
+    <div className={'cg-head' + (coverPhoto ? ' photo' : '')} style={{ '--cover': coverPhoto ? `url(${coverPhoto})` : coverCss(c.cover) }}>
+      <div className="cg-top">
+        <button className="iconbtn" onClick={() => nav('/desafios')} aria-label="Voltar"><Icon name="chevronLeft" /></button>
+        <div className="cg-top-t"><b>{c.name}</b><small>{p.over ? 'Encerrado' : !p.started ? 'Começa ' + shortDate(c.starts) : `Dia ${p.day} de ${p.total}`} · {members.length} {members.length === 1 ? 'pessoa' : 'pessoas'}</small></div>
+        <button className="iconbtn" onClick={invite} aria-label="Convidar"><Icon name="share" /></button>
+        <button className="iconbtn" onClick={() => setMenu(m => !m)} aria-label="Mais"><Icon name="more" /></button>
+      </div>
+      {leader && <button type="button" className="cg-lead" onClick={() => setTab('ranking')} aria-label={'Em primeiro lugar: ' + (leader.user_id === data.me ? 'você' : nameOf(people, leader))}>
+        <span className="cg-lead-crown"><Icon name="crown" /></span>
+        <Avatar name={leader.name} person={people[leader.user_id]} size={34} />
+        <span className="t"><Who name={leader.user_id === data.me ? 'Você' : nameOf(people, leader)} person={people[leader.user_id]} size="mini" />
+          <em>{fmtScore(leader.score, c.scoring)} {unit(leader.score)}{tie ? ' · empatado com você' : ''}</em></span>
+      </button>}
+      <div className="cg-glass">
+        <div><b>{meRow ? meRow.place + 'º' : '–'}</b><span>sua posição</span></div>
+        <div><b>{meRow ? fmtScore(meRow.score, c.scoring) : 0}</b><span>{c.scoring === 'days' ? 'dias ativos' : SCORING[c.scoring].name.toLowerCase()}</span></div>
+        <div><b>{p.over ? 0 : p.left}</b><span>{p.left === 1 ? 'dia restante' : 'dias restantes'}</span></div>
+      </div>
     </div>
-    <div className="cg-line" style={{ background: coverCss(c.cover) }}><i style={{ width: Math.round((p.day / p.total) * 100) + '%' }} /></div>
     {menu && <div className="card cg-menu">
       <button type="button" className="plain" onClick={invite}>Convidar · código {c.code}</button>
       <button type="button" onClick={leave}>{mine ? 'Apagar desafio' : 'Sair do desafio'}</button>
     </div>}
     {loc.state?.created && <div className="card cg-created"><b>Desafio criado!</b><p className="muted small">Mande o código <b>{c.code}</b> ou o link para os amigos entrarem.</p><button type="button" className="cg-btn" onClick={invite}><Icon name="share" />Convidar</button></div>}
-    <div className="cg-stats">
-      <div><b>{meRow ? meRow.place + 'º' : '–'}</b><span>sua posição</span></div>
-      <div><b>{meRow ? fmtScore(meRow.score, c.scoring) : 0}</b><span>{c.scoring === 'days' ? 'dias ativos' : SCORING[c.scoring].name.toLowerCase()}</span></div>
-      <div><b>{p.over ? 0 : p.left}</b><span>{p.left === 1 ? 'dia restante' : 'dias restantes'}</span></div>
-    </div>
-    {leader && <button type="button" className="cg-leader" onClick={() => setTab('ranking')} style={{ '--cv': coverCss(c.cover) }}>
-      <Avatar name={leader.name} person={people[leader.user_id]} size={62} />
-      <span className="t"><small>{leader.user_id === data.me ? 'Você está na liderança' : tie ? 'Empatados na liderança' : 'Na liderança'}</small><b>{leader.user_id === data.me ? 'Você' : nameOf(people, leader)}</b>
-        <em>{fmtScore(leader.score, c.scoring)} {unit(leader.score)}{tie ? ' · com você' : meRow && leader.user_id !== data.me ? ' · você está a ' + fmtScore(leader.score - meRow.score, c.scoring) + ' ' + unit(leader.score - meRow.score) : ''}</em></span>
-      <span className="cg-crown"><Icon name="crown" /></span>
-    </button>}
     <button type="button" className="cg-btn" onClick={() => nav('/desafios/postar', { state: { only: c.id } })}><Icon name="camera" />Postar uma atividade</button>
     <div className="cg-seg" role="tablist">
       {[['feed', 'Feed'], ['ranking', 'Ranking'], ['chat', 'Chat']].map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}
@@ -264,14 +276,14 @@ function Ranking({ c, rows, me, people }) {
     {rows.length >= 3 && <div className="cg-podium">
       {order.map((r, i) => r ? <div key={r.user_id} className={'p' + r.place}>
         <Avatar name={r.name} person={people[r.user_id]} size={i === 1 ? 60 : 46} />
-        <span className="small">{r.user_id === me ? 'Você' : nameOf(people, r).split(' ')[0]}</span>
+        <Who name={r.user_id === me ? 'Você' : nameOf(people, r).split(' ')[0]} person={people[r.user_id]} />
         <div className="stand"><b>{r.place}</b><small>{fmtScore(r.score, c.scoring)} {unit(r.score)}</small></div>
       </div> : <div key={i} />)}
     </div>}
     <div className="card cg-rows">
       {rows.map(r => <div key={r.user_id} className={'cg-row' + (r.user_id === me ? ' me' : '')}>
         <span className="n">{r.place}</span><Avatar name={r.name} person={people[r.user_id]} size={38} />
-        <span className="t"><b>{r.user_id === me ? 'Você' : nameOf(people, r)}{c.teams && r.team != null ? <i className={'cg-team t' + r.team} /> : null}</b><small className="muted">{r.last ? 'última ' + ago(r.last) : 'ainda não postou'}</small></span>
+        <span className="t"><span className="cg-who"><b>{r.user_id === me ? 'Você' : nameOf(people, r)}</b>{c.teams && r.team != null ? <i className={'cg-team t' + r.team} /> : null}<MiniCard person={people[r.user_id]} /></span><small className="muted">{r.last ? 'última ' + ago(r.last) : 'ainda não postou'}</small></span>
         <span className="pts">{fmtScore(r.score, c.scoring)}<small>{unit(r.score)}</small></span>
       </div>)}
     </div>
@@ -321,7 +333,7 @@ function Feed({ data, people: given, reload }) {
         c.stats?.sets ? c.stats.sets + ' séries' : null].filter(Boolean)
       return <article key={c.id} className="cg-post">
         <div className="cg-post-top"><Avatar name={names[c.user_id]} person={people[c.user_id]} size={38} />
-          <span className="t"><b>{c.user_id === me ? 'Você' : names[c.user_id]}</b><small className="muted">{ago(c.created_at)} · {c.title || KIND_NAME[c.kind]}</small></span>
+          <span className="t"><Who name={c.user_id === me ? 'Você' : names[c.user_id]} person={people[c.user_id]} /><small className="muted">{ago(c.created_at)} · {c.title || KIND_NAME[c.kind]}</small></span>
           {/* the CARGA seal: this one was recorded in the app (a photo alone carries none) */}
           {c.verified !== false && <span className="cg-seal" title="Gravado no CARGA"><CargaMark height={16} />CARGA</span>}
           {c.verified !== false && st && <StatusBadge status={st} />}
@@ -360,7 +372,7 @@ function Chat({ c, members, me, people = {} }) {
   return <div className="card cg-chat">
     {msgs === null ? <p className="muted">Carregando…</p> : !msgs.length ? <p className="muted">Comece a conversa. Vale provocar.</p> : null}
     {(msgs || []).map(m => <div key={m.id} className={'cg-msg' + (m.user_id === me ? ' me' : '')}>
-      {m.user_id !== me && <b>{names[m.user_id]}</b>}<span>{m.body}</span><small>{ago(m.created_at)}</small>
+      {m.user_id !== me && <Who name={names[m.user_id]} person={people[m.user_id]} />}<span>{m.body}</span><small>{ago(m.created_at)}</small>
     </div>)}
     <div ref={end} />
     <div className="cg-cm-in"><input className="cg-in" placeholder="Mensagem…" maxLength={1000} value={text} onChange={e => setText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') send() }} /><button type="button" className="cg-btn" onClick={send}>Enviar</button></div>
