@@ -17,7 +17,15 @@ export const SPORTS = {
   run: { name: 'Corrida', verb: 'Correr', icon: 'figureRun', q: 3, max: 9, kcalKgKm: 1.0 },
   walk: { name: 'Caminhada', verb: 'Caminhar', icon: 'steps', q: 2, max: 4.5, kcalKgKm: 0.53 },
   ride: { name: 'Pedal', verb: 'Pedalar', icon: 'bike', q: 8, max: 25, met: 7.5 },
+  // the sports without GPS: only the clock runs (a class, a game, a swim)
+  bjj: { name: 'Jiu-jitsu', icon: 'figureStrength', gps: false, met: 8 },
+  muaythai: { name: 'Muay Thai', icon: 'boxing', gps: false, met: 9 },
+  boxing: { name: 'Boxe', icon: 'boxing', gps: false, met: 9 },
+  football: { name: 'Futebol', icon: 'figureRun', gps: false, met: 7 },
+  swim: { name: 'Natação', icon: 'swim', gps: false, met: 7 },
+  other: { name: 'Outra atividade', icon: 'stopwatch', gps: false, met: 5 },
 }
+export const hasGps = type => SPORTS[type]?.gps !== false
 export const MAX_ACC = 35
 export const GOOD_ACC = 20
 export const STOP_MS = 8000
@@ -219,13 +227,15 @@ export function decodeRows(str, width) {
 /** The finished run as it is kept in S.runs. */
 export function finishTrack(track, { now = Date.now(), kg, name } = {}) {
   const t = track.status === 'paused' ? track : pauseTrack(track, now)
-  const movingSec = Math.round(t.movingMs / 1000)
+  // without GPS there is no moving or stopped: the whole clock counts
+  const movingSec = Math.round((hasGps(t.type) ? t.movingMs : elapsedMs(t, now)) / 1000)
   const t0 = t.startedAt
   const rows = t.pts.map(p => [Math.round(p.lat * 1e5), Math.round(p.lng * 1e5), Math.round((p.t - t0) / 1000), p.alt == null ? -9999 : Math.round(p.alt)])
   const sport = SPORTS[t.type]
   const hour = new Date(t0).getHours()
   const part = hour < 5 ? 'noturna' : hour < 12 ? 'matinal' : hour < 18 ? 'à tarde' : 'noturna'
-  const title = name || (t.type === 'ride' ? 'Pedal ' + (part === 'matinal' ? 'matinal' : part === 'à tarde' ? 'à tarde' : 'noturno') : sport.name + ' ' + part)
+  const when = hour < 5 ? 'à noite' : hour < 12 ? 'de manhã' : hour < 18 ? 'à tarde' : 'à noite'
+  const title = name || (!hasGps(t.type) ? sport.name + ' ' + when : t.type === 'ride' ? 'Pedal ' + (part === 'matinal' ? 'matinal' : part === 'à tarde' ? 'à tarde' : 'noturno') : sport.name + ' ' + part)
   return {
     id: 'run' + t0.toString(36), type: t.type, name: title, start: t0, end: t.pauseAt,
     elapsedSec: Math.round(elapsedMs(t, now) / 1000), movingSec, distM: Math.round(t.dist), gainM: Math.round(t.gain),

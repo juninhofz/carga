@@ -8,7 +8,7 @@
 // distance). The screen is kept on while recording (App.jsx useWakeLock) for that reason.
 import { create } from 'zustand'
 import { useStore } from '../store/useStore.js'
-import { addFix, startTrack, pauseTrack, resumeTrack, finishTrack, fmtPace, GOOD_ACC } from './run-track.js'
+import { hasGps, addFix, startTrack, pauseTrack, resumeTrack, finishTrack, fmtPace, fmtKm, fmtClock, fmtSpeed, elapsedMs, movingMsNow, currentPace, paceOf, SPORTS, GOOD_ACC } from './run-track.js'
 
 const LIVE = 'carga.run.live'
 const PREFS = 'carga.run.prefs'
@@ -35,6 +35,7 @@ function onFix(pos) {
   const { track } = addFix(st.track, fix)
   useRun.setState({ fix, gps, track })
   if (track.splits.length > before) announce(track)
+  showOnLock()
   if (Date.now() - savedAt > 5000) { savedAt = Date.now(); write(LIVE, track) }
 }
 
@@ -68,24 +69,28 @@ export function startRun(type) {
   const track = startTrack(type || useRun.getState().prefs.type)
   write(LIVE, track)
   useRun.setState({ track })
+  if (!hasGps(track.type)) { say('Atividade iniciada'); showOnLock(); return }
   watchGps()
   // the fix that is already there starts the line, if it is fresh
   const f = useRun.getState().fix
   if (f && Date.now() - f.t < 5000) useRun.setState({ track: addFix(track, { ...f, t: track.startedAt }).track })
   say('Atividade iniciada')
+  showOnLock()
 }
 export function pauseRun() {
   const track = pauseTrack(useRun.getState().track)
   write(LIVE, track)
   useRun.setState({ track })
   say('Pausado')
+  showOnLock()
 }
 export function resumeRun() {
   const track = resumeTrack(useRun.getState().track)
   write(LIVE, track)
   useRun.setState({ track })
-  watchGps()
+  if (hasGps(track.type)) watchGps()
   say('Retomando')
+  showOnLock()
 }
 /** Saves the run in S.runs and returns its id (null if it was too short to keep). */
 export function finishRun() {
@@ -98,11 +103,13 @@ export function finishRun() {
   write(LIVE, null)
   useRun.setState({ track: null })
   releaseGps()
+  lockOff()
   if (run.distM < 10 && run.movingSec < 10) return null
   useStore.getState().update(s => { s.runs = [run, ...(Array.isArray(s.runs) ? s.runs : []).filter(r => r.id !== run.id)] })
   return run.id
 }
 export function discardRun() {
+  lockOff()
   write(LIVE, null)
   useRun.setState({ track: null })
   releaseGps()
@@ -129,5 +136,64 @@ function announce(track) {
   const last = track.splits[km - 1]
   const total = track.splits.reduce((a, b) => a + b, 0)
   const [m, s] = fmtPace(last).split(':')
-  say(`${km} ${km > 1 ? 'quilômetros' : 'quilômetro'}. Tempo, ${spokenTime(total)}. Último quilômetro em ${Number(m)} minutos e ${Number(s)} segundos.`)
+  say(`${km} ${km > 1 ? 'quilômetros' : 'quilômetro'}. Tempo, ${spokenTime(total)}. Pace do último quilômetro, ${Number(m)} minutos e ${Number(s)} segundos.`)
+}
+
+/* ---------- the lock screen ---------- */
+
+// A web page cannot draw on the lock screen, but the phone shows what is playing there, with its
+// buttons. So while a run records, a silent sound loops and the "now playing" says the run:
+// title "5,24 km · 27:31", artist "Pace 5:15 /km · pace médio 5:14", and the play/pause buttons pause
+// and resume the run. It has to start from a tap (browsers only play sound after one): lockOn() is
+// called from the start button, and again from the run screen's buttons.
+let audio = null, lockTimer = null
+
+function silence(sec = 10, rate = 8000) {
+  const n = sec * rate, buf = new ArrayBuffer(44 + n), v = new DataView(buf)
+  const str = (o, t) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)) }
+  str(0, 'RIFF'); v.setUint32(4, 36 + n, true); str(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true)
+  v.setUint32(24, rate, true); v.setUint32(28, rate, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true); str(36, 'data'); v.setUint32(40, n, true)
+  new Uint8Array(buf, 44).fill(128)
+  return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }))
+}
+
+/** From a tap: start the silent loop and the lock-screen panel. */
+export function lockOn() {
+  if (!('mediaSession' in navigator)) return
+  try {
+    if (!audio) { audio = new Audio(silence()); audio.loop = true }
+    audio.play().catch(() => {})
+    const ms = navigator.mediaSession
+    ms.setActionHandler('play', () => { if (useRun.getState().track?.status === 'paused') resumeRun(); audio?.play().catch(() => {}) })
+    ms.setActionHandler('pause', () => { if (useRun.getState().track?.status === 'running') pauseRun() })
+    try { ms.setActionHandler('stop', null) } catch { /* not every browser knows it */ }
+  } catch { /* no media session here */ }
+  if (!lockTimer) lockTimer = setInterval(showOnLock, 1000)
+  showOnLock()
+}
+
+function showOnLock() {
+  const t = useRun.getState().track
+  if (!t || !audio || !('mediaSession' in navigator)) return
+  const now = Date.now(), ride = t.type === 'ride', mov = movingMsNow(t, now)
+  const pace = currentPace(t, now)
+  const live = ride ? (pace ? (3600 / pace).toFixed(1).replace('.', ',') : '0,0') + ' km/h' : 'Pace ' + fmtPace(pace) + ' /km'
+  const avg = ride ? 'média ' + fmtSpeed(t.dist, mov / 1000) + ' km/h' : 'pace médio ' + fmtPace(paceOf(mov / 1000, t.dist))
+  const gps = hasGps(t.type)
+  try {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: gps ? `${fmtKm(t.dist)} km · ${fmtClock(elapsedMs(t, now))}` : `${SPORTS[t.type].name} · ${fmtClock(elapsedMs(t, now))}`,
+      artist: t.status === 'paused' ? 'Pausado · toque ▶ para retomar' : gps ? `${live} · ${avg}` : 'Em andamento',
+      album: 'CARGA · ' + SPORTS[t.type].name,
+      artwork: [{ src: '/icon-512.png', sizes: '512x512', type: 'image/png' }, { src: '/icon-180.png', sizes: '180x180', type: 'image/png' }],
+    })
+    navigator.mediaSession.playbackState = t.status === 'paused' ? 'paused' : 'playing'
+  } catch { /* fine */ }
+}
+
+function lockOff() {
+  clearInterval(lockTimer)
+  lockTimer = null
+  try { audio?.pause() } catch { /* fine */ }
+  try { navigator.mediaSession.metadata = null; navigator.mediaSession.playbackState = 'none' } catch { /* fine */ }
 }

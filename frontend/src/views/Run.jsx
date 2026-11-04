@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import Icon from '../components/Icon.jsx'
 import RunMap from '../components/RunMap.jsx'
-import { useRun, watchGps, releaseGps, startRun, pauseRun, resumeRun, finishRun, discardRun, setPrefs } from '../lib/run-recorder.js'
-import { SPORTS, elapsedMs, movingMsNow, currentPace, paceOf, fmtClock, fmtPace, fmtKm, fmtSpeed,
+import { useRun, watchGps, releaseGps, startRun, pauseRun, resumeRun, finishRun, discardRun, setPrefs, lockOn } from '../lib/run-recorder.js'
+import { SPORTS, hasGps, elapsedMs, movingMsNow, currentPace, paceOf, fmtClock, fmtPace, fmtKm, fmtSpeed,
   pointsOf, segmentsOf, bestEfforts, runDay } from '../lib/run-track.js'
 
 /* CARGA runs: start, record and look back on a run, a walk or a ride, with the GPS. Three screens:
@@ -67,17 +68,17 @@ function RunStart() {
   const wk = weekTotals(runs)
   const ready = gps === 'ok' || gps === 'weak'
   return <div className="narrow run">
-    <div className="hdr"><div><h1>Corrida</h1><div className="sub">GPS, ritmo e parciais por km</div></div>
+    <div className="hdr"><div><h1>Corrida</h1><div className="sub">GPS, pace e parciais por km</div></div>
       <button className="iconbtn" onClick={() => nav(-1)} aria-label="Fechar"><Icon name="xmark" /></button></div>
 
     <div className="card run-startcard">
       <RunMap segments={[]} here={fix} live className="run-map-start" />
       <div className={'run-gps ' + gps}><i />{gpsLabel(gps, fix)}</div>
       <div className="run-sports" role="radiogroup" aria-label="Atividade">
-        {Object.entries(SPORTS).map(([k, s]) => <button key={k} type="button" role="radio" aria-checked={prefs.type === k}
+        {Object.entries(SPORTS).filter(([k]) => hasGps(k)).map(([k, s]) => <button key={k} type="button" role="radio" aria-checked={prefs.type === k}
           className={'run-sport' + (prefs.type === k ? ' on' : '')} onClick={() => setPrefs({ type: k })}><Icon name={s.icon} />{s.name}</button>)}
       </div>
-      <button type="button" className="run-go" disabled={gps === 'denied' || gps === 'unsupported'} onClick={() => setCount(3)}>
+      <button type="button" className="run-go" disabled={gps === 'denied' || gps === 'unsupported'} onClick={() => { lockOn(); setCount(3) }}>
         {ready ? 'Iniciar' : 'Iniciar sem esperar o GPS'}</button>
       <label className="run-opt"><input type="checkbox" checked={!!prefs.voice} onChange={e => setPrefs({ voice: e.target.checked })} /> Avisos por voz a cada km</label>
       {gps === 'denied' && <p className="muted small">Libere a localização para este site nas configurações do navegador e abra esta tela de novo.</p>}
@@ -99,7 +100,7 @@ function RunStart() {
       {runs.map(r => <button key={r.id} type="button" className="run-row" onClick={() => nav('/corrida/' + r.id)}>
         <RouteThumb run={r} />
         <div className="run-row-t"><b>{r.name}</b><small className="muted">{new Date(r.start).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })} · {SPORTS[r.type]?.name}</small>
-          <span className="run-row-n"><em>{fmtKm(r.distM)} km</em><em>{fmtClock(r.movingSec * 1000)}</em><em>{r.type === 'ride' ? fmtSpeed(r.distM, r.movingSec) + ' km/h' : fmtPace(paceOf(r.movingSec, r.distM)) + ' /km'}</em></span></div>
+          <span className="run-row-n">{hasGps(r.type) ? <><em>{fmtKm(r.distM)} km</em><em>{fmtClock(r.movingSec * 1000)}</em><em>{r.type === 'ride' ? fmtSpeed(r.distM, r.movingSec) + ' km/h' : fmtPace(paceOf(r.movingSec, r.distM)) + ' /km'}</em></> : <><em>{fmtClock(r.movingSec * 1000)}</em><em>{r.kcal} kcal</em></>}</span></div>
         <Icon name="chevronRight" />
       </button>)}
     </div>}
@@ -127,9 +128,10 @@ function RunLive() {
   const { track, fix, gps } = useRun()
   const now = useNow(true, 500)
   const [view, setView] = useState('stats')
-  useEffect(() => { watchGps() }, [])
+  useEffect(() => { if (track && hasGps(track.type)) watchGps() }, [])
   if (!track) return null
   const sport = SPORTS[track.type]
+  const gpsOn = hasGps(track.type)
   const paused = track.status === 'paused'
   const moving = movingMsNow(track, now)
   const pace = currentPace(track, now)
@@ -139,6 +141,22 @@ function RunLive() {
   for (let i = 0; i + 1 < cuts.length; i++) segs.push(track.pts.slice(cuts[i], cuts[i + 1]).map(p => [p.lat, p.lng]))
   const finish = () => { const id = finishRun(); nav(id ? '/corrida/' + id : '/corrida', { replace: true }) }
   const ride = track.type === 'ride'
+  if (!gpsOn) return <div className={'run-live nogps' + (paused ? ' paused' : '')}>
+    <div className="run-live-top"><span /><b>{sport.name}</b><span /></div>
+    <div className="run-live-stats">
+      {paused && <div className="run-paused">Pausado</div>}
+      <span className="run-sport-ic"><Icon name={sport.icon} /></span>
+      <div className="run-big main"><span>Tempo</span><b>{fmtClock(elapsedMs(track, now))}</b></div>
+    </div>
+    <div className="run-live-bar">
+      {!paused && <button type="button" className="run-pause" onClick={() => { lockOn(); pauseRun() }} aria-label="Pausar"><Icon name="pause" /></button>}
+      {paused && <>
+        <button type="button" className="run-resume" onClick={() => { lockOn(); resumeRun() }}><Icon name="play" />Retomar</button>
+        <HoldButton className="run-finish" onDone={finish}><Icon name="flag" />Segure p/ concluir</HoldButton>
+      </>}
+    </div>
+    {paused && <button type="button" className="run-discard" onClick={() => { if (window.confirm('Descartar esta atividade? Ela não será salva.')) { discardRun(); nav('/corrida', { replace: true }) } }}>Descartar</button>}
+  </div>
   return <div className={'run-live' + (paused ? ' paused' : '') + (view === 'map' ? ' mapview' : '')}>
     <div className="run-live-top">
       <span className={'run-gps ' + gps}><i />{gps === 'ok' ? 'GPS' : gps === 'weak' ? 'Sinal fraco' : 'Sem GPS'}</span>
@@ -152,15 +170,15 @@ function RunLive() {
       <div className="run-big"><span>Tempo</span><b>{fmtClock(elapsedMs(track, now))}</b></div>
       <div className="run-big main"><span>Distância (km)</span><b>{fmtKm(track.dist)}</b></div>
       <div className="run-pair">
-        <div><span>{ride ? 'Velocidade' : 'Ritmo atual'}</span><b>{ride ? (pace ? (3600 / pace).toFixed(1).replace('.', ',') : '0,0') : fmtPace(pace)}</b><small>{ride ? 'km/h' : '/km'}</small></div>
-        <div><span>{ride ? 'Média' : 'Ritmo médio'}</span><b>{ride ? fmtSpeed(track.dist, moving / 1000) : fmtPace(avg)}</b><small>{ride ? 'km/h' : '/km'}</small></div>
+        <div><span>{ride ? 'Velocidade' : 'Pace atual'}</span><b>{ride ? (pace ? (3600 / pace).toFixed(1).replace('.', ',') : '0,0') : fmtPace(pace)}</b><small>{ride ? 'km/h' : '/km'}</small></div>
+        <div><span>{ride ? 'Média' : 'Pace médio'}</span><b>{ride ? fmtSpeed(track.dist, moving / 1000) : fmtPace(avg)}</b><small>{ride ? 'km/h' : '/km'}</small></div>
         <div><span>Em movimento</span><b>{fmtClock(moving)}</b><small>{track.gain ? Math.round(track.gain) + ' m ↑' : ' '}</small></div>
       </div>
     </div>
     <div className="run-live-bar">
-      {!paused && <button type="button" className="run-pause" onClick={pauseRun} aria-label="Pausar"><Icon name="pause" /></button>}
+      {!paused && <button type="button" className="run-pause" onClick={() => { lockOn(); pauseRun() }} aria-label="Pausar"><Icon name="pause" /></button>}
       {paused && <>
-        <button type="button" className="run-resume" onClick={resumeRun}><Icon name="play" />Retomar</button>
+        <button type="button" className="run-resume" onClick={() => { lockOn(); resumeRun() }}><Icon name="play" />Retomar</button>
         <HoldButton className="run-finish" onDone={finish}><Icon name="flag" />Segure p/ concluir</HoldButton>
       </>}
     </div>
@@ -207,11 +225,11 @@ function PaceChart({ run, pts }) {
   const fast = ride ? (hi * 3.6).toFixed(1).replace('.', ',') + ' km/h' : fmtPace(1000 / hi)
   const slow = ride ? (lo * 3.6).toFixed(1).replace('.', ',') + ' km/h' : fmtPace(1000 / lo)
   return <figure className="run-chart">
-    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={ride ? 'Velocidade ao longo do percurso' : 'Ritmo ao longo do percurso'}>
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={ride ? 'Velocidade ao longo do percurso' : 'Pace ao longo do percurso'}>
       {altPath && <path d={altPath} fill="var(--run-alt)" />}
       <path d={line} fill="none" stroke="var(--run-acc)" strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
     </svg>
-    <figcaption><span>{fast}</span><span className="muted">{ride ? 'velocidade' : 'ritmo'} {altPath ? '· elevação ao fundo' : ''}</span><span>{slow}</span></figcaption>
+    <figcaption><span>{fast}</span><span className="muted">{ride ? 'velocidade' : 'pace'} {altPath ? '· elevação ao fundo' : ''}</span><span>{slow}</span></figcaption>
   </figure>
 }
 
@@ -242,14 +260,18 @@ function RunDetail({ id }) {
       {editing
         ? <input className="run-name-in" defaultValue={run.name} autoFocus onBlur={e => { rename(e.target.value); setEditing(false) }} onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }} />
         : <button type="button" className="run-name" onClick={() => setEditing(true)}>{run.name} <Icon name="pencil" /></button>}
-      <div className="run-stats">
+      {!hasGps(run.type) ? <div className="run-stats">
+        <div><span>Duração</span><b>{fmtClock(run.movingSec * 1000)}</b></div>
+        <div><span>Calorias</span><b>{run.kcal} <small>kcal</small></b></div>
+        <div><span>Início</span><b>{new Date(run.start).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</b></div>
+      </div> : <div className="run-stats">
         <div><span>Distância</span><b>{fmtKm(run.distM)} <small>km</small></b></div>
-        <div><span>{ride ? 'Velocidade média' : 'Ritmo médio'}</span><b>{ride ? fmtSpeed(run.distM, run.movingSec) : fmtPace(avg)} <small>{ride ? 'km/h' : '/km'}</small></b></div>
+        <div><span>{ride ? 'Velocidade média' : 'Pace médio'}</span><b>{ride ? fmtSpeed(run.distM, run.movingSec) : fmtPace(avg)} <small>{ride ? 'km/h' : '/km'}</small></b></div>
         <div><span>Tempo em movimento</span><b>{fmtClock(run.movingSec * 1000)}</b></div>
         <div><span>Ganho de elevação</span><b>{run.gainM || 0} <small>m</small></b></div>
         <div><span>Calorias</span><b>{run.kcal} <small>kcal</small></b></div>
         <div><span>Tempo total</span><b>{fmtClock(run.elapsedSec * 1000)}</b></div>
-      </div>
+      </div>}
     </div>
 
     {segs.length > 0 && <div className="card run-mapcard"><RunMap segments={segs} className="run-map-detail" /></div>}
@@ -259,7 +281,7 @@ function RunDetail({ id }) {
     {!ride && run.splits?.length > 0 && <div className="card">
       <div className="run-h"><span className="lv-h">Parciais</span></div>
       <div className="run-splits">
-        <div className="run-split head"><span>Km</span><span>Ritmo</span><span /></div>
+        <div className="run-split head"><span>Km</span><span>Pace</span><span /></div>
         {run.splits.map((s, i) => <div key={i} className={'run-split' + (s === fastest && run.splits.length > 1 ? ' best' : '')}>
           <span>{i + 1}</span><span>{fmtPace(s)}</span>
           <span className="run-split-bar"><i style={{ width: Math.round(40 + 60 * ((slowest - s) / (slowest - fastest || 1))) + '%' }} /></span>
@@ -292,15 +314,38 @@ export function RunCard() {
   const last = useStore(s => (s.S.runs || [])[0])
   if (track) return <button type="button" className="card run-card live" onClick={() => nav('/corrida')}>
     <span className="run-card-ic"><Icon name={SPORTS[track.type].icon} /></span>
-    <span className="run-card-t"><b>{SPORTS[track.type].name} em andamento</b><small>{fmtKm(track.dist)} km · {track.status === 'paused' ? 'pausada' : 'gravando'}</small></span>
+    <span className="run-card-t"><b>{SPORTS[track.type].name} em andamento</b><small>{hasGps(track.type) ? fmtKm(track.dist) + ' km · ' : ''}{track.status === 'paused' ? 'pausada' : 'gravando'}</small></span>
     <span className="lv-chip hot">Voltar</span>
   </button>
   return <button type="button" className="card run-card" onClick={() => nav('/corrida')}>
     <span className="run-card-ic"><Icon name={SPORTS[type]?.icon || 'figureRun'} /></span>
     <span className="run-card-t"><b>Corrida, caminhada ou pedal</b>
-      <small>{last ? `Última: ${fmtKm(last.distM)} km em ${fmtClock(last.movingSec * 1000)} · ${new Date(last.start).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}` : 'Grave com o GPS: ritmo, parciais e mapa'}</small></span>
+      <small>{last ? `Última: ${fmtKm(last.distM)} km em ${fmtClock(last.movingSec * 1000)} · ${new Date(last.start).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}` : 'Grave com o GPS: pace, parciais e mapa'}</small></span>
     <Icon name="chevronRight" />
   </button>
+}
+
+/** The tab bar's Start: what to start, instead of starting the gym workout straight away. */
+const CLASS_SPORTS = ['bjj', 'muaythai', 'boxing', 'football', 'swim', 'other']
+export function StartChooser({ onGym, onClose }) {
+  const nav = useNavigate()
+  const go = type => { onClose(); if (hasGps(type)) { setPrefs({ type }); nav('/corrida') } else { lockOn(); startRun(type); nav('/corrida') } }
+  return createPortal(<div className="start-pick" role="dialog" aria-label="O que você vai fazer?" onClick={onClose}>
+    <div className="start-pick-in" onClick={e => e.stopPropagation()}>
+      <div className="start-pick-h"><b>O que você vai fazer?</b><button type="button" className="iconbtn" onClick={onClose} aria-label="Fechar"><Icon name="xmark" /></button></div>
+      <button type="button" className="start-opt" onClick={() => { onClose(); onGym() }}>
+        <span className="start-ic"><Icon name="dumbbell" /></span><span className="start-opt-t"><b>Treino na academia</b><small>Começar o treino de hoje</small></span><Icon name="chevronRight" />
+      </button>
+      <div className="start-sec">Com GPS</div>
+      <div className="start-grid">
+        {['run', 'walk', 'ride'].map(k => <button key={k} type="button" className="start-tile" onClick={() => go(k)}><Icon name={SPORTS[k].icon} />{SPORTS[k].name}</button>)}
+      </div>
+      <div className="start-sec">Esporte ou aula · cronômetro</div>
+      <div className="start-grid">
+        {CLASS_SPORTS.map(k => <button key={k} type="button" className="start-tile" onClick={() => go(k)}><Icon name={SPORTS[k].icon} />{SPORTS[k].name}</button>)}
+      </div>
+    </div>
+  </div>, document.body)
 }
 
 /** The run in progress, for App.jsx (screen on) and the Home card. */

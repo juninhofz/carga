@@ -3,14 +3,13 @@ import { buildOpening, openingScene, CUTS } from '../lib/carga-opening.js'
 import { APP_NAME } from '../lib/brand.js'
 
 // The opening over everything while the app starts (lib/carga-opening.js). The full cut plays on
-// the first launch and on the first after an update, the quick one on every other launch; a tap
-// skips it, and with reduced motion there is none. It sits above the boot screen (index.html), so
+// every launch (CARGA's choice: the whole lift every time the app opens); a tap skips it, and with reduced motion there is none. It sits above the boot screen (index.html), so
 // whichever of the two is up the user sees one dark screen, never a flash between them.
 const SEEN_KEY = 'carga_opening_v'
 const VERSION = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'dev'
 
-export function openingCut(seen, version = VERSION) {
-  return seen === version ? 'quick' : 'full'
+export function openingCut() {
+  return 'full'
 }
 
 function readSeen() { try { return localStorage.getItem(SEEN_KEY) } catch { return null } }

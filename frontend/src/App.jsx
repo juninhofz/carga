@@ -45,7 +45,6 @@ import Modals from './components/Modals.jsx'
 import Toast from './components/Toast.jsx'
 import SyncBanner from './components/SyncBanner.jsx'
 import { CloudSync } from './components/CloudAccount.jsx'
-import GlassField from './components/GlassField.jsx'
 import RestTimer from './components/RestTimer.jsx'
 import TimerFlash from './components/TimerFlash.jsx'
 import { SeasonalLayer } from './components/Seasonal.jsx'
@@ -382,7 +381,6 @@ function Shell() {
           the route again. */}
       <div id="app">
         {/* the light behind the glass of every screen: inside #app, whose isolation keeps it above the page's own background (index.css, dark theme) */}
-        <GlassField />
         <Page key={loc.pathname} loc={loc} render={view} motion={pageMotion(pathRef.current, loc.pathname, navType)} />
         {showPreview && <Page key={preview} loc={previewLoc(preview)} render={view} under scrollY={scrollPositions.get(preview) || 0} />}
       </div>

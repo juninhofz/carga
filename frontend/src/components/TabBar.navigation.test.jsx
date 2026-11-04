@@ -75,6 +75,10 @@ describe('root tab history', () => {
   it('preserves the workout chooser return path', async () => {
     useStore.setState({ S: { ...useStore.getState().S, routines: [] } })
     await tap('Start')
+    // CARGA: Start first asks what to start (views/Run.jsx StartChooser); the gym is the first choice
+    const gym = document.body.querySelector('.start-opt')
+    expect(gym).toBeTruthy()
+    await act(async () => gym.click())
     expect(router.state.location.pathname).toBe('/workout')
     await go(-1)
     expect(router.state.location.pathname).toBe('/home')
