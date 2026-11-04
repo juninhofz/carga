@@ -4115,3 +4115,6 @@ body:has(.run-live) #tabbar{display:none}
 .exmedia.frames img.on{opacity:1}
 .exmedia.frames.compact img{height:170px!important}
 .exmedia.frames.mini img{height:96px!important}
+
+/* the reactions are the phone's emoji */
+.cg-react .cg-emoji{font-size:18px;line-height:1;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}

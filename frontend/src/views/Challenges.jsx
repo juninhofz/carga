@@ -532,7 +532,8 @@ function MiniRoute({ points }) {
 }
 
 const KIND_NAME = { gym: 'Academia', run: 'Corrida', walk: 'Caminhada', ride: 'Pedal', sport: 'Aula' }
-const REACT_ICON = { fire: 'flame', strong: 'arm', clap: 'sparkles' }
+// the phone's own emoji for now (CARGA's own reactions are for later)
+const REACT_EMOJI = { fire: '🔥', strong: '💪', clap: '👏' }
 
 function Feed({ data, people: given, reload }) {
   const { checkins, members, reactions, comments, me } = data
@@ -578,7 +579,7 @@ function Feed({ data, people: given, reload }) {
           {REACTIONS.map(([k, label]) => {
             const n = reactions.filter(r => r.checkin_id === c.id && r.kind === k).length
             const on = reactions.some(r => r.checkin_id === c.id && r.kind === k && r.user_id === me)
-            return <button key={k} type="button" className={on ? 'on' : ''} aria-pressed={on} aria-label={label} onClick={() => toggle(c, k)}><Icon name={REACT_ICON[k]} />{n || ''}</button>
+            return <button key={k} type="button" className={on ? 'on' : ''} aria-pressed={on} aria-label={label} onClick={() => toggle(c, k)}><span className="cg-emoji" aria-hidden="true">{REACT_EMOJI[k]}</span>{n || ''}</button>
           })}
           <button type="button" className="cg-cm-btn" onClick={() => setOpen(o => ({ ...o, [c.id]: !o[c.id] }))}><Icon name="chat" />{cs.length || ''}</button>
         </div>
