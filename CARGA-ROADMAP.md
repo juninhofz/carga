@@ -48,6 +48,22 @@ Já feito: XP calculado do histórico, 2 desafios por semana + 3 por mês, carta
       mesmo se cair e voltar. Precisa de contas e servidor (Fase 2): até lá a carta mostra "Nº —".
 - Decidido não ter: Exame de Rank (sobe só por pontos) e títulos permanentes por enquanto.
 
+## Personal CARGA (plano personalizado) — começado em 04/11/2026
+
+- [x] Questionário completo e adaptável (25 perguntas em 8 blocos: objetivo, você, agenda,
+      esporte, equipamento, preferências, recuperação, observações livres)
+- [x] Motor de regras de treinador (lib/personal/plan.js): divisão pelos dias, perna fora dos dias
+      de luta, treino curto nos dias de esporte, exercícios pelo equipamento, sem os que doem ou que a
+      pessoa não curte, prioridades musculares, necessidades do esporte, doses por objetivo,
+      experiência e recuperação, explicação de cada escolha e como evoluir
+- [x] Aula do esporte vira atividade na agenda e conta como cardio nas missões
+- [x] Vários métodos guardados; trocar de método muda a semana
+- [ ] Missões ligadas ao esporte (ex.: "vá às 3 aulas de jiu-jitsu")
+- [ ] Registro rápido da aula (foi/não foi, intensidade) e ajuste do treino do dia seguinte
+- [ ] "Trocar o treino de hoje" com sugestões do método (rápido, só cardio, mobilidade)
+- [ ] Fases até uma data (competição/viagem) e semanas leves automáticas
+- [ ] Enviar as respostas e a observação livre para a nuvem (com conta) para analisarmos
+
 ## Fase 1 — Arrumar a casa (curta, e a primeira obrigação legal)
 
 - [x] **Código aberto no GitHub**: https://github.com/juninhofz/carga (público, AGPL), sem as

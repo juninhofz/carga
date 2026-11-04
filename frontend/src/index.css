@@ -3529,3 +3529,67 @@ button.wl-summary{width:100%;padding:0 0 10px;text-align:start;border-radius:var
 .lv-flash.done{opacity:.75}
 .lv-missions .lv-mhead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}
 .lv-missions .lv-mhead .lv-h{margin:0}
+
+/* The CARGA Personal (views/Personal.jsx): the questionnaire and the plan it makes */
+.pz .pz-hero{display:grid;gap:10px;justify-items:start}
+.pz .card.pz-hero h2{margin:0;font-size:24px;line-height:1.15;color:#fff;font-weight:700;text-transform:none;letter-spacing:-.01em}
+.pz .pz-hero p{margin:0}
+.pz-big{font-size:40px;line-height:1}
+.pz-q{display:grid;gap:14px}
+.pz-prog{height:6px;border-radius:6px;background:rgba(255,255,255,.12);overflow:hidden}
+.pz-prog i{display:block;height:100%;background:linear-gradient(90deg,#ff7a1a,#ffd29a);transition:width .3s}
+.pz-meta{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.pz .card h2.pz-title{margin:0;font-size:22px;line-height:1.2;color:#fff;font-weight:700;text-transform:none;letter-spacing:-.01em}
+.pz-help{margin:-6px 0 0;color:var(--glass-text2,var(--label-2));font-size:14px}
+.pz-list{display:grid;gap:8px}
+.pz-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pz-choice{display:flex;align-items:center;gap:12px;width:100%;text-align:start;padding:13px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:inherit;font:inherit;cursor:pointer;transition:background .15s,border-color .15s}
+.pz-choice.on{background:rgba(255,107,0,.2);border-color:rgba(255,150,60,.65);box-shadow:0 0 0 1px rgba(255,150,60,.35) inset}
+.pz-ic{font-size:22px;line-height:1;flex:none}
+.pz-ct{display:grid;gap:2px;min-width:0}
+.pz-ct b{font-weight:600}
+.pz-ct small{color:var(--glass-text2,var(--label-2));font-size:12.5px}
+.pz-ok{margin-left:auto;color:#ffb36b;flex:none}
+.pz-days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.pz-day{padding:12px 0;border-radius:14px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:inherit;font:inherit;font-weight:600;cursor:pointer}
+.pz-day.on{background:linear-gradient(180deg,#ff9a3c,#ff6b00);border-color:rgba(255,220,180,.5);color:#fff}
+.pz-chips{display:flex;flex-wrap:wrap;gap:6px}
+.pz-chip{padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:inherit;font:inherit;font-size:14px;cursor:pointer}
+.pz-chip.on{background:rgba(255,107,0,.25);border-color:rgba(255,150,60,.6);color:#ffd1a3}
+.pz-form{display:grid;gap:10px}
+.pz-num{display:grid;gap:6px;font-size:14px}
+.pz-num>span:first-child{color:var(--glass-text2,var(--label-2))}
+.pz-numin{display:flex;align-items:center;gap:8px}
+.pz-numin input,.pz-date,.pz-text,.pz-area{flex:1;min-width:0;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);color:inherit;font:inherit}
+.pz-numin em{font-style:normal;color:var(--glass-text2,var(--label-2))}
+.pz-area{width:100%;box-sizing:border-box;resize:vertical}
+.pz-sports{display:grid;gap:12px}
+.pz-sport{display:grid;gap:8px;padding:12px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)}
+.pz-sname{font-size:17px}
+.pz-l{font-size:13px;color:var(--glass-text2,var(--label-2));margin-top:4px}
+.pz-nav{display:grid;grid-template-columns:auto 1fr;gap:10px;margin-top:4px}
+.pz-next{border:0;border-radius:999px;padding:15px 18px;font:inherit;font-weight:700;font-size:16px;color:#fff;cursor:pointer;width:100%;
+  background:linear-gradient(180deg,rgba(255,140,40,.95),rgba(255,94,0,.95));box-shadow:0 12px 30px -10px rgba(255,107,0,.9),inset 0 1px 0 rgba(255,255,255,.5)}
+.pz-next:disabled{opacity:.4;cursor:default;box-shadow:none}
+.pz-back{border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:14px 18px;font:inherit;font-weight:600;background:rgba(255,255,255,.06);color:inherit;cursor:pointer}
+.pz-plan{display:grid;gap:0}
+.pz-plan .pz-back{width:100%;margin-top:10px}
+.pz-plan .pz-next{margin-top:6px}
+.pz-wday{display:grid}
+.pz-wrow{display:grid;grid-template-columns:42px 1fr auto;align-items:center;gap:8px;padding:11px 0;border:0;border-bottom:1px solid rgba(255,255,255,.07);background:none;color:inherit;font:inherit;text-align:start;width:100%}
+button.pz-wrow{cursor:pointer}
+.pz-wrow b{color:#ffb36b}
+.pz-wrow.sport span{color:#a7f3d0}
+.pz-wrow.rest span{opacity:.7}
+.pz-ex{margin:4px 0 10px 42px;padding:0;list-style:none;display:grid;gap:6px;font-size:14px}
+.pz-ex li{display:flex;justify-content:space-between;gap:10px}
+.pz-ex li span{text-transform:capitalize}
+.pz-ex em{font-style:normal;color:var(--glass-text2,var(--label-2));white-space:nowrap;font-variant-numeric:tabular-nums}
+.pz-why{margin:6px 0 0;padding-left:18px;display:grid;gap:6px;font-size:14px}
+.pz-method{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.pz-method small{display:block}
+.pz-method button.lv-chip{cursor:pointer;font:inherit;font-weight:700;font-size:12px}
+.pz-cta{display:flex;align-items:center;gap:12px;width:100%;text-align:start;margin-bottom:12px;cursor:pointer;color:inherit;font:inherit}
+.pz-cta .pz-big{font-size:30px}
+.pz-cta b{display:block;font-size:16px}
+.pz-cta small{color:var(--glass-text2,var(--label-2))}

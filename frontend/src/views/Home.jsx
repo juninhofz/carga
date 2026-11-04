@@ -223,7 +223,8 @@ export default function Home() {
     {!S.routines.length && !S.active && (
       <div className="card">
         <CardHead icon="calendar" title={t('Welcome!')} sub={t('Set up your weekly routine to get going, or grab a ready-made starter plan.')} />
-        <Button variant="primary" icon="clipboard" onClick={starterPlanSheet}>{t('Load starter plan')}</Button>
+        <Button variant="primary" icon="sparkles" onClick={() => nav('/personal')}>Montar meu plano com o Personal</Button>
+        <div style={{ height: 8 }} /><Button icon="clipboard" onClick={starterPlanSheet}>{t('Load starter plan')}</Button>
         <div style={{ height: 8 }} /><Button onClick={() => nav('/plan')}>{t('Build my own plan')}</Button>
       </div>
     )}

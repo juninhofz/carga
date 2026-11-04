@@ -59,6 +59,7 @@ import MobileOnboarding from './views/MobileOnboarding.jsx'
 import PermissionSteps from './views/PermissionSteps.jsx'
 import Home from './views/Home.jsx'
 import Plan from './views/Plan.jsx'
+import Personal from './views/Personal.jsx'
 import Workout from './views/Workout.jsx'
 import { ENGLISH_NAME_HINT } from './lib/brand.js'
 
@@ -340,6 +341,7 @@ function Shell() {
           route falls through to the catch-all redirect below. The data stays where it is. */}
       {isOn(S, 'checkin') && <Route path="/checkin" element={<CheckIn />} />}
       <Route path="/plan" element={<Plan />} />
+      <Route path="/personal" element={<Personal />} />
       <Route path="/plan/r/:id" element={<RoutineEdit />} />
       <Route path="/plan/programmes" element={<Programmes />} />
       <Route path="/plan/prog/:id" element={<ProgrammeEdit />} />

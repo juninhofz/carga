@@ -182,6 +182,12 @@ export default function Plan() {
         <button className="iconbtn" data-tour="plan-menu" onClick={openMenu} aria-label={t('Plan options')} title={t('Plan options')}><Icon name="share" /></button>
       </div>
     </div>
+    {/* the CARGA Personal: a whole plan from a questionnaire (views/Personal.jsx) */}
+    <button type="button" className="card pz-cta" onClick={() => nav('/personal')}>
+      <span className="pz-big" aria-hidden="true">🧠</span>
+      <span><b>Personal CARGA</b><small>Responda umas perguntas e receba um plano feito para você, com o seu esporte e a sua rotina.</small></span>
+      <Icon name="chevronRight" className="chev" />
+    </button>
     <input ref={fileRef} type="file" accept="application/json,.json" onChange={pickFile} hidden />
     <Segmented className="plan-views" tour="plan-views" value={view} onChange={setView}
       options={[{ value: 'schedule', label: t('Schedule') }, { value: 'routines', label: t('Routines') }]} />
