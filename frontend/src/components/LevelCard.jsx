@@ -72,7 +72,7 @@ export function LevelCard({ S, now }) {
   return <div className={'card level-card' + (L.tier.id === 'max' ? ' max' : '')} data-level>
     <div className="lv-top">
       <button type="button" className="lv-card" onClick={() => setViewing(true)} aria-label={t('Open your rank card')}>
-        <RankCard rank={L.rank} level={L.level} name={name} />
+        <RankCard rank={L.rank} level={L.level} name={name} xp={xp} stats={L.stats} />
       </button>
       <div className="lv-who">
         <div className="lv-eyebrow">{t('Rank {0}', L.tier.r)} · {fmtNum(L.total)} XP</div>

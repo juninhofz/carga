@@ -69,10 +69,11 @@ function Face({ rank, level, name, xp, stats }) {
   </div>
 }
 
-/** The card, still. `size` 'sm' for Home's card, 'lg' for the big one. */
+/** The card, still. `size` 'sm' for Home's card, 'lg' for the big one: the same card at two sizes. */
 export function RankCard({ rank, level, name, xp, stats, size = 'sm', twoFaced = false }) {
   const k = TIERS[rank] || TIERS[0]
-  const face = <Face rank={rank} level={level} name={name} xp={size === 'lg' ? xp : null} stats={size === 'lg' ? stats : null} />
+  // the small card is the same card, only smaller: it shows everything the big one does
+  const face = <Face rank={rank} level={level} name={name} xp={xp} stats={stats} />
   return <div className={`rc rc-${size} ${k.fx}`} style={vars(k)} role="img" aria-label={t('Rank {0}: {1}, level {2}', k.r, t(k.name), level)}>
     {twoFaced
       ? <><div className="rc-front">{face}</div><div className="rc-back"><span className="rc-m" dangerouslySetInnerHTML={{ __html: MARK }} /></div></>
