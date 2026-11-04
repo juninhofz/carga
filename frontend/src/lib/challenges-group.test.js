@@ -55,3 +55,17 @@ describe('the rest', () => {
     expect(routeOf({ stats: { route: encodeRows(pts.map(([a, b]) => [Math.round(a * 1e5), Math.round(b * 1e5)])) } })).toEqual(pts)
   })
 })
+
+describe('a one-day race', () => {
+  const race = { starts: '2026-11-08', ends: '2026-11-08', scoring: 'race', target_km: 10 }
+  const run = (user_id, km, sec, extra = {}) => ({ user_id, day: '2026-11-08', created_at: '2026-11-08T09:00:00Z', kind: 'run', km, minutes: Math.round(sec / 60), stats: { sec }, ...extra })
+  const ms = [{ user_id: 'a', name: 'Ana' }, { user_id: 'b', name: 'Bia' }, { user_id: 'c', name: 'Caio' }]
+  it('puts the fastest over the distance first, and those without a time last', () => {
+    const rows = leaderboard(race, ms, [run('a', 10.02, 3120), run('b', 10.1, 2890), run('c', 6, 1500)])
+    expect(rows.map(r => [r.name, r.score, r.place])).toEqual([['Bia', 2890, 1], ['Ana', 3120, 2], ['Caio', 0, 3]])
+  })
+  it('keeps each one\'s best time', () => {
+    const rows = leaderboard(race, ms.slice(0, 1), [run('a', 10, 3300), run('a', 10, 3100, { created_at: '2026-11-08T11:00:00Z' })])
+    expect(rows[0].score).toBe(3100)
+  })
+})

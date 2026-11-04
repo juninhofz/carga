@@ -10,6 +10,7 @@ import { retapTab } from '../lib/scroll-top.js'
 import { useState } from 'react'
 import { StartChooser } from '../views/Run.jsx'
 import { useRun } from '../lib/run-recorder.js'
+import { useNotes } from '../lib/notifications.js'
 
 // Module scope, not TabBar's render body. Declared inside it, `Tab` was a new function on every
 // render, so React saw a different component type each time and threw the button away and built a
@@ -35,6 +36,7 @@ export default function TabBar({ onStart }) {
   // CARGA: Start asks what to start (gym, a run, a sport); a run being recorded opens straight away
   const [choosing, setChoosing] = useState(false)
   const runLive = useRun(s => !!s.track)
+  const unread = useNotes(s => s.unread)
   if (!user && !isGuest) return null
   const cur = loc.pathname.split('/')[1] || 'home'
   // A screen without a tab of its own lights the tab it is opened from (Muscles from both).
@@ -78,7 +80,7 @@ export default function TabBar({ onStart }) {
           : <span>{S.active ? (cur === 'workout' ? t('Workout') : S.active.editingWorkoutId ? t('Edit workout') : t('Resume')) : t('Start')}</span>}
       </button>
       <Tab active={on('stats')} icon="chart" label={t('Stats')} onClick={() => switchTab('/stats')} tour="tab-stats" />
-      <Tab active={on('desafios')} icon="trophy" label="Desafios" onClick={() => switchTab('/desafios')} tour="tab-challenges" />
+      <Tab active={on('desafios')} icon="trophy" label="Desafios" dot={unread > 0} onClick={() => switchTab('/desafios')} tour="tab-challenges" />
       {choosing && <StartChooser onGym={startWorkout} onClose={() => setChoosing(false)} />}
     </nav>
   )

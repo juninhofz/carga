@@ -71,6 +71,19 @@ export const onAuth = fn => {
   return () => data.subscription.unsubscribe()
 }
 
+/** Deletes the signed-in account for good (LGPD): the photos first, then everything else with it. */
+export async function deleteAccount() {
+  const user = await currentUser()
+  if (!user) return { error: 'Not signed in.' }
+  const { data: mine } = await cloud().from('checkins').select('photo_path').eq('user_id', user.id).not('photo_path', 'is', null)
+  const paths = (mine || []).map(x => x.photo_path).filter(Boolean)
+  if (paths.length) await cloud().storage.from('checkins').remove(paths)
+  const { error } = await cloud().rpc('delete_my_account')
+  if (error) return { error: /delete_my_account/.test(error.message) ? 'Ainda não disponível. Tente mais tarde.' : error.message }
+  await signOut()
+  return { ok: true }
+}
+
 /* ---------- profile ---------- */
 
 export async function loadProfile() {

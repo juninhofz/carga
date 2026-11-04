@@ -61,6 +61,7 @@ import Plan from './views/Plan.jsx'
 import Personal from './views/Personal.jsx'
 import Run, { useRunLive } from './views/Run.jsx'
 import { ChallengesHome, CreateChallenge, JoinByLink, ChallengePage, PostCheckin } from './views/Challenges.jsx'
+import { NotesLive, NotesPage } from './components/Notes.jsx'
 import Workout from './views/Workout.jsx'
 import { ENGLISH_NAME_HINT } from './lib/brand.js'
 
@@ -350,6 +351,7 @@ function Shell() {
       <Route path="/desafios" element={<ChallengesHome />} />
       <Route path="/desafios/novo" element={<CreateChallenge />} />
       <Route path="/desafios/postar" element={<PostCheckin />} />
+      <Route path="/desafios/avisos" element={<NotesPage />} />
       <Route path="/desafios/entrar/:code" element={<JoinByLink />} />
       <Route path="/desafios/:id" element={<ChallengePage />} />
       <Route path="/plan/r/:id" element={<RoutineEdit />} />
@@ -394,7 +396,7 @@ function Shell() {
           would ride along with the page for the length of it. Decides for itself when to show —
           including on the sign-in screen, when the server has just ended the session. */}
       <SyncBanner />
-      <CloudSync />
+      <CloudSync /><NotesLive />
       {!noTabs && <TabBar onStart={startFlow} />}
       {!noTabs && authed && <ScrollTopButton off={loc.pathname === '/workout'} path={loc.pathname} />}
       <RestTimer />

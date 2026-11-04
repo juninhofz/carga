@@ -18,7 +18,10 @@ export const SCORING = {
   minutes: { name: 'Minutos', help: 'O tempo de atividade somado.', unit: () => 'min' },
   km: { name: 'Quilômetros', help: 'Só corrida, caminhada e pedal.', unit: () => 'km' },
   carga: { name: 'Pontos CARGA', help: 'Pelo status: Pena 1, Firme 2, Pesado 3, Brutal 4, Carga Máxima 5.', unit: () => 'pts' },
+  race: { name: 'Menor tempo', help: 'Vence quem fizer a distância mais rápido.', unit: () => '' },
 }
+/** A check-in's time in seconds (a run keeps its exact moving time; otherwise its minutes). */
+export const checkinSeconds = c => Number(c?.stats?.sec) > 0 ? Number(c.stats.sec) : (Number(c?.minutes) || 0) * 60
 const STATUS_PTS = { pena: 1, firme: 2, pesado: 3, brutal: 4, max: 5 }
 export const REACTIONS = [['fire', 'Fogo'], ['strong', 'Força'], ['clap', 'Palmas']]
 
@@ -54,10 +57,31 @@ export function leaderboard(challenge, members, checkins) {
     if (challenge.scoring === 'days') { const was = r.days.get(c.day) || 0, w = weightOf(c); if (w > was) { r.days.set(c.day, w); r.score += w - was; r.reachedAt = Date.parse(c.created_at) } }
     else { const s = checkinScore(c, challenge.scoring); if (s > 0) { r.score += s; r.reachedAt = Date.parse(c.created_at) } }
   }
+  if (challenge.scoring === 'race') return raceBoard(challenge, rows, sorted)
   const list = [...rows.values()].map(r => ({ ...r, score: Math.round(r.score * 100) / 100, days: r.days.size }))
   list.sort((a, b) => b.score - a.score || (a.reachedAt || Infinity) - (b.reachedAt || Infinity) || a.name.localeCompare(b.name))
   let place = 0, prev = null
   list.forEach((r, i) => { if (r.score !== prev) { place = i + 1; prev = r.score } r.place = place })
+  return list
+}
+
+// A race: each person's best time over the event's distance (a run or walk at least 95% of it);
+// the fastest first, those with no time yet after them. `score` is the time in seconds.
+function raceBoard(challenge, rows, sorted) {
+  const need = Number(challenge.target_km) > 0 ? Number(challenge.target_km) * 0.95 : 0
+  for (const r of rows.values()) { r.score = 0; r.count = 0; r.last = null }
+  for (const c of sorted) {
+    const r = rows.get(c.user_id)
+    if (!r) continue
+    r.count++
+    r.last = !r.last || c.created_at > r.last ? c.created_at : r.last
+    if (!['run', 'walk'].includes(c.kind) || (need && !(Number(c.km) >= need))) continue
+    const sec = checkinSeconds(c)
+    if (sec > 0 && (!r.score || sec < r.score)) r.score = sec
+  }
+  const list = [...rows.values()].map(r => ({ ...r, days: 0 }))
+  list.sort((a, b) => (a.score ? 0 : 1) - (b.score ? 0 : 1) || a.score - b.score || a.name.localeCompare(b.name))
+  list.forEach((r, i) => { r.place = r.score ? i + 1 : list.length })
   return list
 }
 
@@ -94,6 +118,7 @@ export function runActivity(run, status) {
     if (thin.length > 1) stats.route = encodeRows(thin.map(p => [Math.round(p.lat * 1e5), Math.round(p.lng * 1e5)]))
   }
   stats.kcal = run.kcal
+  stats.sec = run.movingSec
   return {
     activity_id: run.id, day: localDay(run.start), kind: gps ? run.type : 'sport', title: run.name || SPORTS[run.type]?.name || 'Atividade',
     minutes: Math.round(run.movingSec / 60), km: gps ? Math.round(run.distM / 10) / 100 : 0, status: status?.id || null, stats,
@@ -101,11 +126,14 @@ export function runActivity(run, status) {
 }
 
 /** A check-in with only a photo: what was done, as the person says it. Counts half. */
-export function manualActivity({ title, kind = 'other', minutes = 0, km = 0 }) {
+export function manualActivity({ title, kind = 'other', minutes = 0, km = 0, time = '' }) {
+  // a race's time typed as 42:15 or 1:02:30
+  const parts = String(time || '').trim().split(':').map(Number)
+  const sec = parts.length > 1 && parts.every(Number.isFinite) ? parts.reduce((t, x) => t * 60 + x, 0) : 0
   const now = Date.now()
   return { activity_id: 'foto-' + now.toString(36), day: localDay(now), kind, title: String(title || '').trim().slice(0, 80) || 'Treino',
-    minutes: Math.max(0, Math.min(1440, Math.round(Number(minutes) || 0))), km: ['run', 'walk', 'ride'].includes(kind) ? Math.max(0, Math.min(1000, Number(km) || 0)) : 0,
-    status: null, stats: {}, verified: false }
+    minutes: sec ? Math.round(sec / 60) : Math.max(0, Math.min(1440, Math.round(Number(minutes) || 0))), km: ['run', 'walk', 'ride'].includes(kind) ? Math.max(0, Math.min(1000, Number(km) || 0)) : 0,
+    status: null, stats: sec ? { sec } : {}, verified: false }
 }
 
 /** A gym workout as a check-in. */

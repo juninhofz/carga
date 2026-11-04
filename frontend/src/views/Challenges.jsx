@@ -6,6 +6,8 @@ import { useCloud } from '../components/CloudAccount.jsx'
 import { CLOUD_ON } from '../lib/cloud.js'
 import { StatusBadge } from '../components/StatusReveal.jsx'
 import { PersonPhoto } from '../components/ProfilePhoto.jsx'
+import { NotesBell } from '../components/Notes.jsx'
+import { poke } from '../lib/notifications.js'
 import CargaMark from '../components/CargaMark.jsx'
 import { RankCard } from '../components/RankCard.jsx'
 import { createPortal } from 'react-dom'
@@ -36,7 +38,8 @@ const ago = ts => {
 }
 const initials = name => (name || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?'
 // half points (a photo-only check-in) show as ½, km with one decimal
-const fmtScore = (n, scoring) => (scoring === 'km' ? n.toFixed(1).replace('.', ',') : Number.isInteger(n) ? String(n) : (Math.floor(n) ? Math.floor(n) : '') + (Math.abs(n % 1 - 0.5) < 0.01 ? '½' : ',' + String(Math.round((n % 1) * 10))))
+const clock = sec => { const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), x = Math.round(sec % 60); return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(x).padStart(2, '0') }
+const fmtScore = (n, scoring) => scoring === 'race' ? (n ? clock(n) : '–') : (scoring === 'km' ? n.toFixed(1).replace('.', ',') : Number.isInteger(n) ? String(n) : (Math.floor(n) ? Math.floor(n) : '') + (Math.abs(n % 1 - 0.5) < 0.01 ? '½' : ',' + String(Math.round((n % 1) * 10))))
 export const inviteLink = code => location.origin + location.pathname + '#/desafios/entrar/' + code
 
 function useMyName() {
@@ -186,7 +189,7 @@ export function ChallengesHome() {
     } catch (e) { setErr(e.message) }
   }
   return <div className="narrow cg">
-    <Header title="Desafios" />
+    <Header title="Desafios" right={<NotesBell />} />
     <div className="cg-btns">
       <button type="button" className="cg-btn" onClick={() => nav('/desafios/novo')}><Icon name="plus" />Criar</button>
       <button type="button" className="cg-btn ghost" onClick={() => setJoining(j => !j)}><Icon name="key" />Entrar com código</button>
@@ -224,28 +227,41 @@ export function CreateChallenge() {
   const user = useCloud(s => s.user)
   const myName = useMyName()
   const today = todayIso()
-  const [f, setF] = useState({ name: '', cover: 0, starts: today, ends: addDays(today, 29), scoring: 'days', photo: true, teams: false })
+  const [f, setF] = useState({ name: '', cover: 0, starts: today, ends: addDays(today, 29), scoring: 'days', photo: true, teams: false, event: false, km: '' })
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   if (!user) return <div className="narrow cg"><Header title="Criar desafio" back="/desafios" /><NeedAccount /></div>
   const set = patch => setF(p => ({ ...p, ...patch }))
-  const ok = f.name.trim() && f.ends >= f.starts
+  const ok = f.name.trim() && f.ends >= f.starts && (f.scoring !== 'race' || Number(String(f.km).replace(',', '.')) > 0)
+  const setEvent = ev => set(ev ? { event: true, ends: f.starts, scoring: 'race', photo: false } : { event: false, ends: addDays(f.starts, 29), scoring: 'days', photo: true })
+  const scorings = f.event ? ['race', 'km', 'minutes', 'workouts'].map(k => [k, SCORING[k]]) : Object.entries(SCORING).filter(([k]) => k !== 'race')
   const go = async () => {
     setBusy(true); setErr('')
-    try { const id = await createChallenge({ ...f, name: f.name.trim(), memberName: myName }); nav('/desafios/' + id, { replace: true, state: { created: true } }) }
+    try {
+      const km = Number(String(f.km).replace(',', '.'))
+      const id = await createChallenge({ ...f, ends: f.event ? f.starts : f.ends, name: f.name.trim(), memberName: myName, targetKm: f.scoring === 'race' && km > 0 ? km : null, event: f.event })
+      nav('/desafios/' + id, { replace: true, state: { created: true } })
+    }
     catch (e) { setErr(e.message); setBusy(false) }
   }
   return <div className="narrow cg">
     <Header title="Criar desafio" back="/desafios" />
     <div className="card cg-form">
-      <label className="cg-f"><span>Nome</span><input className="cg-in" maxLength={60} placeholder="Novembro Sem Desculpa" value={f.name} onChange={e => set({ name: e.target.value })} /></label>
+      <div className="cg-modes" role="radiogroup" style={{ marginBottom: 0 }}>
+        <button type="button" role="radio" aria-checked={!f.event} className={!f.event ? 'on' : ''} onClick={() => setEvent(false)}><b>Desafio longo</b><small>Dias ou semanas de treino</small></button>
+        <button type="button" role="radio" aria-checked={f.event} className={f.event ? 'on' : ''} onClick={() => setEvent(true)}><b>Evento de um dia</b><small>Uma corrida, um treino, um dia</small></button>
+      </div>
+      <label className="cg-f"><span>Nome</span><input className="cg-in" maxLength={60} placeholder={f.event ? 'Corrida Visão Nordeste' : 'Novembro Sem Desculpa'} value={f.name} onChange={e => set({ name: e.target.value })} /></label>
       <div className="cg-f"><span>Capa</span><div className="cg-covers">{COVERS.map((_, i) => <button key={i} type="button" aria-label={'Capa ' + (i + 1)} className={f.cover === i ? 'on' : ''} style={{ background: coverCss(i) }} onClick={() => set({ cover: i })} />)}</div></div>
-      <div className="cg-two">
+      {f.event ? <div className="cg-two">
+        <label className="cg-f"><span>Dia do evento</span><input type="date" className="cg-in" value={f.starts} onChange={e => set({ starts: e.target.value, ends: e.target.value })} /></label>
+        {f.scoring === 'race' && <label className="cg-f"><span>Distância (km)</span><input className="cg-in" inputMode="decimal" placeholder="10" value={f.km} onChange={e => set({ km: e.target.value })} /></label>}
+      </div> : <div className="cg-two">
         <label className="cg-f"><span>Começa</span><input type="date" className="cg-in" value={f.starts} onChange={e => set({ starts: e.target.value })} /></label>
         <label className="cg-f"><span>Termina</span><input type="date" className="cg-in" value={f.ends} min={f.starts} onChange={e => set({ ends: e.target.value })} /></label>
-      </div>
+      </div>}
       <div className="cg-f"><span>Como pontua</span><div className="cg-score" role="radiogroup">
-        {Object.entries(SCORING).map(([k, s]) => <button key={k} type="button" role="radio" aria-checked={f.scoring === k} className={f.scoring === k ? 'on' : ''} onClick={() => set({ scoring: k })}>
+        {scorings.map(([k, s]) => <button key={k} type="button" role="radio" aria-checked={f.scoring === k} className={f.scoring === k ? 'on' : ''} onClick={() => set({ scoring: k })}>
           <i className="cg-dot" /><span><b>{s.name}</b><small>{s.help}</small></span></button>)}
       </div></div>
       <label className="cg-tog"><span><b>Foto obrigatória</b><small>Cada check-in precisa de uma foto</small></span><input type="checkbox" checked={f.photo} onChange={e => set({ photo: e.target.checked })} /></label>
@@ -313,7 +329,9 @@ export function ChallengePage() {
   const people = { ...(data.people || {}), [data.me]: { ...((data.people || {})[data.me] || { rank: null }), ...(myPhoto ? { avatar: myPhoto } : {}) } }
   const tie = leader && meRow && leader.user_id !== data.me && meRow.place === 1
   const coverPhoto = checkins.find(x => x.photo_url)?.photo_url
-  const showPodium = podium || (p.over && rows.some(r => r.score > 0) && !podiumSeen(c.id))
+  const allIn = c.event && members.length > 1 && rows.every(r => r.score > 0)
+  const finished = p.over || allIn
+  const showPodium = podium || (finished && rows.some(r => r.score > 0) && !podiumSeen(c.id))
   return <div className="narrow cg">
     <div className={'cg-head' + (coverPhoto ? ' photo' : '')} style={{ '--cover': coverPhoto ? `url(${coverPhoto})` : coverCss(c.cover) }}>
       <div className="cg-top">
@@ -330,12 +348,13 @@ export function ChallengePage() {
       </button>}
       <div className="cg-glass">
         <div><b>{meRow ? meRow.place + 'º' : '–'}</b><span>sua posição</span></div>
-        <div><b>{meRow ? fmtScore(meRow.score, c.scoring) : 0}</b><span>{c.scoring === 'days' ? 'dias ativos' : SCORING[c.scoring].name.toLowerCase()}</span></div>
-        <div><b>{p.over ? 0 : p.left}</b><span>{p.left === 1 ? 'dia restante' : 'dias restantes'}</span></div>
+        <div><b>{meRow ? fmtScore(meRow.score, c.scoring) : 0}</b><span>{c.scoring === 'race' ? 'seu tempo' : c.scoring === 'days' ? 'dias ativos' : SCORING[c.scoring].name.toLowerCase()}</span></div>
+        {c.event ? <div><b>{c.scoring === 'race' && c.target_km ? String(c.target_km).replace('.', ',') : p.over ? '✓' : p.left === 0 ? 'Hoje' : p.left}</b><span>{c.scoring === 'race' && c.target_km ? 'km' : p.over ? 'encerrado' : p.left === 0 ? 'é o dia' : 'dias para o evento'}</span></div>
+          : <div><b>{p.over ? 0 : p.left}</b><span>{p.left === 1 ? 'dia restante' : 'dias restantes'}</span></div>}
       </div>
     </div>
     {showPodium && <PodiumReveal c={c} rows={rows} people={people} me={data.me} onClose={() => { markPodium(c.id); setPodium(false); setMenu(m => m) ; reload() }} />}
-    {p.over && rows.some(r => r.score > 0) && <button type="button" className="cg-final" onClick={() => setPodium(true)}><Icon name="trophy" /><span><b>Desafio encerrado</b><small>Ver o pódio final</small></span><Icon name="chevronRight" /></button>}
+    {finished && rows.some(r => r.score > 0) && <button type="button" className="cg-final" onClick={() => setPodium(true)}><Icon name="trophy" /><span><b>{c.event ? 'Evento concluído' : 'Desafio encerrado'}</b><small>Ver o pódio final</small></span><Icon name="chevronRight" /></button>}
     {menu && <div className="card cg-menu">
       <button type="button" className="plain" onClick={invite}>Convidar · código {c.code}</button>
       <button type="button" onClick={leave}>{mine ? 'Apagar desafio' : 'Sair do desafio'}</button>
@@ -374,9 +393,17 @@ function Ranking({ c, rows, me, people }) {
         <span className="n">{r.place}</span><Avatar name={r.name} person={people[r.user_id]} size={38} uid={r.user_id} />
         <span className="t"><span className="cg-who"><b>{r.user_id === me ? 'Você' : nameOf(people, r)}</b>{c.teams && r.team != null ? <i className={'cg-team t' + r.team} /> : null}<MiniCard person={people[r.user_id]} /></span><small className="muted">{r.last ? 'última ' + ago(r.last) : 'ainda não postou'}</small></span>
         <span className="pts">{fmtScore(r.score, c.scoring)}<small>{unit(r.score)}</small></span>
+        {r.user_id !== me && (!r.last || r.last.slice(0, 10) < todayIso()) && <PokeBtn cid={c.id} uid={r.user_id} />}
       </div>)}
     </div>
   </>
+}
+
+/** Poke someone who has not posted today ("bora treinar hoje!"). */
+function PokeBtn({ cid, uid }) {
+  const [state, setState] = useState('')
+  const go = async () => { setState('…'); try { setState((await poke(cid, uid)) ? 'Cutucado!' : 'Já cutucou') } catch { setState('Erro') } }
+  return <button type="button" className="cg-poke" disabled={!!state} onClick={go}>{state || 'Cutucar'}</button>
 }
 
 function MiniRoute({ points }) {
@@ -519,7 +546,7 @@ export function PostCheckin() {
     }, e => setErr(e.message))
   }, [user?.id])
   if (!user) return <div className="narrow cg"><Header title="Postar" back /><NeedAccount /></div>
-  const fits = c => !(c.scoring === 'km' && !['run', 'walk', 'ride'].includes(activity?.kind))
+  const fits = c => !((c.scoring === 'km' && !['run', 'walk', 'ride'].includes(activity?.kind)) || (c.scoring === 'race' && !['run', 'walk'].includes(activity?.kind)))
   const targets = (list || []).filter(c => chosen[c.id] && fits(c))
   // a photo-only check-in always needs its photo: it is the only proof
   const needsPhoto = (mode === 'photo' || targets.some(c => c.photo_required)) && !photo
@@ -552,6 +579,7 @@ export function PostCheckin() {
         <label className="cg-f"><span>Minutos</span><input className="cg-in" type="number" inputMode="numeric" min="0" max="600" placeholder="60" value={man.minutes} onChange={e => setMan(m => ({ ...m, minutes: e.target.value }))} /></label>
         {['run', 'walk', 'ride'].includes(man.kind) && <label className="cg-f"><span>Km</span><input className="cg-in" type="number" inputMode="decimal" min="0" step="0.1" placeholder="5" value={man.km} onChange={e => setMan(m => ({ ...m, km: e.target.value }))} /></label>}
       </div>
+      {['run', 'walk'].includes(man.kind) && (list || []).some(c => c.scoring === 'race') && <label className="cg-f"><span>Tempo da prova</span><input className="cg-in" inputMode="numeric" placeholder="42:15 ou 1:02:30" value={man.time || ''} onChange={e => setMan(m => ({ ...m, time: e.target.value }))} /></label>}
     </div>}
     {mode === 'app' && !given && recent.length > 1 && <div className="cg-picks">{recent.slice(0, 8).map((r, i) => <button key={i} type="button" className={'lv-chip' + (i === pick ? ' hot' : '')} onClick={() => setPick(i)}>{r.label} · {new Date(r.at).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}</button>)}</div>}
     {!activity ? <div className="card"><p className="muted" style={{ margin: 0 }}>Nenhuma atividade gravada nos últimos dias. Termine um treino, uma corrida ou uma aula no CARGA, ou poste só a foto.</p></div> : <>

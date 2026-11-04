@@ -1,4 +1,5 @@
 import ProfilePhoto from './ProfilePhoto.jsx'
+import { deleteAccount } from '../lib/cloud.js'
 import { useEffect, useRef, useState } from 'react'
 import { create } from 'zustand'
 import { useStore } from '../store/useStore.js'
@@ -130,6 +131,14 @@ export function CloudAccountSection() {
         subtitle={status === 'syncing' ? t('Syncing…') : status === 'error' ? t('Could not sync. Check your connection.') + (error ? ' (' + error + ')' : '') : lastSync ? t('Saved {0}', ago(lastSync)) : t('Not synced yet')}
         onClick={() => syncNow()} />
       <Row icon="signOut" iconTint="var(--red)" title={t('Sign out')} danger onClick={async () => { await signOut(); useCloud.setState({ user: null, profile: null, numbers: {}, status: 'off' }) }} />
+      {/* LGPD: deleting the account, deliberately quiet */}
+      <button type="button" className="cloud-delete" onClick={async () => {
+        if (!window.confirm('Apagar sua conta CARGA para sempre? Seus treinos na nuvem, desafios que você criou, posts, fotos e mensagens serão apagados. Os treinos deste aparelho continuam nele.')) return
+        if (window.prompt('Para confirmar, escreva APAGAR') !== 'APAGAR') return
+        const r = await deleteAccount()
+        if (r.error) { window.alert(r.error); return }
+        useCloud.setState({ user: null, profile: null, numbers: {}, status: 'off' })
+      }}>Apagar minha conta</button>
     </Section>
   }
 
