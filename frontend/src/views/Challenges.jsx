@@ -60,6 +60,11 @@ function Avatar({ name, person, size = 30, uid }) {
 
 /* ---------- a person's profile: their card and their medals ---------- */
 
+// A challenge counts (podium and medals) only when at least two people scored in it: alone, nobody
+// wins anything, so a challenge of one cannot be used to collect medals.
+export const MIN_RIVALS = 2
+const disputed = rows => rows.filter(r => r.score > 0).length >= MIN_RIVALS
+
 // every challenge I am in, with its leaderboard, read once per visit (the profiles' feed)
 let boardsCache = null
 async function allBoards() {
@@ -80,7 +85,7 @@ export async function historyOf(uid) {
     const row = rows.find(x => x.user_id === uid)
     if (!row) continue
     const over = c.ends < today
-    out.push({ c, row, count, over, medal: over && row.place <= 3 && row.score > 0 ? { kind: medalKind(c.scoring), place: row.place } : null })
+    out.push({ c, row, count, over, medal: over && disputed(rows) && row.place <= 3 && row.score > 0 ? { kind: medalKind(c.scoring), place: row.place } : null })
   }
   return out.sort((x, y) => (x.c.ends < y.c.ends ? 1 : -1))
 }
@@ -387,7 +392,8 @@ export function ChallengePage() {
   const coverPhoto = checkins.find(x => x.photo_url)?.photo_url
   const allIn = c.event && members.length > 1 && rows.every(r => r.score > 0)
   const finished = p.over || allIn
-  const showPodium = podium || (finished && rows.some(r => r.score > 0) && !podiumSeen(c.id))
+  const counts = disputed(rows)
+  const showPodium = podium || (finished && counts && !podiumSeen(c.id))
   return <div className="narrow cg">
     <div className={'cg-head' + (coverPhoto ? ' photo' : '')} style={{ '--cover': coverPhoto ? `url(${coverPhoto})` : coverCss(c.cover) }}>
       <div className="cg-top">
@@ -410,7 +416,8 @@ export function ChallengePage() {
       </div>
     </div>
     {showPodium && <PodiumReveal c={c} rows={rows} people={people} me={data.me} onClose={() => { markPodium(c.id); setPodium(false); setMenu(m => m) ; reload() }} />}
-    {finished && rows.some(r => r.score > 0) && <button type="button" className="cg-final" onClick={() => setPodium(true)}><Icon name="trophy" /><span><b>{c.event ? 'Evento concluído' : 'Desafio encerrado'}</b><small>Ver o pódio final</small></span><Icon name="chevronRight" /></button>}
+    {finished && !counts && <div className="card cg-nocontest"><b>{c.event ? 'Evento' : 'Desafio'} sem disputa</b><small>Precisa de pelo menos 2 pessoas com resultado para valer pódio e medalha.</small></div>}
+    {finished && counts && <button type="button" className="cg-final" onClick={() => setPodium(true)}><Icon name="trophy" /><span><b>{c.event ? 'Evento concluído' : 'Desafio encerrado'}</b><small>Ver o pódio final</small></span><Icon name="chevronRight" /></button>}
     {menu && <div className="card cg-menu">
       <button type="button" className="plain" onClick={invite}>Convidar · código {c.code}</button>
       <button type="button" onClick={leave}>{mine ? 'Apagar desafio' : 'Sair do desafio'}</button>

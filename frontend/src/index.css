@@ -4085,3 +4085,5 @@ body:has(.run-live) #tabbar{display:none}
 .pf-t b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pf-t small{font-size:12px;color:var(--label-2)}
 .pf-t em{font-style:normal;font-size:13px;font-weight:700;color:#ff8a3d}
+
+.cg-nocontest{display:grid;gap:2px;margin-bottom:12px}.cg-nocontest small{color:var(--label-2)}
