@@ -43,7 +43,9 @@ const ERRORS = {
 const cleanError = e => ERRORS[e?.message] || e?.message || 'Something went wrong. Try again.'
 
 export async function signUp(email, password, name) {
-  const { data, error } = await cloud().auth.signUp({ email, password, options: { data: { name } } })
+  // the confirmation link comes back to this site (it must also be among the project's Redirect URLs)
+  const back = typeof location !== 'undefined' ? location.origin + location.pathname : undefined
+  const { data, error } = await cloud().auth.signUp({ email, password, options: { data: { name }, emailRedirectTo: back } })
   if (error) return { error: cleanError(error) }
   if (!data.session) return { confirm: true }
   await saveProfile({ name })

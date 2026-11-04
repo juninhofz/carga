@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, forwardRef, useSyncExternalStore } from 'react'
+import { LOCAL_WEB } from '../lib/local-web.js'
 import { useNavigate, useParams, useLocation, Navigate } from 'react-router-dom'
 import { useStore, DEF, hasData } from '../store/useStore.js'
 import { healthStatus, loadHealth, enableHealth, disableHealth, openHealthConnect, onHealthChange, enableRead, disableRead } from '../lib/health-sync.js'
@@ -1205,7 +1206,9 @@ export default function Settings({ page = null, find = null, via = null, entryKe
 
       {/* account (demo and mobile builds have nothing to sign in to) */}
       {/* A local-only phone has no account to hand another device a code for (#551). */}
-      {!(MOBILE && user) && <Section title={MOBILE ? t('Your data') : DEMO ? t('Demo') : t('Account')}
+      {/* CARGA on the web (LOCAL_WEB) has no openGym server: its account is the CARGA one above,
+          and these passkey and device-code rows only answered 405 */}
+      {!(MOBILE && user) && !LOCAL_WEB && <Section title={MOBILE ? t('Your data') : DEMO ? t('Demo') : t('Account')}
         footer={MOBILE ? t('Signing in on your computer too needs your own server. Connect this phone to it, and Add another device then gives the computer a code.') : null}>
         {MOBILE ? <>
           <Row icon="lock" iconTint="var(--acc)" title={t('All data stays on this phone')} subtitle={t('No account, no cloud. Back it up anytime in Data & backup.')} />
