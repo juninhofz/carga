@@ -19,7 +19,7 @@ export const FRAMES = {
   '0405': FULL, // dumbbell seated shoulder press
   '0585': FULL, // lever leg extension
   '2267': FULL, // lever seated leg press
-  '0032': ENDS, // barbell deadlift
+  '0032': FULL, // barbell deadlift
   '0025': FULL, // barbell bench press
   '0200': FULL, // cable pushdown (with rope attachment)
   '0652': ENDS, // pull-up
@@ -29,6 +29,9 @@ export const FRAMES = {
   '0605': FULL, // lever standing calf raise
   '0274': FULL, // crunch floor
   '0463': FULL, // front plank
+  '0308': FULL, // dumbbell fly
+  '1060': FULL, // barbell hip thrust
+  '0576': FULL, // lever chest press
 }
 export const FRAME_MS = 520
 const BASE = (import.meta.env?.BASE_URL || '/') + 'carga-frames/'
