@@ -11,7 +11,7 @@ export const FRAMES = {
   '0662': FULL, // push-up
   '0198': FULL, // cable pulldown
   '0085': FULL, // barbell romanian deadlift
-  '0314': ENDS, // dumbbell incline bench press
+  '0314': FULL, // dumbbell incline bench press
   '0586': FULL, // lever lying leg curl
   '0027': FULL, // barbell bent over row
   '0334': FULL, // dumbbell lateral raise
