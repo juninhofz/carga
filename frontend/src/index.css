@@ -3703,3 +3703,5 @@ body:has(.run-live) #tabbar{display:none}
 .run-sport-ic{justify-self:center;width:84px;height:84px;border-radius:50%;background:rgba(255,107,0,.14);color:#ff6b00;display:grid;place-items:center;margin-bottom:14px}
 .run-sport-ic svg{width:44px;height:44px}
 .run-live.nogps .run-big.main b{font-size:88px}
+.run-status{padding:10px 8px 16px}
+.run-status-chip{margin-bottom:8px}

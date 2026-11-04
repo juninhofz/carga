@@ -221,6 +221,18 @@ self.addEventListener('push', e => {
   })())
 })
 self.addEventListener('notificationclick', e => {
+  // CARGA: the notification of an activity being recorded (lib/run-recorder.js): its buttons
+  // pause and resume it in the open app, a tap opens the run screen
+  if (e.notification.tag === 'carga-run') {
+    const action = e.action || 'open'
+    e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
+      const c = clients[0]
+      if (!c) return self.clients.openWindow('./#/corrida')
+      c.postMessage({ type: 'carga-run', action, open: action === 'open' })
+      return action === 'open' && 'focus' in c ? c.focus() : undefined
+    }))
+    return
+  }
   e.notification.close()
   e.waitUntil(self.clients.matchAll({ type: 'window' }).then(clients => {
     const c = clients.find(c => 'focus' in c)

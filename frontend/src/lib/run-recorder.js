@@ -141,59 +141,60 @@ function announce(track) {
 
 /* ---------- the lock screen ---------- */
 
-// A web page cannot draw on the lock screen, but the phone shows what is playing there, with its
-// buttons. So while a run records, a silent sound loops and the "now playing" says the run:
-// title "5,24 km · 27:31", artist "Pace 5:15 /km · pace médio 5:14", and the play/pause buttons pause
-// and resume the run. It has to start from a tap (browsers only play sound after one): lockOn() is
-// called from the start button, and again from the run screen's buttons.
-let audio = null, lockTimer = null
+// A web page cannot draw on the lock screen, but its notifications show there. So while an
+// activity records, one notification of CARGA's own (tag carga-run, silent, replaced in place)
+// says it: "5,24 km · 27:31" and "Pace 5:15 /km · pace médio 5:14", with Pause/Resume buttons the
+// service worker (public/sw.js) passes back here, and a tap opens the run screen in CARGA. (The
+// earlier "now playing" panel came from a silent sound: the browser's media panel looked odd and a
+// tap opened whatever app the phone tied to it.) The permission is asked from a tap: lockOn().
+const TAG = 'carga-run'
+let lockTimer = null, lastShown = 0
 
-function silence(sec = 10, rate = 8000) {
-  const n = sec * rate, buf = new ArrayBuffer(44 + n), v = new DataView(buf)
-  const str = (o, t) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)) }
-  str(0, 'RIFF'); v.setUint32(4, 36 + n, true); str(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true)
-  v.setUint32(24, rate, true); v.setUint32(28, rate, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true); str(36, 'data'); v.setUint32(40, n, true)
-  new Uint8Array(buf, 44).fill(128)
-  return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }))
-}
-
-/** From a tap: start the silent loop and the lock-screen panel. */
+/** From a tap: ask for notifications (once) and start keeping the lock-screen notification. */
 export function lockOn() {
-  if (!('mediaSession' in navigator)) return
-  try {
-    if (!audio) { audio = new Audio(silence()); audio.loop = true }
-    audio.play().catch(() => {})
-    const ms = navigator.mediaSession
-    ms.setActionHandler('play', () => { if (useRun.getState().track?.status === 'paused') resumeRun(); audio?.play().catch(() => {}) })
-    ms.setActionHandler('pause', () => { if (useRun.getState().track?.status === 'running') pauseRun() })
-    try { ms.setActionHandler('stop', null) } catch { /* not every browser knows it */ }
-  } catch { /* no media session here */ }
-  if (!lockTimer) lockTimer = setInterval(showOnLock, 1000)
-  showOnLock()
+  try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission().then(() => showOnLock(true)) } catch { /* fine */ }
+  if (!lockTimer) lockTimer = setInterval(() => showOnLock(), 5000)
+  showOnLock(true)
 }
 
-function showOnLock() {
+async function swReg() {
+  try { return 'serviceWorker' in navigator ? await navigator.serviceWorker.ready : null } catch { return null }
+}
+
+function showOnLock(now) {
   const t = useRun.getState().track
-  if (!t || !audio || !('mediaSession' in navigator)) return
-  const now = Date.now(), ride = t.type === 'ride', mov = movingMsNow(t, now)
-  const pace = currentPace(t, now)
+  if (!t || !('Notification' in window) || Notification.permission !== 'granted') return
+  if (!now && Date.now() - lastShown < 4000) return
+  lastShown = Date.now()
+  const at = Date.now(), ride = t.type === 'ride', mov = movingMsNow(t, at)
+  const gps = hasGps(t.type)
+  const pace = currentPace(t, at)
   const live = ride ? (pace ? (3600 / pace).toFixed(1).replace('.', ',') : '0,0') + ' km/h' : 'Pace ' + fmtPace(pace) + ' /km'
   const avg = ride ? 'média ' + fmtSpeed(t.dist, mov / 1000) + ' km/h' : 'pace médio ' + fmtPace(paceOf(mov / 1000, t.dist))
-  const gps = hasGps(t.type)
-  try {
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: gps ? `${fmtKm(t.dist)} km · ${fmtClock(elapsedMs(t, now))}` : `${SPORTS[t.type].name} · ${fmtClock(elapsedMs(t, now))}`,
-      artist: t.status === 'paused' ? 'Pausado · toque ▶ para retomar' : gps ? `${live} · ${avg}` : 'Em andamento',
-      album: 'CARGA · ' + SPORTS[t.type].name,
-      artwork: [{ src: '/icon-512.png', sizes: '512x512', type: 'image/png' }, { src: '/icon-180.png', sizes: '180x180', type: 'image/png' }],
-    })
-    navigator.mediaSession.playbackState = t.status === 'paused' ? 'paused' : 'playing'
-  } catch { /* fine */ }
+  const paused = t.status === 'paused'
+  const title = gps ? `${SPORTS[t.type].name} · ${fmtKm(t.dist)} km · ${fmtClock(elapsedMs(t, at))}` : `${SPORTS[t.type].name} · ${fmtClock(elapsedMs(t, at))}`
+  const body = paused ? 'Pausado. Toque em Retomar para continuar.' : gps ? `${live} · ${avg}` : 'Em andamento'
+  swReg().then(reg => reg?.showNotification(title, {
+    body, tag: TAG, silent: true, renotify: false, requireInteraction: true,
+    icon: 'icon-512.png', badge: 'icon-180.png', data: { path: '/corrida' },
+    actions: [paused ? { action: 'resume', title: 'Retomar' } : { action: 'pause', title: 'Pausar' }, { action: 'open', title: 'Abrir' }],
+  })).catch(() => {})
 }
 
 function lockOff() {
   clearInterval(lockTimer)
   lockTimer = null
-  try { audio?.pause() } catch { /* fine */ }
-  try { navigator.mediaSession.metadata = null; navigator.mediaSession.playbackState = 'none' } catch { /* fine */ }
+  swReg().then(reg => reg?.getNotifications({ tag: TAG })).then(list => (list || []).forEach(n => n.close())).catch(() => {})
 }
+
+// The notification's buttons and taps, passed on by the service worker.
+try {
+  navigator.serviceWorker?.addEventListener('message', e => {
+    const m = e.data
+    if (!m || m.type !== 'carga-run') return
+    const t = useRun.getState().track
+    if (m.action === 'pause' && t?.status === 'running') pauseRun()
+    else if (m.action === 'resume' && t?.status === 'paused') resumeRun()
+    if (m.open) location.hash = '#/corrida'
+  })
+} catch { /* no service worker here */ }

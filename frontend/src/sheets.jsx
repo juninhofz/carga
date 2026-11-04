@@ -1,4 +1,6 @@
 import { Fragment, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
+import StatusReveal from './components/StatusReveal.jsx'
+import { workoutStatus } from './lib/activity-status.js'
 import { useStore } from './store/useStore.js'
 import { exView, exUnitPin, exUnitOf, exUnitTag, withExUnit, profileUnit, viewTarget, storedTarget, storedBar, viewEntry, viewRow, shownWeight } from './lib/ex-unit.js'
 import { useUI } from './store/useUI.js'
@@ -4020,7 +4022,9 @@ function FinishSummary({ w, prs, e1prs = [], additions = [], close }) {
   return <div style={{ textAlign: 'center', padding: '8px 0' }}>
     {/* Sticky, so the summary can be left from the top however far it has been scrolled. */}
     <div className="fin-x"><button type="button" className="iconbtn" aria-label={t('Close')} onClick={() => closeThenNav(close, '/home')}><Icon name="xmark" /></button></div>
-    <div style={{ fontSize: 44, display: 'flex', justifyContent: 'center', color: 'var(--acc-ink)', position: 'relative' }}><Icon name="trophy" /><SeasonDeco spot="finish" workout /></div>
+    {/* CARGA: the workout's status against the earlier sessions of the same exercises, revealed
+        with its animation (components/StatusReveal.jsx) */}
+    <div style={{ position: 'relative' }}><StatusReveal status={workoutStatus(st.workouts, w, x => sessionVolume(x, st), prs)} /><SeasonDeco spot="finish" workout /></div>
     <h3 style={{ margin: '8px 0' }}>{t('Workout complete!')}</h3>
     <div className="tiles fin" style={{ textAlign: 'start' }}>
       <div className="tile"><div className="l">{t('Duration')}</div><div className="v v-sm">{fmtDur(w.end - w.start)}</div></div>

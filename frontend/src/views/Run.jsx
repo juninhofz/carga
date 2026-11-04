@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import StatusReveal, { StatusBadge } from '../components/StatusReveal.jsx'
+import { runStatus } from '../lib/activity-status.js'
 import { useStore } from '../store/useStore.js'
 import Icon from '../components/Icon.jsx'
 import RunMap from '../components/RunMap.jsx'
@@ -139,7 +141,7 @@ function RunLive() {
   const segs = []
   const cuts = [0, ...track.brk, track.pts.length]
   for (let i = 0; i + 1 < cuts.length; i++) segs.push(track.pts.slice(cuts[i], cuts[i + 1]).map(p => [p.lat, p.lng]))
-  const finish = () => { const id = finishRun(); nav(id ? '/corrida/' + id : '/corrida', { replace: true }) }
+  const finish = () => { const id = finishRun(); nav(id ? '/corrida/' + id : '/corrida', { replace: true, state: { fresh: true } }) }
   const ride = track.type === 'ride'
   if (!gpsOn) return <div className={'run-live nogps' + (paused ? ' paused' : '')}>
     <div className="run-live-top"><span /><b>{sport.name}</b><span /></div>
@@ -238,6 +240,9 @@ const EFFORT_NAMES = { 400: '400 m', 1000: '1 km', 5000: '5 km', 10000: '10 km',
 function RunDetail({ id }) {
   const nav = useNavigate()
   const run = useStore(s => (s.S.runs || []).find(r => r.id === id))
+  const runs = useStore(s => s.S.runs)
+  const fresh = !!useLocation().state?.fresh
+  const status = useMemo(() => (run ? runStatus(runs, run) : null), [run?.id, runs?.length])
   const [editing, setEditing] = useState(false)
   const pts = useMemo(() => (run ? pointsOf(run) : []), [run?.trk])
   const segs = useMemo(() => (run ? segmentsOf(run, pts) : []), [pts])
@@ -256,7 +261,10 @@ function RunDetail({ id }) {
     <div className="hdr"><div><h1>{SPORTS[run.type]?.name}</h1><div className="sub">{dateLine(run.start)}</div></div>
       <button className="iconbtn" onClick={() => nav('/corrida')} aria-label="Fechar"><Icon name="xmark" /></button></div>
 
+    {fresh && status && <div className="card run-status"><StatusReveal status={status} /></div>}
+
     <div className="card run-detail-head">
+      {!fresh && status && <div className="run-status-chip"><StatusBadge status={status} /></div>}
       {editing
         ? <input className="run-name-in" defaultValue={run.name} autoFocus onBlur={e => { rename(e.target.value); setEditing(false) }} onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }} />
         : <button type="button" className="run-name" onClick={() => setEditing(true)}>{run.name} <Icon name="pencil" /></button>}
