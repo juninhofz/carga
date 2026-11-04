@@ -21,7 +21,7 @@ import { EXIDX } from '../lib/exercises.js'
 import { exerciseNameFor } from '../lib/i18n.js'
 import {
   COVERS, coverCss, SCORING, REACTIONS, leaderboard, teamScores, progressOf, runActivity, workoutActivity, myChallenges,
-  createChallenge, joinChallenge, manualActivity, DUEL_LIFTS, liftsOf, liftBoards, leaveChallenge, deleteChallenge, loadChallenge, postCheckin, deleteCheckin, setReaction,
+  createChallenge, joinChallenge, manualActivity, VISIBILITY, discoverChallenges, joinOpen, setVisibility, DUEL_LIFTS, liftsOf, liftBoards, leaveChallenge, deleteChallenge, loadChallenge, postCheckin, deleteCheckin, setReaction,
   addComment, loadMessages, sendMessage, watchChallenge, shrinkPhoto, routeOf,
 } from '../lib/challenges-group.js'
 
@@ -208,6 +208,7 @@ export function ChallengesHome() {
   const [err, setErr] = useState('')
   const [joining, setJoining] = useState(false)
   const [code, setCode] = useState('')
+  const [view, setView] = useState('mine')
   const myName = useMyName()
   useEffect(() => { if (user) myChallenges().then(setList, e => setErr(e.message)) }, [user?.id])
   if (!user) return <div className="narrow cg"><Header title="Desafios" /><NeedAccount /></div>
@@ -228,6 +229,10 @@ export function ChallengesHome() {
       <button type="button" className="cg-btn" onClick={() => nav('/desafios/novo')}><Icon name="plus" />Criar</button>
       <button type="button" className="cg-btn ghost" onClick={() => setJoining(j => !j)}><Icon name="key" />Entrar com código</button>
     </div>
+    <div className="cg-seg" role="tablist" style={{ marginTop: 0 }}>
+      {[['mine', 'Meus desafios'], ['discover', 'Descobrir']].map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={view === k} className={view === k ? 'on' : ''} onClick={() => setView(k)}>{l}</button>)}
+    </div>
+    {view === 'discover' ? <Discover onCode={() => { setView('mine'); setJoining(true) }} /> : <>
     {joining && <div className="card cg-join">
       <input className="cg-in" placeholder="CRG-XXXX" value={code} autoFocus onChange={e => setCode(e.target.value.toUpperCase())} onKeyDown={e => { if (e.key === 'Enter') join() }} />
       <button type="button" className="cg-btn" disabled={code.trim().length < 6} onClick={join}>Entrar</button>
@@ -239,7 +244,37 @@ export function ChallengesHome() {
     {live.map(c => <ChallengeCard key={c.id} c={c} today={today} />)}
     {over.length > 0 && <div className="cg-k">Encerrados</div>}
     {over.map(c => <ChallengeCard key={c.id} c={c} today={today} />)}
+    </>}
   </div>
+}
+
+/** Discover: the listed challenges, events first. An open one joins at once; one with a code asks for it. */
+function Discover({ onCode }) {
+  const nav = useNavigate()
+  const myName = useMyName()
+  const [list, setList] = useState(null)
+  const [err, setErr] = useState('')
+  useEffect(() => { discoverChallenges().then(setList, e => setErr(e.message)) }, [])
+  const join = async c => {
+    try { const id = await joinOpen(c.id, myName); if (id) nav('/desafios/' + id); else setErr('Este desafio não está mais aberto.') } catch (e) { setErr(e.message) }
+  }
+  if (err) return <p className="cg-err">{err}</p>
+  if (!list) return <p className="muted">Carregando…</p>
+  if (!list.length) return <div className="card"><p className="muted" style={{ margin: 0 }}>Nenhum desafio na lista agora. Crie um e deixe aberto para quem quiser entrar.</p></div>
+  const today = todayIso()
+  return <div className="cg-disc">{list.map(c => {
+    const p = progressOf(c, today)
+    return <div key={c.id} className="cg-card cg-disc-card">
+      <span className="cg-cover" style={{ background: coverCss(c.cover) }}><b>{c.name}</b>{c.event && <i className="cg-ev">Evento</i>}</span>
+      <span className="cg-meta">
+        <span className="small muted">{SCORING[c.scoring]?.name}{c.target_km ? ' · ' + String(c.target_km).replace('.', ',') + ' km' : ''} · {c.members} {Number(c.members) === 1 ? 'pessoa' : 'pessoas'} · de {c.owner_name}<br />
+          {c.event ? (p.left === 0 ? 'É hoje' : shortDate(c.starts)) : !p.started ? 'Começa ' + shortDate(c.starts) : 'Termina ' + shortDate(c.ends)}</span>
+        {c.joined ? <button type="button" className="lv-chip ok cg-disc-btn" onClick={() => nav('/desafios/' + c.id)}>Você está</button>
+          : c.visibility === 'open' ? <button type="button" className="lv-chip hot cg-disc-btn" onClick={() => join(c)}>Entrar</button>
+            : <button type="button" className="lv-chip cg-disc-btn" onClick={onCode}><Icon name="key" />Com código</button>}
+      </span>
+    </div>
+  })}</div>
 }
 
 function ChallengeCard({ c, today }) {
@@ -261,7 +296,7 @@ export function CreateChallenge() {
   const user = useCloud(s => s.user)
   const myName = useMyName()
   const today = todayIso()
-  const [f, setF] = useState({ name: '', cover: 0, starts: today, ends: addDays(today, 29), scoring: 'days', photo: true, teams: false, event: false, km: '' })
+  const [f, setF] = useState({ name: '', cover: 0, starts: today, ends: addDays(today, 29), scoring: 'days', photo: true, teams: false, event: false, km: '', visibility: 'code' })
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   if (!user) return <div className="narrow cg"><Header title="Criar desafio" back="/desafios" /><NeedAccount /></div>
@@ -300,6 +335,11 @@ export function CreateChallenge() {
           <i className="cg-dot" /><span><b>{s.name}</b><small>{s.help}</small></span></button>)}
       </div></div>
       {f.scoring === 'lifts' && <LiftPicker value={f.lifts || []} onChange={lifts => set({ lifts })} />}
+      <div className="cg-f"><span>Quem pode ver e entrar</span><div className="cg-score" role="radiogroup">
+        {Object.entries(VISIBILITY).map(([k, v]) => <button key={k} type="button" role="radio" aria-checked={f.visibility === k} className={f.visibility === k ? 'on' : ''} onClick={() => set({ visibility: k })}>
+          <i className="cg-dot" /><span><b>{v.name}</b><small>{v.help}</small></span></button>)}
+      </div></div>
+      <small className="muted">{f.event ? 'Cada pessoa cria 1 evento por dia.' : 'Cada pessoa cria 1 desafio longo por mês.'}</small>
       <label className="cg-tog"><span><b>Foto obrigatória</b><small>Cada check-in precisa de uma foto</small></span><input type="checkbox" checked={f.photo} onChange={e => set({ photo: e.target.checked })} /></label>
       <label className="cg-tog"><span><b>Em equipes</b><small>Divide o grupo em dois times</small></span><input type="checkbox" checked={f.teams} onChange={e => set({ teams: e.target.checked })} /></label>
       {err && <p className="cg-err">{err}</p>}
@@ -420,6 +460,7 @@ export function ChallengePage() {
     {finished && counts && <button type="button" className="cg-final" onClick={() => setPodium(true)}><Icon name="trophy" /><span><b>{c.event ? 'Evento concluído' : 'Desafio encerrado'}</b><small>Ver o pódio final</small></span><Icon name="chevronRight" /></button>}
     {menu && <div className="card cg-menu">
       <button type="button" className="plain" onClick={invite}>Convidar · código {c.code}</button>
+      {mine && Object.entries(VISIBILITY).filter(([k]) => k !== (c.visibility || 'code')).map(([k, v]) => <button key={k} type="button" className="plain" onClick={async () => { try { await setVisibility(c.id, k); setMenu(false); reload() } catch (e) { alert(e.message) } }}>Mudar para: {v.name}</button>)}
       <button type="button" onClick={leave}>{mine ? 'Apagar desafio' : 'Sair do desafio'}</button>
     </div>}
     {loc.state?.created && <div className="card cg-created"><b>Desafio criado!</b><p className="muted small">Mande o código <b>{c.code}</b> ou o link para os amigos entrarem.</p><button type="button" className="cg-btn" onClick={invite}><Icon name="share" />Convidar</button></div>}

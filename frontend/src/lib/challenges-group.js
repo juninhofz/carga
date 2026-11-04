@@ -192,7 +192,15 @@ export function workoutActivity(w, status, { volume = 0, sets = 0, lifts = {} } 
 
 const db = () => cloud()
 const me = async () => (await currentUser())?.id || null
-const fail = error => { throw new Error(error?.message || 'Não foi possível falar com o servidor.') }
+// the limits the database keeps, said plainly
+const LIMITS = { LIMIT_LONG: 'Você já criou um desafio longo este mês. Dá para criar outro no mês que vem, ou um evento de um dia.', LIMIT_EVENT: 'Você já criou um evento hoje. Amanhã dá para criar outro.' }
+const fail = error => { const m = error?.message || ''; throw new Error(LIMITS[Object.keys(LIMITS).find(k => m.includes(k))] || m || 'Não foi possível falar com o servidor.') }
+
+export const VISIBILITY = {
+  code: { name: 'Na lista, com código', help: 'Aparece em Descobrir; só entra quem recebeu o código.' },
+  open: { name: 'Na lista, aberto', help: 'Aparece em Descobrir e qualquer pessoa entra.' },
+  hidden: { name: 'Escondido', help: 'Não aparece na lista; só por convite.' },
+}
 
 /** The challenges I am in, newest first: [{ ...challenge, team, members }]. */
 export async function myChallenges() {
@@ -208,11 +216,12 @@ export async function myChallenges() {
 }
 
 // always all ten arguments: the database also keeps an older 8-argument version of this function
-export async function createChallenge({ name, cover, starts, ends, scoring, photo, teams, memberName, targetKm = null, event = false, rules = null }) {
+export async function createChallenge({ name, cover, starts, ends, scoring, photo, teams, memberName, targetKm = null, event = false, rules = null, visibility = 'code' }) {
   const { data, error } = await db().rpc('create_challenge', { p_name: name, p_cover: cover, p_starts: starts, p_ends: ends, p_scoring: scoring, p_photo: photo, p_teams: teams, p_member_name: memberName, p_target_km: targetKm, p_event: event })
   if (error) fail(error)
-  // a lifting duel's exercises and points
-  if (rules) { const r = await db().from('challenges').update({ rules }).eq('id', data); if (r.error) fail(r.error) }
+  // a lifting duel's exercises and points, and who can find it
+  const extra = { ...(rules ? { rules } : {}), ...(visibility && visibility !== 'code' ? { visibility } : {}) }
+  if (Object.keys(extra).length) { const r = await db().from('challenges').update(extra).eq('id', data); if (r.error) fail(r.error) }
   return data
 }
 
@@ -220,6 +229,23 @@ export async function joinChallenge(code, memberName) {
   const { data, error } = await db().rpc('join_challenge', { p_code: code, p_member_name: memberName })
   if (error) fail(error)
   return data
+}
+
+/** Discover: the listed challenges that have not ended (no codes in them). */
+export async function discoverChallenges() {
+  const { data, error } = await db().rpc('discover_challenges')
+  if (error) fail(error)
+  return data || []
+}
+/** Joins an open challenge from Discover; null if it is not open (any more). */
+export async function joinOpen(id, memberName) {
+  const { data, error } = await db().rpc('join_open_challenge', { p_id: id, p_member_name: memberName })
+  if (error) fail(error)
+  return data
+}
+export async function setVisibility(id, visibility) {
+  const { error } = await db().from('challenges').update({ visibility }).eq('id', id)
+  if (error) fail(error)
 }
 
 export async function leaveChallenge(id) {

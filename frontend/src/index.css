@@ -4095,3 +4095,12 @@ body:has(.run-live) #tabbar{display:none}
 .lv-medals i .medal{width:100%;height:auto;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
 .lv-medals b{font:900 17px/1 "Barlow Condensed","Arial Narrow",Impact,sans-serif;color:#1a0b00}
 .lv-medals .none{opacity:.45}
+
+/* Discover */
+.cg-disc{display:grid;gap:12px}
+.cg-disc-card{cursor:default}
+.cg-disc-card .cg-meta{align-items:flex-end}
+.cg-disc-btn{border:0;cursor:pointer;font:inherit;font-weight:800;font-size:13px;padding:8px 14px;flex:none}
+.cg-disc-btn svg{width:14px;height:14px}
+.cg-cover .cg-ev{position:absolute;right:12px;top:12px;font-style:normal;font:800 11px/1 "Barlow Condensed","Arial Narrow",Impact,sans-serif;letter-spacing:.1em;text-transform:uppercase;background:rgba(0,0,0,.35);padding:5px 9px;border-radius:999px}
+.cg-cover{position:relative}
