@@ -3898,3 +3898,17 @@ body:has(.run-live) #tabbar{display:none}
 .cg-crown svg{width:22px;height:22px}
 .cg-leader .pp-face{border-width:3px}
 .cg-top-t b{white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;font-size:22px;line-height:1}
+
+/* posting: from the app or a photo alone (half) */
+.cg-modes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.cg-modes button{display:grid;gap:2px;padding:12px;border-radius:14px;border:1.5px solid transparent;background:var(--surface);color:inherit;font:inherit;text-align:start;cursor:pointer}
+.cg-modes button.on{border-color:#ff6b00;background:rgba(255,107,0,.1)}
+.cg-modes small{color:var(--label-2);font-size:12.5px}
+.cg-modes button.on small{color:#ff8a3d;font-weight:700}
+.cg-man{margin-bottom:12px}
+.cg-kinds{display:flex;flex-wrap:wrap;gap:6px}
+.cg-kinds .lv-chip{border:0;cursor:pointer;font:inherit;font-weight:700;font-size:13px;padding:7px 12px}
+.cg-half{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:var(--surface-2);color:var(--label-2);white-space:nowrap}
+.cg-post-top{grid-template-columns:auto 1fr auto auto auto}
+.cg-seal{display:inline-flex;align-items:center;gap:4px;padding:3px 8px 3px 5px;border-radius:999px;background:rgba(255,107,0,.12);color:#ff8a3d;font:800 11px "Barlow Condensed","Arial Narrow",Impact,sans-serif;letter-spacing:.08em}
+.cg-seal .carga-mark{display:inline-flex}.cg-seal .carga-mark svg{height:100%;width:auto}

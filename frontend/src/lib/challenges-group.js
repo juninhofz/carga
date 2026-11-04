@@ -22,12 +22,19 @@ export const SCORING = {
 const STATUS_PTS = { pena: 1, firme: 2, pesado: 3, brutal: 4, max: 5 }
 export const REACTIONS = [['fire', 'Fogo'], ['strong', 'Força'], ['clap', 'Palmas']]
 
+// A check-in posted with only a photo (no activity recorded in the app: `verified` false) counts
+// half: there is no proof, and the app's own record is what the challenges want to encourage.
+export const UNVERIFIED = 0.5
+const weightOf = c => (c.verified === false ? UNVERIFIED : 1)
+
 /** What a check-in scores in a challenge of `scoring`. */
 export function checkinScore(c, scoring) {
-  if (scoring === 'minutes') return Math.max(0, c.minutes || 0)
-  if (scoring === 'km') return ['run', 'walk', 'ride'].includes(c.kind) ? Number(c.km) || 0 : 0
-  if (scoring === 'carga') return STATUS_PTS[c.status] || 1
-  return 1
+  const w = weightOf(c)
+  if (scoring === 'minutes') return Math.max(0, c.minutes || 0) * w
+  if (scoring === 'km') return ['run', 'walk', 'ride'].includes(c.kind) ? (Number(c.km) || 0) * w : 0
+  // a photo-only check-in has no status: half of Firme
+  if (scoring === 'carga') return c.verified === false ? STATUS_PTS.firme * w : STATUS_PTS[c.status] || 1
+  return w
 }
 
 /**
@@ -35,7 +42,7 @@ export function checkinScore(c, scoring) {
  * counts each member's distinct days. Ties keep whoever got there first ahead.
  */
 export function leaderboard(challenge, members, checkins) {
-  const rows = new Map(members.map(m => [m.user_id, { user_id: m.user_id, name: m.name || 'Sem nome', team: m.team, score: 0, count: 0, last: null, reachedAt: 0, days: new Set() }]))
+  const rows = new Map(members.map(m => [m.user_id, { user_id: m.user_id, name: m.name || 'Sem nome', team: m.team, score: 0, count: 0, last: null, reachedAt: 0, days: new Map() }]))
   const inRange = c => c.day >= challenge.starts && c.day <= challenge.ends
   const sorted = [...checkins].filter(inRange).sort((a, b) => (a.created_at < b.created_at ? -1 : 1))
   for (const c of sorted) {
@@ -43,7 +50,8 @@ export function leaderboard(challenge, members, checkins) {
     if (!r) continue
     r.count++
     r.last = !r.last || c.created_at > r.last ? c.created_at : r.last
-    if (challenge.scoring === 'days') { if (!r.days.has(c.day)) { r.days.add(c.day); r.score++; r.reachedAt = Date.parse(c.created_at) } }
+    // a day counts once, as much as its best check-in: 1 from the app, ½ from a photo alone
+    if (challenge.scoring === 'days') { const was = r.days.get(c.day) || 0, w = weightOf(c); if (w > was) { r.days.set(c.day, w); r.score += w - was; r.reachedAt = Date.parse(c.created_at) } }
     else { const s = checkinScore(c, challenge.scoring); if (s > 0) { r.score += s; r.reachedAt = Date.parse(c.created_at) } }
   }
   const list = [...rows.values()].map(r => ({ ...r, score: Math.round(r.score * 100) / 100, days: r.days.size }))
@@ -90,6 +98,14 @@ export function runActivity(run, status) {
     activity_id: run.id, day: localDay(run.start), kind: gps ? run.type : 'sport', title: run.name || SPORTS[run.type]?.name || 'Atividade',
     minutes: Math.round(run.movingSec / 60), km: gps ? Math.round(run.distM / 10) / 100 : 0, status: status?.id || null, stats,
   }
+}
+
+/** A check-in with only a photo: what was done, as the person says it. Counts half. */
+export function manualActivity({ title, kind = 'other', minutes = 0, km = 0 }) {
+  const now = Date.now()
+  return { activity_id: 'foto-' + now.toString(36), day: localDay(now), kind, title: String(title || '').trim().slice(0, 80) || 'Treino',
+    minutes: Math.max(0, Math.min(1440, Math.round(Number(minutes) || 0))), km: ['run', 'walk', 'ride'].includes(kind) ? Math.max(0, Math.min(1000, Number(km) || 0)) : 0,
+    status: null, stats: {}, verified: false }
 }
 
 /** A gym workout as a check-in. */

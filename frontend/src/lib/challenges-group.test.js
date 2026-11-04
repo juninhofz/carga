@@ -32,6 +32,20 @@ describe('the leaderboard', () => {
   })
 })
 
+describe('a check-in with only a photo', () => {
+  const m2 = [{ user_id: 'a', name: 'Ana' }, { user_id: 'b', name: 'Bia' }]
+  it('counts half a day, and a recorded one the same day makes it whole', () => {
+    const rows = leaderboard(ch('days'), m2, [ck('a', '2026-11-02', { verified: false }), ck('b', '2026-11-02', { verified: false }), ck('b', '2026-11-02', { created_at: '2026-11-02T20:00:00Z' })])
+    expect(rows.map(r => [r.name, r.score])).toEqual([['Bia', 1], ['Ana', 0.5]])
+  })
+  it('counts half in every other scoring', () => {
+    expect(checkinScore({ verified: false }, 'workouts')).toBe(0.5)
+    expect(checkinScore({ verified: false, minutes: 60 }, 'minutes')).toBe(30)
+    expect(checkinScore({ verified: false, kind: 'run', km: 5 }, 'km')).toBe(2.5)
+    expect(checkinScore({ verified: false }, 'carga')).toBe(1)
+  })
+})
+
 describe('the rest', () => {
   it('knows the day of the challenge', () => {
     expect(progressOf({ starts: '2026-11-01', ends: '2026-11-30' }, '2026-11-04')).toMatchObject({ total: 30, day: 4, left: 26, started: true, over: false })

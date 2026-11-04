@@ -6,11 +6,12 @@ import { useCloud } from '../components/CloudAccount.jsx'
 import { CLOUD_ON } from '../lib/cloud.js'
 import { StatusBadge } from '../components/StatusReveal.jsx'
 import { PersonPhoto } from '../components/ProfilePhoto.jsx'
+import CargaMark from '../components/CargaMark.jsx'
 import { LEVELS, runStatus, workoutStatus } from '../lib/activity-status.js'
 import { sessionVolume } from '../lib/history.js'
 import {
   COVERS, coverCss, SCORING, REACTIONS, leaderboard, teamScores, progressOf, runActivity, workoutActivity, myChallenges,
-  createChallenge, joinChallenge, leaveChallenge, deleteChallenge, loadChallenge, postCheckin, deleteCheckin, setReaction,
+  createChallenge, joinChallenge, manualActivity, leaveChallenge, deleteChallenge, loadChallenge, postCheckin, deleteCheckin, setReaction,
   addComment, loadMessages, sendMessage, watchChallenge, shrinkPhoto, routeOf,
 } from '../lib/challenges-group.js'
 
@@ -30,7 +31,8 @@ const ago = ts => {
   return d === 1 ? 'ontem' : 'há ' + d + ' dias'
 }
 const initials = name => (name || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?'
-const fmtScore = (n, scoring) => (scoring === 'km' ? n.toFixed(1).replace('.', ',') : String(Math.round(n)))
+// half points (a photo-only check-in) show as ½, km with one decimal
+const fmtScore = (n, scoring) => (scoring === 'km' ? n.toFixed(1).replace('.', ',') : Number.isInteger(n) ? String(n) : (Math.floor(n) ? Math.floor(n) : '') + (Math.abs(n % 1 - 0.5) < 0.01 ? '½' : ',' + String(Math.round((n % 1) * 10))))
 export const inviteLink = code => location.origin + location.pathname + '#/desafios/entrar/' + code
 
 function useMyName() {
@@ -320,7 +322,9 @@ function Feed({ data, people: given, reload }) {
       return <article key={c.id} className="cg-post">
         <div className="cg-post-top"><Avatar name={names[c.user_id]} person={people[c.user_id]} size={38} />
           <span className="t"><b>{c.user_id === me ? 'Você' : names[c.user_id]}</b><small className="muted">{ago(c.created_at)} · {c.title || KIND_NAME[c.kind]}</small></span>
-          {st && <StatusBadge status={st} />}
+          {/* the CARGA seal: this one was recorded in the app (a photo alone carries none) */}
+          {c.verified !== false && <span className="cg-seal" title="Gravado no CARGA"><CargaMark height={16} />CARGA</span>}
+          {c.verified !== false && st && <StatusBadge status={st} />}
           {c.user_id === me && <button type="button" className="iconbtn cg-del" onClick={() => remove(c)} aria-label="Apagar"><Icon name="trash" /></button>}
         </div>
         {(c.photo_url || route) && <div className="cg-ph">
@@ -390,7 +394,12 @@ export function PostCheckin() {
   const recent = useRecentActivities()
   const [pick, setPick] = useState(0)
   const given = loc.state?.activity || null
-  const activity = useMemo(() => given || recent[pick]?.act() || null, [given, pick, recent])
+  // 'app': an activity recorded in CARGA, counts whole; 'photo': a photo and what was done, counts half
+  const [mode, setMode] = useState('app')
+  const [man, setMan] = useState({ title: '', kind: 'gym', minutes: '', km: '' })
+  const fromApp = useMemo(() => given || recent[pick]?.act() || null, [given, pick, recent])
+  useEffect(() => { if (!given && !recent.length) setMode('photo') }, [recent.length])
+  const activity = mode === 'photo' ? manualActivity(man) : fromApp
   const [list, setList] = useState(null)
   const [chosen, setChosen] = useState({})
   const [photo, setPhoto] = useState(null)
@@ -411,7 +420,8 @@ export function PostCheckin() {
   if (!user) return <div className="narrow cg"><Header title="Postar" back /><NeedAccount /></div>
   const fits = c => !(c.scoring === 'km' && !['run', 'walk', 'ride'].includes(activity?.kind))
   const targets = (list || []).filter(c => chosen[c.id] && fits(c))
-  const needsPhoto = targets.some(c => c.photo_required) && !photo
+  // a photo-only check-in always needs its photo: it is the only proof
+  const needsPhoto = (mode === 'photo' || targets.some(c => c.photo_required)) && !photo
   const onPhoto = async e => {
     const f = e.target.files?.[0]
     e.target.value = ''
@@ -428,11 +438,25 @@ export function PostCheckin() {
   const st = activity && LEVELS.find(l => l.id === activity.status)
   return <div className="narrow cg">
     <Header title="Postar nos desafios" back />
-    {!given && recent.length > 1 && <div className="cg-picks">{recent.slice(0, 8).map((r, i) => <button key={i} type="button" className={'lv-chip' + (i === pick ? ' hot' : '')} onClick={() => setPick(i)}>{r.label} · {new Date(r.at).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}</button>)}</div>}
-    {!activity ? <div className="card"><p className="muted" style={{ margin: 0 }}>Nenhuma atividade nos últimos dias. Termine um treino, uma corrida ou uma aula e poste aqui.</p></div> : <>
-      <div className="card cg-act"><span className="cg-act-ic"><Icon name={activity.kind === 'gym' ? 'dumbbell' : activity.kind === 'sport' ? 'stopwatch' : 'cargaRun'} /></span>
+    {!given && <div className="cg-modes" role="radiogroup">
+      <button type="button" role="radio" aria-checked={mode === 'app'} className={mode === 'app' ? 'on' : ''} onClick={() => setMode('app')}><b>Atividade do CARGA</b><small>Gravada no app, com o selo CARGA</small></button>
+      <button type="button" role="radio" aria-checked={mode === 'photo'} className={mode === 'photo' ? 'on' : ''} onClick={() => setMode('photo')}><b>Só a foto</b><small>Sem atividade gravada</small></button>
+    </div>}
+    {mode === 'photo' && <div className="card cg-form cg-man">
+      <p className="muted small" style={{ margin: 0 }}>Treinou sem gravar no app? Poste a foto e conte o que fez.</p>
+      <div className="cg-kinds">{[['gym', 'Academia'], ['run', 'Corrida'], ['walk', 'Caminhada'], ['ride', 'Pedal'], ['sport', 'Aula'], ['other', 'Outro']].map(([k, l]) =>
+        <button key={k} type="button" className={'lv-chip' + (man.kind === k ? ' hot' : '')} onClick={() => setMan(m => ({ ...m, kind: k }))}>{l}</button>)}</div>
+      <label className="cg-f"><span>O que você fez</span><input className="cg-in" maxLength={80} placeholder="Ex.: Treino de perna" value={man.title} onChange={e => setMan(m => ({ ...m, title: e.target.value }))} /></label>
+      <div className="cg-two">
+        <label className="cg-f"><span>Minutos</span><input className="cg-in" type="number" inputMode="numeric" min="0" max="600" placeholder="60" value={man.minutes} onChange={e => setMan(m => ({ ...m, minutes: e.target.value }))} /></label>
+        {['run', 'walk', 'ride'].includes(man.kind) && <label className="cg-f"><span>Km</span><input className="cg-in" type="number" inputMode="decimal" min="0" step="0.1" placeholder="5" value={man.km} onChange={e => setMan(m => ({ ...m, km: e.target.value }))} /></label>}
+      </div>
+    </div>}
+    {mode === 'app' && !given && recent.length > 1 && <div className="cg-picks">{recent.slice(0, 8).map((r, i) => <button key={i} type="button" className={'lv-chip' + (i === pick ? ' hot' : '')} onClick={() => setPick(i)}>{r.label} · {new Date(r.at).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}</button>)}</div>}
+    {!activity ? <div className="card"><p className="muted" style={{ margin: 0 }}>Nenhuma atividade gravada nos últimos dias. Termine um treino, uma corrida ou uma aula no CARGA, ou poste só a foto.</p></div> : <>
+      {mode === 'app' && <div className="card cg-act"><span className="cg-act-ic"><Icon name={activity.kind === 'gym' ? 'dumbbell' : activity.kind === 'sport' ? 'stopwatch' : 'cargaRun'} /></span>
         <span className="t"><b>{activity.title}</b><small className="muted">{activity.minutes} min{Number(activity.km) > 0 ? ' · ' + String(activity.km).replace('.', ',') + ' km' : ''}{activity.stats?.sets ? ' · ' + activity.stats.sets + ' séries' : ''}</small></span>
-        {st && <StatusBadge status={st} />}</div>
+        {st && <StatusBadge status={st} />}</div>}
       <button type="button" className={'cg-photo' + (preview ? ' has' : '')} onClick={() => file.current?.click()} style={preview ? { backgroundImage: `url(${preview})` } : undefined}>
         {!preview && <><Icon name="camera" /><span>Tirar foto ou escolher da galeria</span></>}
       </button>
@@ -444,7 +468,7 @@ export function PostCheckin() {
             <input type="checkbox" disabled={!fits(c)} checked={!!chosen[c.id] && fits(c)} onChange={e => setChosen(x => ({ ...x, [c.id]: e.target.checked }))} />
             <span>{c.name}</span><small className="muted">{fits(c) ? SCORING[c.scoring].name : 'só corrida'}{c.photo_required ? ' · foto' : ''}</small></label>)}</div>}
       </div>
-      {needsPhoto && <p className="muted small">Um dos desafios marcados pede foto.</p>}
+      {needsPhoto && <p className="muted small">{mode === 'photo' ? 'Escolha a foto do treino.' : 'Um dos desafios marcados pede foto.'}</p>}
       {err && <p className="cg-err">{err}</p>}
       <button type="button" className="cg-btn" disabled={busy || !targets.length || needsPhoto} onClick={post}>{busy ? 'Postando…' : 'Postar'}</button>
     </>}
