@@ -74,7 +74,8 @@ describe('nothing re-implements the rule', () => {
     })
     // `w.start || new Date(w.d)` and its spellings. history.js itself is where the rule lives.
     const handRolled = /\bstart\s*(\|\||\?\?)\s*(Number\()?new Date\s*\(/
-    const offenders = [...walk(root), ...walk(mcp)]
+    // CARGA removed the MCP server (mcp/); its folder is walked only when it is there
+    const offenders = [...walk(root), ...(fs.existsSync(mcp) ? walk(mcp) : [])]
       .filter(p => !p.endsWith(path.join('lib', 'history.js')))
       .filter(p => handRolled.test(fs.readFileSync(p, 'utf8')))
       .map(p => path.relative(root, p))

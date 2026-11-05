@@ -47,6 +47,12 @@ export const MODULES = [
   { id: 'seasonal', group: 'extras', icon: 'pumpkin', tint: 'var(--orange)', title: 'Seasonal themes',
     desc: 'Halloween, Christmas and the advent calendar. Spooky, festive, optional.' },
 ]
+// CARGA: the modules that need what this build does not have (the openGym server for the Coach and
+// the integrations, an app from the store for the watch and the health apps). They stay in the code,
+// off and out of sight, until there is a way for them to work. VITE_HIDDEN_MODULES overrides the
+// list; the test run sets it empty, so every module is there as upstream has them.
+export const HIDDEN_MODULES = new Set(((import.meta.env || {}).VITE_HIDDEN_MODULES ?? 'coach,integrations,watch,health').split(',').map(x => x.trim()).filter(Boolean))
+export const SHOWN_MODULES = MODULES.filter(m => !HIDDEN_MODULES.has(m.id))
 export const MODULE_IDS = MODULES.map(m => m.id)
 export const MODULE = Object.fromEntries(MODULES.map(m => [m.id, m]))
 
@@ -69,6 +75,7 @@ const isMap = v => !!v && typeof v === 'object' && !Array.isArray(v)
 
 /** Whether module `id` is on for this profile. Unknown ids are on (a newer client's module). */
 export function isOn(S, id) {
+  if (HIDDEN_MODULES.has(id)) return false
   const v = isMap(S?.modules) ? S.modules[id] : undefined
   if (typeof v === 'boolean') return v
   // Before 1.4.4 the check-in had its own switch in Look & Home; it decides until Modules does.

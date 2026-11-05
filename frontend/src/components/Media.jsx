@@ -7,8 +7,6 @@ import Icon from './Icon.jsx'
 import CustomMedia, { CustomThumb, LinkCard } from './CustomMedia.jsx'
 import { youtubeId, youtubeLinks } from '../lib/youtube.js'
 import { useAnimSources } from './Animations.jsx'
-import ExerciseFigure from './ExerciseFigure.jsx'
-import { OWN_FIGURES } from '../lib/brand.js'
 import { hasFrames, frameSrc, frameOrder, FRAME_MS } from '../lib/carga-frames.js'
 
 // An exercise's picture, wherever one shows. A custom exercise goes to CustomMedia.jsx — its own
@@ -20,35 +18,9 @@ export default function Media(p) {
   const custom = isCustomEx(p.ex)
   const links = youtubeLinks(p.notes).filter(url => !custom || youtubeId(url) !== youtubeId(p.ex?.url))
   return <>
-    {custom ? <CustomMedia {...p} /> : hasFrames(p.ex) ? <FramesMedia {...p} /> : OWN_FIGURES ? <OwnMedia {...p} /> : <BuiltinMedia {...p} />}
+    {custom ? <CustomMedia {...p} /> : hasFrames(p.ex) ? <FramesMedia {...p} /> : <BuiltinMedia {...p} />}
     {(!p.minimizable || size !== 'off') && links.map(url => <LinkCard key={url} url={url} compact={p.compact} mini={p.minimizable && size === 'mini'} />)}
   </>
-}
-
-// CARGA's own figure in place of the shipped clip (lib/brand.js OWN_FIGURES): the same card, the
-// same tap to pause and the same minimize control as BuiltinMedia below, with nothing to load.
-function OwnMedia({ ex, id, compact, minimizable }) {
-  const [playing, setPlaying] = useState(true)
-  const gifSize = useStore(s => s.S.gifSize)
-  const update = useStore(s => s.update)
-  if (minimizable && gifSize === 'off') return null
-  const mini = minimizable && gifSize === 'mini'
-  const toggleSize = e => { e.stopPropagation(); update(s => { s.gifSize = mini ? 'full' : 'mini' }) }
-  return (
-    <div className={'exmedia own' + (compact ? ' compact' : '') + (mini ? ' mini' : '')} id={id} role="img" aria-label={exerciseNameFor(ex)} onClick={() => setPlaying(v => !v)}>
-      <ExerciseFigure ex={ex} animate={playing} />
-      {minimizable && (
-        <button className="giftoggle" onClick={toggleSize}>
-          <Icon name={mini ? 'expand' : 'minimize'} />{mini ? t('Expand') : t('Minimize')}
-        </button>
-      )}
-      {!mini && (
-        <span className="gifhint">
-          <Icon name={playing ? 'pause' : 'play'} />{playing ? t('tap to pause') : t('tap to play')}
-        </span>
-      )}
-    </div>
-  )
 }
 
 // CARGA's character in three frames (lib/carga-frames.js): the same card, tap to pause and
@@ -131,7 +103,7 @@ function BuiltinMedia({ ex, id, compact, minimizable }) {
   return (
     <div className={'exmedia' + (compact ? ' compact' : '') + (mini ? ' mini' : '') + (failed === 'all' ? ' broken' : '')} id={id} onClick={onTap}>
       {failed === 'all'
-        ? <div className="exmedia-x"><ExerciseFigure ex={ex} body={body} /></div>
+        ? <div className="exmedia-x"><Icon name="dumbbell" /></div>
         : showGif && clip && clipSrc
           // No poster: Android's WebView went back to it at every loop and stalled there (the
           // still above stands in while the clip loads, so nothing is lost without it).
@@ -238,16 +210,13 @@ export function autoplayClip(el) {
 // broken-image glyph in a list of them (#281). The failure is remembered per image, so a list
 // that re-renders does not ask again; a new exercise in the same slot tries its own.
 export function Thumb(p) {
-  return isCustomEx(p.ex) ? <CustomThumb {...p} /> : hasFrames(p.ex) ? <img className="thumb" loading="lazy" decoding="async" draggable={false} src={frameSrc(p.ex, 0)} alt="" /> : OWN_FIGURES ? <OwnThumb {...p} /> : <BuiltinThumb {...p} />
-}
-function OwnThumb({ ex }) {
-  return <div className="thumb thumb-x thumb-own"><ExerciseFigure ex={ex} className="exfig-thumb" /></div>
+  return isCustomEx(p.ex) ? <CustomThumb {...p} /> : hasFrames(p.ex) ? <img className="thumb" loading="lazy" decoding="async" draggable={false} src={frameSrc(p.ex, 0)} alt="" /> : <BuiltinThumb {...p} />
 }
 function BuiltinThumb({ ex }) {
   const body = useStore(s => figureOf(s.S))
   const src = ex.img ? imgSrc(ex, body) : null
   const [broken, setBroken] = useState(null)
   if (!src) return <div className="thumb thumb-x"><Icon name="dumbbell" /></div>
-  if (broken === src) return <div className="thumb thumb-x"><ExerciseFigure ex={ex} body={body} className="exfig-thumb" /></div>
+  if (broken === src) return <div className="thumb thumb-x"><Icon name="dumbbell" /></div>
   return <img className="thumb" loading="lazy" decoding="async" draggable={false} src={src} alt="" onError={() => setBroken(src)} />
 }

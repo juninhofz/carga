@@ -33,7 +33,7 @@ import CargaMark from '../components/CargaMark.jsx'
 import { ChallengesCard } from '../components/Challenges.jsx'
 import { LevelCard } from '../components/LevelCard.jsx'
 import { isOn } from '../lib/modules.js'
-import { APP_NAME } from '../lib/brand.js'
+import { APP_NAME, OPENGYM_EXTRAS } from '../lib/brand.js'
 
 // Home = what to do now + a quick glance. Deep charts & history live in Stats.
 export default function Home() {
@@ -135,13 +135,13 @@ export default function Home() {
     </div>
 
     {/* Monday: Your week; the 1st: Your month (lib/recap.js). Off in Settings → Look & Home. */}
-    <RecapHomeCard S={S} />
+    {OPENGYM_EXTRAS && <RecapHomeCard S={S} />}
 
     {/* Christmas (lib/seasonal.js): the advent calendar's card, 1 to 24 December, from the theme's chunk. */}
     <SeasonDeco spot="home-advent" />
 
     {/* December and January: the year in openGym is ready (lib/wrapped.js homeCardYear). */}
-    {on('motivation') && <WrappedHomeCard S={S} />}
+    {OPENGYM_EXTRAS && on('motivation') && <WrappedHomeCard S={S} />}
 
     {/* What has rested and what is still recovering, kindly (lib/recovery-hint.js). */}
     {on('health') && <RecoveryHint S={S} />}
@@ -273,7 +273,7 @@ export default function Home() {
 
     {/* The streak opens its calendar from its text (CardHead open); the weekly-sets line and the
         party banner are buttons of their own beside it, not inside a card that is a button. */}
-    {on('motivation') ? <div className="card tap-host streak-card">
+    {OPENGYM_EXTRAS && on('motivation') ? <div className="card tap-host streak-card">
       <SeasonDeco spot="home-streak" />
       {/* in season, a Santa hat on the flame (components/Seasonal.jsx) */}
       <CardHead className="streak-head" glyph={<span className="streak-flame-wrap"><StreakFlame lit={streak.current > 0} /><SeasonDeco spot="streak-flame" /></span>}

@@ -11,10 +11,15 @@ export const BRAND_LANG = ENV.VITE_DEFAULT_LANG ?? 'pt-BR'
 // Whether a translated exercise name also shows the English one in brackets, until someone sets
 // it in Settings. CARGA shows the translation alone; the test run keeps the upstream default (on).
 export const ENGLISH_NAME_HINT = ENV.VITE_ENGLISH_NAME_HINT === '1'
-// Whether exercises show CARGA's own animated figure (lib/carga-figure.js) instead of the shipped
-// media, which this build does not carry. The test run turns it off, so the upstream media suites
-// keep testing the stills and clips.
-export const OWN_FIGURES = (ENV.VITE_OWN_FIGURES ?? '1') === '1'
+// openGym's own streak card, week and month recaps and "your year in openGym" on Home. CARGA has
+// its rank, levels, missions and the challenges' medals in their place, so they are off; the code
+// stays for a CARGA year in review later. The monthly challenges are not part of this: they count
+// for the rank. The test run turns them on, as upstream has them.
+export const OPENGYM_EXTRAS = (ENV.VITE_OPENGYM_EXTRAS ?? '0') === '1'
+// The languages offered in Settings. The other packs stay in the app (a phone set to one of them
+// still gets it), only the choice is shorter: CARGA is written in Brazilian Portuguese. The test
+// run sets it empty, which offers every language as upstream does.
+export const SHOWN_LANGS = (ENV.VITE_SHOWN_LANGS ?? 'pt-BR,en,es').split(',').map(x => x.trim()).filter(Boolean)
 // Whether a finished activity is kept as it was: no editing, no new date or duration, no deleting
 // (a workout or a run counts for the rank and the challenges, so its record stays). The test run
 // turns it off, so the upstream suites keep testing the edits.

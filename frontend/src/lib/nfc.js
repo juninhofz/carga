@@ -10,6 +10,7 @@
 // Anywhere else nfcSupport() answers false and the NFC rows stay away.
 //
 // Only NDEF stickers of our own: no card emulation, nothing that reads or copies a gym card.
+import { LOCAL_WEB } from './local-web.js'
 import { MOBILE } from './mobile.js'
 import { platformNow } from './platform-now.js'
 
@@ -32,6 +33,9 @@ export function nfcSupport() {
   return supportP
 }
 async function askSupport() {
+  // CARGA on the web: the stickers' links point at openGym's site, so they would open the wrong
+  // app; the stickers wait for CARGA's store app (and its own links)
+  if (LOCAL_WEB) return { supported: false, enabled: false }
   if (webNfc()) return { supported: true, enabled: true, web: true }
   try {
     const w = await nfcPlugin()

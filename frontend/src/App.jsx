@@ -63,7 +63,7 @@ import Run, { useRunLive } from './views/Run.jsx'
 import { ChallengesHome, CreateChallenge, JoinByLink, ChallengePage, PostCheckin } from './views/Challenges.jsx'
 import { NotesLive, NotesPage } from './components/Notes.jsx'
 import Workout from './views/Workout.jsx'
-import { ENGLISH_NAME_HINT } from './lib/brand.js'
+import { ENGLISH_NAME_HINT, OPENGYM_EXTRAS } from './lib/brand.js'
 
 // Screens most sessions never open (the Coach, the admin dashboard, photos, measurements, the
 // balance check) are their own chunks rather than part of the code every start parses: ~200 KB
@@ -410,7 +410,7 @@ function Shell() {
           over a running workout or the first-launch screens. */}
       {authed && !needsMobileOnboarding && !permSteps && <SeasonalLayer hidden={inWorkout || loc.pathname === '/workout'} />}
       {/* Your year in openGym (components/WrappedEntry.jsx): nothing loaded until it is opened. */}
-      {authed && isOn(S, 'motivation') && <WrappedLayer ready={setupDone} />}
+      {authed && OPENGYM_EXTRAS && isOn(S, 'motivation') && <WrappedLayer ready={setupDone} />}
     </>
   )
 }

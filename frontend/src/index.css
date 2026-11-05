@@ -1232,22 +1232,7 @@ button.whdr-gym{color:var(--acc-ink);cursor:pointer}
 /* both the animation and the still failed to load: a neutral tile instead of the browser's
    broken-image glyph; same heights as the picture so the card does not jump. tap retries. */
 .exmedia.broken{background:var(--surface-2)}
-/* CARGA's own figure (components/ExerciseFigure.jsx): orange on the app's dark ground, in either theme */
-.exmedia.own,.thumb-own{background:radial-gradient(100% 80% at 50% 35%,#242424 0%,#121212 78%)}
-.exmedia.own .cfig{height:320px;padding:4%}
-.exmedia.own.compact .cfig{height:120px}
-.exmedia.own.mini .cfig{height:84px}
-.cfig svg{width:100%;height:100%;display:block}
-.thumb-own .cfig{padding:3px}
 .exmedia-x{width:100%;height:320px;display:flex;align-items:center;justify-content:center;color:var(--label-3);font-size:34px}
-/* no media in this build: the exercise's muscles on the body map (components/ExerciseFigure.jsx) */
-.exfig{width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:6%}
-.exfig .bodymap{width:100%;height:100%;gap:6%;align-items:center}
-.exfig .bm-v{height:100%;max-height:none}
-.exfig .bm-ph{height:100%}
-.exfig-thumb{padding:4px}
-.exfig-thumb .bodymap{gap:1px}
-.exfig-thumb .bm-v path{stroke-width:3}
 .exmedia.compact .exmedia-x{height:120px}
 .exmedia.mini .exmedia-x{height:84px}
 /* a custom exercise's own video (components/CustomMedia.jsx): the same box as a picture, on black

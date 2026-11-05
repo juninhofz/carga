@@ -97,7 +97,7 @@ import { openSeasonal } from '../components/Seasonal.jsx'
 import { useNfcSupported, nfcStickerSheet } from '../components/Nfc.jsx'
 import { dailyModeOf, settleAll } from '../lib/weigh-ins.js'
 import { voiceShortcutsSheet, voiceRowTitle } from '../components/VoiceShortcuts.jsx'
-import { ENGLISH_NAME_HINT, APP_NAME, SOURCE_URL } from '../lib/brand.js'
+import { ENGLISH_NAME_HINT, APP_NAME, SOURCE_URL, SHOWN_LANGS } from '../lib/brand.js'
 
 /* Settings (v1.3.11). The root is one screen: an account card, eleven rows that each open a page
    (/settings/<page>), and a search over every row. Rare things live one level further down
@@ -870,7 +870,7 @@ export default function Settings({ page = null, find = null, via = null, entryKe
         <SelectRow
           icon="globe" iconTint="var(--blue)" title={t('Language')}
           value={lang} onChange={v => update(s => { s.lang = v; s.langAuto = false })}
-          options={Object.entries(LANGS).map(([k, name]) => ({
+          options={Object.entries(LANGS).filter(([k]) => !SHOWN_LANGS.length || SHOWN_LANGS.includes(k) || k === lang).map(([k, name]) => ({
             value: k, label: name,
             subtitle: INSTR_LANGS.includes(k) ? null : t("Exercise instructions aren't translated into this language yet, so they stay in English."),
           }))}

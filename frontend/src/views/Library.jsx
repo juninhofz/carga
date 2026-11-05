@@ -84,7 +84,6 @@ export default function Library() {
   return <>
     <div className="hdr lib-hdr"><div><h1>{t('Exercises')}</h1></div>
       <Button size="sm" variant="tinted" icon="figureStrength" onClick={() => nav('/muscles')}>{t('By muscle')}</Button>
-      {/* This build ships no exercise media: CARGA's own figure stands in (components/ExerciseFigure.jsx). */}
       <div className="sub lib-count">{t('{0} exercises', EXDB.length + ownCount)}</div>
     </div>
     <div className="search-row" data-tour="lib-search" style={{ marginBottom: 10 }}><div className={'search' + (narrowed ? ' has-count' : '') + (q ? ' has-clear' : '')}><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
