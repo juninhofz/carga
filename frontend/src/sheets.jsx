@@ -3288,7 +3288,7 @@ function WorkoutDetail({ w, close }) {
     {/* The editor starts from the record as it is, so a note typed here goes in first — the same
         flush the date row does, and the unmount hook then has nothing left to write over it. */}
     {/* CARGA: the workout as one of the activity pictures, the same as at its finish (components/ShareActivity.jsx) */}
-    {LOCKED_HISTORY && <><Button variant="tinted" icon="share" onClick={() => ui().openSheet(close2 => <ShareActivity data={gymShareData(st, w, workoutStatus(st.workouts, w, x => sessionVolume(x, st), Array.isArray(w.prs) ? w.prs : []))} name={'carga-treino-' + (w.d || 'hoje') + '.png'} close={close2} />)}>{t('Share')}</Button>
+    {LOCKED_HISTORY && <><Button variant="tinted" icon="share" onClick={() => ui().openSheet(close2 => <ShareActivity data={gymShareData(st, w, workoutStatus(st.workouts, w, x => sessionVolume(x, st), Array.isArray(w.prs) ? w.prs : []))} name={'carga-treino-' + (w.d || 'hoje') + '.png'} close={close2} postKey={'w-' + w.id} />)}>{t('Share')}</Button>
     <div style={{ height: 8 }} /></>}
     {!LOCKED_HISTORY && <><Button icon="pencil" data-tour="wd-edit" disabled={!!st.active} onClick={() => {
       flushNote()
@@ -4074,7 +4074,7 @@ function FinishSummary({ w, prs, e1prs = [], additions = [], close }) {
       {/* CARGA: post it to the group challenges (views/Challenges.jsx picks the newest activity) */}
       {signedIn && <Button variant="tinted" icon="trophy" onClick={() => closeThenNav(close, '/desafios/postar')}>Postar nos desafios</Button>}
       {/* CARGA: the workout as one of the activity pictures (components/ShareActivity.jsx) */}
-      <Button variant="tinted" icon="share" data-fin-share onClick={() => ui().openSheet(close2 => <ShareActivity data={gymShareData(st, S().workouts.find(x => x.id === w.id) || w, workoutStatus(st.workouts, w, x => sessionVolume(x, st), prs))} name={'carga-treino-' + (w.d || 'hoje') + '.png'} close={close2} />)}>{t('Share')}</Button>
+      <Button variant="tinted" icon="share" data-fin-share onClick={() => ui().openSheet(close2 => <ShareActivity data={gymShareData(st, S().workouts.find(x => x.id === w.id) || w, workoutStatus(st.workouts, w, x => sessionVolume(x, st), prs))} name={'carga-treino-' + (w.d || 'hoje') + '.png'} close={close2} postKey={'w-' + w.id} />)}>{t('Share')}</Button>
     </div>
     <div style={{ height: 14 }} />
     <h4 className="sec" style={{ textAlign: 'start' }}>{t('What you just trained')}</h4>

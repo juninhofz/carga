@@ -260,7 +260,7 @@ function RunDetail({ id }) {
   const fastest = run.splits?.length ? Math.min(...run.splits) : 0
   const slowest = run.splits?.length ? Math.max(...run.splits) : 0
   const rename = name => useStore.getState().update(s => { const r = (s.runs || []).find(x => x.id === id); if (r && name.trim()) { r.name = name.trim().slice(0, 80); r._ts = Date.now() } })
-  const share = () => useUI.getState().openSheet(close => <ShareActivity data={runShareData(run, status)} name={'carga-' + run.type + '-' + runDay(run) + '.png'} close={close} />)
+  const share = () => useUI.getState().openSheet(close => <ShareActivity data={runShareData(run, status)} name={'carga-' + run.type + '-' + runDay(run) + '.png'} close={close} postKey={'r-' + run.id} />)
   const restKm = run.distM - (run.splits?.length || 0) * 1000
   const restSec = run.movingSec - (run.splits || []).reduce((a, b) => a + b, 0)
   return <div className="narrow run">

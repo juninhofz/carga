@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import { handOff } from '../lib/post-handoff.js'
+import { useCloud } from './CloudAccount.jsx'
 import Icon from './Icon.jsx'
 import { MODELS, GYM_MODELS, drawShare } from '../lib/share-card.js'
 import { shareImage } from '../lib/share-image.js'
@@ -38,7 +40,8 @@ export function runShareData(run, status) {
 }
 
 const ROMAN = ['I', 'II', 'III', 'IV', 'V']
-export default function ShareActivity({ data: given, name = 'carga.png', close }) {
+export default function ShareActivity({ data: given, name = 'carga.png', close, postKey = '' }) {
+  const signedIn = !!useCloud(c => c.user)
   // the rank card model draws this person's card as it stands now
   const S = useStore(s => s.S)
   const data = useRef(null)
@@ -86,5 +89,7 @@ export default function ShareActivity({ data: given, name = 'carga.png', close }
     {model === 'photo' && <button type="button" className="sha-photo" onClick={() => file.current?.click()}><Icon name="camera" />{photo ? 'Trocar a foto' : 'Escolher uma foto'}</button>}
     <input ref={file} type="file" accept="image/*" hidden onChange={onPhoto} />
     <button type="button" className="sha-go" disabled={!img?.blob || busy} onClick={share}><Icon name="share" />Compartilhar</button>
+    {/* CARGA: the same activity straight into a challenge, this picture as its photo */}
+    {postKey && signedIn && <button type="button" className="sha-post" disabled={!img?.blob} onClick={() => { handOff({ key: postKey, photo: img.blob }); close?.(); location.hash = '#/desafios/postar' }}><Icon name="trophy" />Postar num desafio</button>}
   </div>
 }

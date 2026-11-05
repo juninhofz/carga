@@ -4202,3 +4202,8 @@ body:has(.run-live) #tabbar{display:none}
 .own-dev-r span{text-align:start;font-weight:700}
 .own-dev-r b{font:italic 900 24px/1 "Barlow Condensed","Arial Narrow",Impact,sans-serif;font-variant-numeric:tabular-nums}
 .own-dev-r b:last-child{color:#ff8a3d}
+
+/* CARGA: post the shared activity straight into a challenge */
+.sha-post{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:8px;border:0;border-radius:14px;padding:13px;background:rgba(255,107,0,.14);color:#ff8a3d;font:800 16px/1 inherit;cursor:pointer}
+.sha-post:disabled{opacity:.5}
+.sha-post svg{width:18px;height:18px}

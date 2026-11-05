@@ -7,6 +7,7 @@ import { CLOUD_ON } from '../lib/cloud.js'
 import { StatusBadge } from '../components/StatusReveal.jsx'
 import { STATUS_DEFS } from '../lib/status-art.js'
 import { activitiesOf } from '../lib/activity-sync.js'
+import { takeHandOff } from '../lib/post-handoff.js'
 // the status chips draw their icons from these symbols (StatusReveal puts them in only where it plays)
 const StatusDefs = () => <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true" dangerouslySetInnerHTML={{ __html: '<defs>' + STATUS_DEFS + '</defs>' }} />
 import { PersonPhoto } from '../components/ProfilePhoto.jsx'
@@ -672,19 +673,26 @@ function Chat({ c, members, me, people = {} }) {
 /* ---------- posting a check-in ---------- */
 
 /** The activities of the last week that can be posted, newest first. */
+const gymAct = (S, w) => {
+  const st = workoutStatus(S.workouts, w, x => sessionVolume(x, S), Array.isArray(w.prs) ? w.prs : [])
+  const sets = (w.entries || []).reduce((n, e) => n + (e.sets || []).filter(s => s && s.done).length, 0)
+  return workoutActivity(w, st, { volume: sessionVolume(w, S), sets, lifts: liftsOf(w, S.unit) })
+}
+/** An activity of mine as a check-in, by key: 'w-<workout id>' or 'r-<run id>' (the share sheet hands one in). */
+export function activityByKey(S, key) {
+  if (!key) return null
+  if (key.startsWith('r-')) { const r = (S.runs || []).find(x => 'r-' + x.id === key); return r ? runActivity(r, runStatus(S.runs, r)) : null }
+  const w = (S.workouts || []).find(x => 'w-' + x.id === key)
+  return w ? gymAct(S, w) : null
+}
+
 function useRecentActivities() {
   const S = useStore(s => s.S)
   return useMemo(() => {
     const from = Date.now() - 8 * 86400000
     const out = []
     for (const r of (S.runs || []).filter(r => r.start >= from)) out.push({ at: r.start, label: r.name, act: () => runActivity(r, runStatus(S.runs, r)) })
-    for (const w of (S.workouts || []).filter(w => (w.start || 0) >= from)) {
-      out.push({ at: w.start, label: w.name || 'Treino', act: () => {
-        const st = workoutStatus(S.workouts, w, x => sessionVolume(x, S), Array.isArray(w.prs) ? w.prs : [])
-        const sets = (w.entries || []).reduce((n, e) => n + (e.sets || []).filter(s => s && s.done).length, 0)
-        return workoutActivity(w, st, { volume: sessionVolume(w, S), sets, lifts: liftsOf(w, S.unit) })
-      } })
-    }
+    for (const w of (S.workouts || []).filter(w => (w.start || 0) >= from)) out.push({ at: w.start, label: w.name || 'Treino', act: () => gymAct(S, w) })
     return out.sort((a, b) => b.at - a.at)
   }, [S.runs, S.workouts])
 }
@@ -695,7 +703,10 @@ export function PostCheckin() {
   const user = useCloud(s => s.user)
   const recent = useRecentActivities()
   const [pick, setPick] = useState(0)
-  const given = loc.state?.activity || null
+  const S = useStore(s => s.S)
+  // from the share sheet (lib/post-handoff.js): the activity by its key, and the picture made there as the post's photo
+  const [handoff] = useState(() => takeHandOff())
+  const given = useMemo(() => loc.state?.activity || activityByKey(S, handoff?.key) || null, [loc.state, handoff])
   // 'app': an activity recorded in CARGA, counts whole; 'photo': a photo and what was done, counts half
   const [mode, setMode] = useState('app')
   const [man, setMan] = useState({ title: '', kind: 'gym', minutes: '', km: '' })
@@ -704,8 +715,9 @@ export function PostCheckin() {
   const activity = mode === 'photo' ? manualActivity(man) : fromApp
   const [list, setList] = useState(null)
   const [chosen, setChosen] = useState({})
-  const [photo, setPhoto] = useState(null)
-  const [preview, setPreview] = useState(null)
+  const handed = handoff?.photo instanceof Blob ? handoff.photo : null
+  const [photo, setPhoto] = useState(handed)
+  const [preview, setPreview] = useState(() => (handed ? URL.createObjectURL(handed) : null))
   const [caption, setCaption] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
