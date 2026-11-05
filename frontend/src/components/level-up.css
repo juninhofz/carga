@@ -1,0 +1,38 @@
+/* CARGA: the level-up (components/LevelUp.jsx): one more plate on the bar */
+.lvup{position:fixed;inset:0;z-index:300;display:grid;place-items:center;padding:24px;background:rgba(8,6,5,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);animation:lvup-in .25s ease-out both}
+.lvup-stage{position:relative;width:min(340px,100%);height:360px;border-radius:24px;overflow:hidden;background:radial-gradient(circle at 50% 40%,#231a15,#0f0c0b 72%);color:#f6eee8;box-shadow:0 20px 60px rgba(0,0,0,.5),inset 0 0 0 1px rgba(255,107,0,.25)}
+.lvup-stage svg{position:absolute;left:0;top:40px;width:100%;height:220px}
+.lvup-bar{fill:#cfd3d8}
+.lvup-old{fill:#2b2b2b;stroke:#4a4440;stroke-width:2}
+.lvup-new{fill:#ff6b00;stroke:#ffb06b;stroke-width:2}
+.lvup-collar{fill:#e5e5e5}
+.lvup-hit{fill:none;stroke:#ffd166;stroke-width:3;opacity:0;transform-box:fill-box;transform-origin:center}
+.lvup-count{position:absolute;left:0;right:0;top:26px;text-align:center;font:800 15px "Barlow Condensed","Arial Narrow",Impact,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#a8968a}
+.lvup-count b{display:inline-block;color:#f6eee8;font:italic 900 28px/1 "Barlow Condensed","Arial Narrow",Impact,sans-serif;letter-spacing:0;margin-left:6px;vertical-align:-4px}
+.lvup-plus{position:absolute;left:0;right:0;top:128px;text-align:center;font:italic 900 28px "Barlow Condensed","Arial Narrow",Impact,sans-serif;color:#ffd166;opacity:0}
+.lvup-cap{position:absolute;left:0;right:0;bottom:26px;display:grid;justify-items:center;gap:4px;padding:0 16px;text-align:center}
+.lvup-t{font:italic 900 36px/1 "Barlow Condensed","Arial Narrow",Impact,sans-serif;text-transform:uppercase}
+.lvup-t em{color:#ff6b00;font-style:inherit}
+.lvup-s{font:600 14px/1.3 inherit;color:#a8968a}.lvup-s b{color:#f6eee8}
+.lvup-nl{animation:lvup-inL .5s .3s cubic-bezier(.5,0,.6,1.3) both}
+.lvup-nr{animation:lvup-inR .5s .3s cubic-bezier(.5,0,.6,1.3) both}
+.lvup-cl{animation:lvup-clL .22s .9s ease-out both}
+.lvup-cr{animation:lvup-clR .22s .9s ease-out both}
+.lvup-hit{animation:lvup-hit .45s .79s ease-out both}
+.lvup-rig{animation:lvup-clank .3s .79s ease-out}
+.lvup-count b{animation:lvup-flip .5s 1.05s cubic-bezier(.3,1.6,.5,1) both}
+.lvup-plus{animation:lvup-plus 1s .85s ease-out both}
+.lvup-t{animation:lvup-slam .45s 1.25s cubic-bezier(.2,1.6,.4,1) both}
+.lvup-s{animation:lvup-fade .5s 1.6s both}
+@keyframes lvup-in{from{opacity:0}to{opacity:1}}
+@keyframes lvup-inL{from{transform:translateX(-170px)}to{transform:none}}
+@keyframes lvup-inR{from{transform:translateX(170px)}to{transform:none}}
+@keyframes lvup-clL{from{transform:translateX(-26px);opacity:0}to{transform:none;opacity:1}}
+@keyframes lvup-clR{from{transform:translateX(26px);opacity:0}to{transform:none;opacity:1}}
+@keyframes lvup-hit{0%{opacity:1;transform:scale(.4)}100%{opacity:0;transform:scale(1.6)}}
+@keyframes lvup-clank{0%{transform:none}30%{transform:translateY(5px)}60%{transform:translateY(-2px)}100%{transform:none}}
+@keyframes lvup-flip{0%{transform:rotateX(90deg);opacity:0}100%{transform:none;opacity:1}}
+@keyframes lvup-plus{0%{opacity:0;transform:translateY(10px)}25%{opacity:1}100%{opacity:0;transform:translateY(-40px)}}
+@keyframes lvup-slam{0%{opacity:0;transform:scale(2.2)}100%{opacity:1;transform:none}}
+@keyframes lvup-fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.lvup,.lvup *{animation:none!important}}

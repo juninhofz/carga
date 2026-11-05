@@ -4118,3 +4118,13 @@ body:has(.run-live) #tabbar{display:none}
 
 /* the reactions are the phone's emoji */
 .cg-react .cg-emoji{font-size:18px;line-height:1;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+
+/* CARGA: History with every activity: the kind chips, the route thumbnail, the status chip */
+.hist-kinds{display:flex;gap:6px;overflow-x:auto;margin:0 0 12px;padding-bottom:2px;scrollbar-width:none}
+.hist-kinds .chip{flex:none;border:0;border-radius:999px;background:var(--surface-2,rgba(127,127,127,.12));color:inherit;font:600 14px/1 inherit;padding:8px 13px;cursor:pointer}
+.hist-kinds .chip.on{background:#ff6b00;color:#fff}
+.hist-thumb{width:34px;height:34px;border-radius:8px;overflow:hidden;flex:none;display:grid;place-items:center}
+.hist-thumb > *{width:34px!important;height:34px!important}
+.hist-st{flex:none;display:inline-flex}
+.hist-st .sr-chip{font-size:11px;padding:3px 8px 3px 5px;gap:4px}
+.hist-st .sr-chip svg{width:13px;height:13px}

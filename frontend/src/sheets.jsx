@@ -1,5 +1,5 @@
 import { Fragment, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
-import StatusReveal from './components/StatusReveal.jsx'
+import StatusReveal, { StatusBadge } from './components/StatusReveal.jsx'
 import { workoutStatus } from './lib/activity-status.js'
 import ShareActivity from './components/ShareActivity.jsx'
 import { useCloud } from './components/CloudAccount.jsx'
@@ -3423,16 +3423,19 @@ function Calendar({ start, close }) {
 export const calendarSheet = start => ui().openSheet(close => <Calendar start={start} close={close} />)
 
 /* shared small workout row (used in lists) */
-export function WorkoutRow({ w, onClick, tour }) {
+// CARGA: History passes the status chip and the start time, so a gym session and a class on the
+// same day read as two things
+export function WorkoutRow({ w, onClick, tour, status = null, time = '' }) {
   const st = useStore(s => s.S)
   const glyph = glyphOf((st.routines.find(r => r.id === w.routineId) || {}).emoji)
   const mediaN = workoutMediaCount(w)
   return <div className="item" data-tour={tour} {...tappable(onClick)}>
     <span className="lrow-i" style={{ width: 34, height: 34, borderRadius: 8, fontSize: 19 }}><Icon name={glyph} /></span>
     <div className="grow"><div className="tt">{w.name}</div>
-      <div className="ss">{[fmtDate(w.d, true), ...durPart(w.end - w.start), tn('{0} set', '{0} sets', setsDone(w)), fmtVol(sessionVolume(w, st), st.unit)].join(' · ')}</div></div>
+      <div className="ss">{[fmtDate(w.d, true) + (time ? ' · ' + time : ''), ...durPart(w.end - w.start), tn('{0} set', '{0} sets', setsDone(w)), fmtVol(sessionVolume(w, st), st.unit)].join(' · ')}</div></div>
     {mediaN > 0 && <span className="wrow-media" title={tn('{0} photo or video', '{0} photos or videos', mediaN)} aria-label={tn('{0} photo or video', '{0} photos or videos', mediaN)}><Icon name="image" />{mediaN}</span>}
     {w.prs && w.prs.length > 0 && <span className="pr"><Icon name="trophy" />{w.prs.length} PR</span>}
+    {status && <span className="hist-st"><StatusBadge status={status} /></span>}
     <Icon name="chevronRight" className="chev" />
   </div>
 }

@@ -10,6 +10,7 @@ import { medalSVG, medalSummary } from '../lib/medals.js'
 import { RankCard, RankUp, CardView } from './RankCard.jsx'
 import { useCloud } from './CloudAccount.jsx'
 import { PartyBanner, PARTY_MS } from './Streak.jsx'
+import LevelUp from './LevelUp.jsx'
 import {
   levelCard, TIERS, PTS, DECAY, tickDaily, STREAK_MAX, monthAllPts, startPause, endPause,
 } from '../lib/carga-level.js'
@@ -117,9 +118,11 @@ export function LevelCard({ S, now, after = null }) {
   const [open, setOpen] = useState(false)
   const [party, setParty] = useState(null)
   const [rankUp, setRankUp] = useState(null)
+  const [levelUp, setLevelUp] = useState(null)
   const [viewing, setViewing] = useState(false)
   const closeParty = useCallback(() => setParty(null), [])
   const closeRankUp = useCallback(() => setRankUp(null), [])
+  const closeLevelUp = useCallback(() => setLevelUp(null), [])
   const closeView = useCallback(() => setViewing(false), [])
   const xp = { into: L.into, step: L.step }
   const W = L.week
@@ -131,7 +134,8 @@ export function LevelCard({ S, now, after = null }) {
     if (seen) {
       const seenRank = Math.max(0, Math.min(TIERS.length - 1, seen.rank ?? 0))
       if (L.rank !== seenRank) setRankUp({ from: seenRank, to: L.rank, down: L.rank < seenRank })
-      else if (L.level > seen.level) setParty({ kind: 'level', text: t('Level {0}! {1}', L.level, levelName(L)), icon: '⬆️' })
+      // CARGA: a new level is one more plate on the bar (components/LevelUp.jsx)
+      else if (L.level > seen.level) setLevelUp({ level: L.level, name: levelName(L), left: Math.max(0, L.step - L.into) })
       else if (W && W.allDone && !(seen.all === W.key)) setParty({ kind: 'week', text: t('All missions done: +{0}', W.bonus), icon: '⚡' })
       else if (W && W.missions.some(p => p.done && !(seen.done || []).includes(W.key + '|' + p.id))) setParty({ kind: 'week', text: t('Mission done: +{0}', W.missionPts), icon: '✔️' })
     }
@@ -170,6 +174,7 @@ export function LevelCard({ S, now, after = null }) {
         </div>
       </div>
       {L.risk && prev && <div className="lv-risk small">⚠ {t('Your Carga is dropping. Train this week or your card goes back to Rank {0}.', prev.r)}</div>}
+      {levelUp && <LevelUp level={levelUp.level} name={levelName(L)} left={levelUp.left} onClose={closeLevelUp} />}
       {party && <PartyBanner text={party.text} icon={<span className="lv-party-icon">{party.icon}</span>} className={'lv-party ' + party.kind} onClose={closeParty} />}
     </div>
 
