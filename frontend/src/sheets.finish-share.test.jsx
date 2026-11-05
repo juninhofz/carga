@@ -65,6 +65,6 @@ describe('finish summary: Share', () => {
     await settle()
     expect(host.querySelector('.sha-h b').textContent).toBe('Compartilhar')
     const labels = [...host.querySelectorAll('.sha-m')].map(b => b.textContent)
-    expect(labels).toEqual(['Escuro', 'Laranja', 'Com foto', 'Adesivo'])
+    expect(labels).toEqual(['CARGA', 'Recibo', 'Carta de rank', 'Com foto'])
   })
 })

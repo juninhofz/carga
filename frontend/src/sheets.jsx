@@ -4041,7 +4041,7 @@ function gymShareData(st, w, status) {
     title: w.name || 'Treino', status, statusLabel: status ? status.name : '',
     big: min >= 60 ? { v: Math.floor(min / 60) + ':' + String(min % 60).padStart(2, '0'), u: 'h' } : { v: String(min), u: 'min' },
     stats: [['Volume', vol >= 1000 ? (vol / 1000).toFixed(1).replace('.', ',') + ' t' : Math.round(vol) + ' ' + st.unit], ['Séries', String(list.reduce((n, x) => n + Number(x[1].split('×')[0]), 0))], ['Exerc.', String(list.length)]],
-    segments: null, list,
+    segments: null, list, at: w.start,
   }
 }
 
