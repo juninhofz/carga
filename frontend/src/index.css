@@ -691,6 +691,9 @@ h4.sec{
      darker pill so its white text no longer depends on what the picture shows behind it. */
   .exmedia .gifhint,.exmedia .giftoggle,.mback{-webkit-backdrop-filter:none;backdrop-filter:none}
   .exmedia .gifhint,.exmedia .giftoggle{background:rgba(0,0,0,.8)}
+
+  /* CARGA: its glass surfaces, solid for people who ask for less transparency */
+  .cg-glass,.cg-lead,.note-banner,.cg-ph-badges .cg-seal,.cg-ph-badges .sr-chip{-webkit-backdrop-filter:none;backdrop-filter:none}
 }
 
 /* ------------------------------------------------------------ week strip -- */

@@ -260,7 +260,6 @@ function RunDetail({ id }) {
   const fastest = run.splits?.length ? Math.min(...run.splits) : 0
   const slowest = run.splits?.length ? Math.max(...run.splits) : 0
   const rename = name => useStore.getState().update(s => { const r = (s.runs || []).find(x => x.id === id); if (r && name.trim()) { r.name = name.trim().slice(0, 80); r._ts = Date.now() } })
-  const remove = () => { if (window.confirm('Apagar esta atividade?')) { useStore.getState().update(s => { s.runs = (s.runs || []).filter(x => x.id !== id) }); nav('/corrida', { replace: true }) } }
   const share = () => useUI.getState().openSheet(close => <ShareActivity data={runShareData(run, status)} name={'carga-' + run.type + '-' + runDay(run) + '.png'} close={close} />)
   const restKm = run.distM - (run.splits?.length || 0) * 1000
   const restSec = run.movingSec - (run.splits || []).reduce((a, b) => a + b, 0)
@@ -314,7 +313,7 @@ function RunDetail({ id }) {
       {Object.entries(best).map(([m, sec]) => <div key={m} className="run-effort"><span>{EFFORT_NAMES[m]}</span><b>{fmtClock(sec * 1000)}</b></div>)}
     </div>}
 
-    <button type="button" className="run-delete" onClick={remove}><Icon name="trash" /> Apagar atividade</button>
+    {/* a saved activity stays in the history for good: it counts for the rank and the challenges */}
   </div>
 }
 

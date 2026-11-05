@@ -36,3 +36,4 @@
 @keyframes lvup-slam{0%{opacity:0;transform:scale(2.2)}100%{opacity:1;transform:none}}
 @keyframes lvup-fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.lvup,.lvup *{animation:none!important}}
+@media (prefers-reduced-transparency:reduce){.lvup{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(8,6,5,.94)}}

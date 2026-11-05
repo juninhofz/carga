@@ -2,6 +2,7 @@
 // who share a challenge with you can see, on your profile, what you have been doing day by day: what
 // it was, when, how long, how far and its status. The workout itself (exercises, sets, weights) stays
 // on the phone. Runs only when signed in; the last list sent is remembered, so nothing is sent twice.
+// A saved activity is kept for good: the database ignores changes to it and refuses to delete it.
 import { cloud, currentUser } from './cloud.js'
 import { runStatus, workoutStatus } from './activity-status.js'
 import { sessionVolume } from './history.js'
@@ -45,10 +46,7 @@ export async function syncActivities(S) {
       const { error } = await cloud().from('activities').upsert(rows, { onConflict: 'user_id,id' })
       if (error) return
     }
-    // an activity deleted on the phone leaves the profile too
-    const keep = rows.map(r => '"' + r.id.replace(/"/g, '') + '"').join(',')
-    const q = cloud().from('activities').delete().eq('user_id', (await currentUser()).id)
-    await (rows.length ? q.not('id', 'in', '(' + keep + ')') : q)
+    // nothing is ever taken back: a saved activity stays in the history (the database keeps it too)
     try { localStorage.setItem(SENT, sig) } catch { /* private mode */ }
   } catch { /* offline: next time */ } finally { busy = false }
 }

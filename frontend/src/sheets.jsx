@@ -105,7 +105,7 @@ import { copyText } from './lib/clipboard.js'
 import { queueRemaining, pinState } from './lib/queue.js'
 import { DAY_NOTE_TAGS, DAY_NOTE_LABEL, DAY_NOTE_ICON, dayNoteOf, dayNoteLine, canNoteDay, withDayNote } from './lib/day-notes.js'
 import { isOn } from './lib/modules.js'
-import { APP_NAME } from './lib/brand.js'
+import { APP_NAME, LOCKED_HISTORY } from './lib/brand.js'
 
 const S = () => useStore.getState().S
 const update = (...a) => useStore.getState().update(...a)
@@ -3238,10 +3238,11 @@ function WorkoutDetail({ w, close }) {
       title: w.name,
       sections: [
         { items: [
-          { icon: 'calendar', label: t('Change date & time'), onClick: () => workoutDateSheet(w, close) },
-          { icon: 'stopwatch', label: t('Change duration'), onClick: () => workoutDurationSheet(w, close) },
+          // CARGA: a finished workout keeps its date and length (lib/brand.js LOCKED_HISTORY)
+          !LOCKED_HISTORY && { icon: 'calendar', label: t('Change date & time'), onClick: () => workoutDateSheet(w, close) },
+          !LOCKED_HISTORY && { icon: 'stopwatch', label: t('Change duration'), onClick: () => workoutDurationSheet(w, close) },
           { icon: 'plus', label: t('Save as routine'), onClick: saveAsRoutine },
-        ] },
+        ].filter(Boolean) },
         { title: t('Share'), items: [
           { icon: 'person', label: t('Share with a friend'), sub: t('As a routine they can do too'), onClick: shareWithFriend },
           // The share card is part of Motivation (Settings → Modules).
@@ -3250,9 +3251,9 @@ function WorkoutDetail({ w, close }) {
           { icon: 'note', label: t('Save as PDF'), onClick: saveAsPdf },
           { icon: 'download', label: t('Export as .fit file'), onClick: exportFit },
         ] },
-        { items: [
+        ...(LOCKED_HISTORY ? [] : [{ items: [
           { icon: 'trash', label: t('Delete workout'), danger: true, onClick: deleteWorkout },
-        ] },
+        ] }]),
       ],
     })
   }
@@ -3286,12 +3287,15 @@ function WorkoutDetail({ w, close }) {
     {st.active && <p className="small muted">{t('Finish the current workout first.')}</p>}
     {/* The editor starts from the record as it is, so a note typed here goes in first — the same
         flush the date row does, and the unmount hook then has nothing left to write over it. */}
-    <Button icon="pencil" data-tour="wd-edit" disabled={!!st.active} onClick={() => {
+    {/* CARGA: the workout as one of the activity pictures, the same as at its finish (components/ShareActivity.jsx) */}
+    {LOCKED_HISTORY && <><Button variant="tinted" icon="share" onClick={() => ui().openSheet(close2 => <ShareActivity data={gymShareData(st, w, workoutStatus(st.workouts, w, x => sessionVolume(x, st), Array.isArray(w.prs) ? w.prs : []))} name={'carga-treino-' + (w.d || 'hoje') + '.png'} close={close2} />)}>{t('Share')}</Button>
+    <div style={{ height: 8 }} /></>}
+    {!LOCKED_HISTORY && <><Button icon="pencil" data-tour="wd-edit" disabled={!!st.active} onClick={() => {
       flushNote()
       try { update(state => { editCompletedSession(state, w) }); closeThenNav(close, '/workout') }
       catch (error) { toast(t(error.message)) }
     }}>{t('Edit workout')}</Button>
-    <div style={{ height: 8 }} />
+    <div style={{ height: 8 }} /></>}
     {/* The same exercises again, today, as a new session (#58): the rows read what was logged
         in this workout. The record itself stays as it is. */}
     <Button icon="reset" disabled={!!st.active} onClick={() => {

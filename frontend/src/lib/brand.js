@@ -15,6 +15,10 @@ export const ENGLISH_NAME_HINT = ENV.VITE_ENGLISH_NAME_HINT === '1'
 // media, which this build does not carry. The test run turns it off, so the upstream media suites
 // keep testing the stills and clips.
 export const OWN_FIGURES = (ENV.VITE_OWN_FIGURES ?? '1') === '1'
+// Whether a finished activity is kept as it was: no editing, no new date or duration, no deleting
+// (a workout or a run counts for the rank and the challenges, so its record stays). The test run
+// turns it off, so the upstream suites keep testing the edits.
+export const LOCKED_HISTORY = (ENV.VITE_LOCKED_HISTORY ?? '1') === '1'
 // Where this build's source code is published, as the AGPL asks (Settings → About).
 export const SOURCE_URL = ENV.VITE_SOURCE_URL || 'https://github.com/juninhofz/carga'
 // The address printed on share cards; empty draws none.
