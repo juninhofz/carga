@@ -62,6 +62,21 @@ import { DeleteAccountRow } from '../components/DeleteAccount.jsx'
 import { warmupAutoOf } from '../lib/warmup-ramp.js'
 import { Section, Row, SelectRow, Switch, Segmented, Button, TextField, SearchField } from '../components/ui.jsx'
 import { CloudAccountSection, useCloud } from '../components/CloudAccount.jsx'
+import { OWNER_ID } from './Owner.jsx'
+
+// CARGA: the owner's panel, only on the owner's account (views/Owner.jsx; the database answers no one else)
+function OwnerLink() {
+  const user = useCloud(c => c.user)
+  const nav = useNavigate()
+  if (user?.id !== OWNER_ID) return null
+  return <div className="card" style={{ padding: 0 }}>
+    <button type="button" className="item" style={{ width: '100%' }} onClick={() => nav('/dono')}>
+      <span className="lrow-i" style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(255,107,0,.16)', color: '#ff8a3d' }}><Icon name="chart" /></span>
+      <div className="grow" style={{ textAlign: 'start' }}><div className="tt">Painel do dono</div><div className="ss">Quem está entrando e usando o CARGA</div></div>
+      <Icon name="chevronRight" className="chev" />
+    </button>
+  </div>
+}
 import { POLICIES_FOR, POLICY_NAME, POLICY_DESC, profileRule } from '../lib/progression.js'
 import { PAGES, ROOT_GROUPS, pageVisible, searchSettings, pageTrail } from './settings-pages.js'
 import { platformNow } from '../lib/platform-now.js'
@@ -1194,6 +1209,7 @@ export default function Settings({ page = null, find = null, via = null, entryKe
     account: () => <>
       {/* CARGA's own account and cloud (components/CloudAccount.jsx) */}
       <CloudAccountSection />
+      <OwnerLink />
       {/* The server: which one, which account, how that stands, "Sync now". A paired phone's
           Admin and Disconnect sit in the same block; a browser's account rows follow in their own. */}
       {user && !DEMO && <ServerSyncSection>

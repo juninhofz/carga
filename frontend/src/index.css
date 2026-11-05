@@ -4162,3 +4162,24 @@ body:has(.run-live) #tabbar{display:none}
 .pf-act-t{flex:1;min-width:0;display:grid}
 .pf-act-t b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pf-act-t small{color:var(--label-2,#999);font-size:12px}
+
+/* CARGA: the owner's panel (views/Owner.jsx) */
+.owner .own-k{font:800 12px/1 "Barlow Condensed","Arial Narrow",Impact,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--label-2,#999);margin:18px 2px 8px}
+.own-tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.own-t{background:var(--surface,#161616);border-radius:16px;padding:12px;display:grid;gap:2px}
+.own-t b{font:italic 900 30px/1 "Barlow Condensed","Arial Narrow",Impact,sans-serif;font-variant-numeric:tabular-nums}
+.own-t span{font-size:13px;color:var(--label-2,#999)}
+.own-t.big{background:linear-gradient(135deg,#ff8a1f,#ff6b00);color:#1a0b00}
+.own-t.big span{color:rgba(26,11,0,.75)}
+.own-chart{margin-top:10px;display:grid;gap:10px}
+.own-bars{height:90px;display:flex;align-items:flex-end;gap:3px}
+.own-bars i{flex:1;border-radius:3px 3px 0 0;background:var(--surface-3,rgba(127,127,127,.25))}
+.own-bars i.on{background:#ff6b00}
+.own-axis{display:flex;justify-content:space-between;font-size:11px;color:var(--label-2,#999)}
+.own-list{padding:4px 12px}
+.own-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--separator,rgba(127,127,127,.15))}
+.own-row:first-child{border-top:0}
+.own-av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:rgba(255,107,0,.16);color:#ff8a3d;font-weight:800;flex:none}
+.own-who{flex:1;min-width:0;display:grid}.own-who b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.own-who small,.own-n small{font-size:12px;color:var(--label-2,#999)}
+.own-n{display:grid;text-align:end;flex:none}
