@@ -89,7 +89,7 @@ export default function History() {
   }, [more, shown])
   return <>
     <div className="hdr"><button className="iconbtn" data-back="/stats" data-tour="history-back" onClick={() => nav('/stats')} aria-label={t('Stats')}><Icon name="chevronLeft" /></button>
-      <div style={{ flex: 1, marginInlineStart: 12 }}><h1>{t('History')}</h1><div className="sub">{acts === 1 ? '1 atividade' : acts + ' atividades'}</div></div>
+      <div style={{ flex: 1, marginInlineStart: 12 }}><h1>Histórico de atividades</h1><div className="sub">{acts === 1 ? '1 atividade' : acts + ' atividades'}</div></div>
       {S.workouts.length > 0 && <button className="iconbtn" onClick={reportSheet} aria-label={t('Performance report')} title={t('Performance report')}><Icon name="note" /></button>}</div>
     <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true" dangerouslySetInnerHTML={{ __html: '<defs>' + STATUS_DEFS + '</defs>' }} />
     {kinds.length > 2 && <div className="hist-kinds" role="tablist" aria-label="Tipo de atividade">{kinds.map(([k, label]) => <button key={k} type="button" role="tab" aria-selected={kind === k} className={'chip' + (kind === k ? ' on' : '')} onClick={() => setKind(k)}>{label}</button>)}</div>}

@@ -69,7 +69,7 @@ function HistoryButton() {
   const nav = useNavigate()
   return <button type="button" className="card lv-hist" onClick={() => nav('/history')}>
     <span className="lv-hist-ic"><Icon name="history" /></span>
-    <span className="lv-hist-t"><b>Meu histórico</b><small>Academia, corridas e esportes, dia a dia</small></span>
+    <span className="lv-hist-t"><b>Histórico de atividades</b><small>Academia, corridas e esportes, dia a dia</small></span>
     <Icon name="chevronRight" />
   </button>
 }
