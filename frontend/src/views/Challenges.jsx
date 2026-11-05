@@ -5,9 +5,11 @@ import Icon from '../components/Icon.jsx'
 import { useCloud } from '../components/CloudAccount.jsx'
 import { CLOUD_ON } from '../lib/cloud.js'
 import { StatusBadge } from '../components/StatusReveal.jsx'
+import { STATUS_DEFS } from '../lib/status-art.js'
+// the status chips draw their icons from these symbols (StatusReveal puts them in only where it plays)
+const StatusDefs = () => <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true" dangerouslySetInnerHTML={{ __html: '<defs>' + STATUS_DEFS + '</defs>' }} />
 import { PersonPhoto } from '../components/ProfilePhoto.jsx'
 import { NotesBell } from '../components/Notes.jsx'
-import { poke } from '../lib/notifications.js'
 import CargaMark from '../components/CargaMark.jsx'
 import { RankCard } from '../components/RankCard.jsx'
 import { TIERS, levelFor } from '../lib/carga-level.js'
@@ -22,7 +24,7 @@ import { exerciseNameFor } from '../lib/i18n.js'
 import {
   COVERS, coverCss, SCORING, REACTIONS, leaderboard, teamScores, progressOf, runActivity, workoutActivity, myChallenges,
   createChallenge, joinChallenge, manualActivity, VISIBILITY, discoverChallenges, joinOpen, setVisibility, DUEL_LIFTS, liftsOf, liftBoards, leaveChallenge, deleteChallenge, loadChallenge, postCheckin, deleteCheckin, setReaction,
-  addComment, loadMessages, sendMessage, watchChallenge, shrinkPhoto, routeOf,
+  addComment, loadMessages, sendMessage, watchChallenge, shrinkPhoto, routeOf, likeInfo, setLike, postedActivities
 } from '../lib/challenges-group.js'
 
 /* CARGA group challenges (approved mockup, 2026-11-04): your challenges, create one, join by code
@@ -97,13 +99,23 @@ export async function medalsOf(uid) {
 const ROMAN = ['I', 'II', 'III', 'IV', 'V']
 function PersonSheet({ uid, person, name, close }) {
   const [items, setItems] = useState(null)
+  const [tab, setTab] = useState('desafios')
+  const [like, setLikeState] = useState(null)
   useEffect(() => { historyOf(uid).then(setItems, () => setItems([])) }, [uid])
+  useEffect(() => { likeInfo(uid).then(setLikeState, () => setLikeState(null)) }, [uid])
+  const toggleLike = async () => {
+    if (!like) return
+    const on = !like.mine
+    setLikeState({ ...like, mine: on, count: like.count + (on ? 1 : -1) })
+    try { await setLike(uid, on) } catch { setLikeState(like) }
+  }
   const shown = person?.name || name || 'Sem nome'
   const rank = person?.rank ?? 0, level = person?.level || 1
   const L = levelFor(Number(person?.carga) || 0)
   const tier = TIERS[Math.max(0, Math.min(TIERS.length - 1, rank))]
   const summary = medalSummary((items || []).filter(h => h.medal).map(h => h.medal))
   return <div className="pf">
+    <StatusDefs />
     <div className="pf-h"><button type="button" className="iconbtn" onClick={close} aria-label="Fechar"><Icon name="xmark" /></button></div>
     {/* the Home's orange card */}
     <div className="pf-hero">
@@ -116,6 +128,16 @@ function PersonSheet({ uid, person, name, close }) {
           <span className="pf-pts">{Number(person.carga).toLocaleString('pt-BR')} pts</span></>}
       </div>
     </div>
+    {/* a like: anyone can give one, not on your own profile */}
+    {like && <div className="pf-like-row">
+      {like.me !== uid ? <button type="button" className={'pf-like' + (like.mine ? ' on' : '')} aria-pressed={like.mine} onClick={toggleLike}>
+        <Icon name="heart" />{like.mine ? 'Curtido' : 'Curtir'}{like.count > 0 && <b>{like.count}</b>}</button>
+        : <span className="pf-like-n"><Icon name="heart" />{like.count === 1 ? '1 curtida' : like.count + ' curtidas'}</span>}
+    </div>}
+    <div className="pf-tabs" role="tablist">
+      {[['desafios', 'Desafios e medalhas'], ['historico', 'Histórico']].map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}
+    </div>
+    {tab === 'historico' ? <PersonHistory uid={uid} isMe={like?.me === uid} /> : <>
     {/* how many 1st, 2nd and 3rd places */}
     <div className="pf-counts">{summary.map(m => <div key={m.place}><span dangerouslySetInnerHTML={{ __html: medalSVG(m.kind, m.place) }} /><b>{m.n}</b><small>{m.place}º lugar</small></div>)}</div>
     {/* every challenge, newest first, with the medal and the result */}
@@ -126,7 +148,45 @@ function PersonSheet({ uid, person, name, close }) {
         <span className="pf-t"><b>{h.c.name}</b><small>{h.over ? 'Encerrado' : 'Em andamento'} · {shortDate(h.c.starts)}{h.c.ends !== h.c.starts ? ' a ' + shortDate(h.c.ends) : ''}</small>
           <em>{h.row.score > 0 ? h.row.place + 'º de ' + h.count + ' · ' + fmtScore(h.row.score, h.c.scoring) + ' ' + SCORING[h.c.scoring].unit(h.row.score) : 'Ainda sem resultado'}</em></span>
       </div>)}</div>}
+    </>}
   </div>
+}
+
+const ACT_ICON = { gym: 'dumbbell', run: 'cargaRun', walk: 'steps', ride: 'bike', sport: 'stopwatch' }
+const actWhen = ms => new Date(ms).toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' }) + ' · ' + new Date(ms).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+const actDur = min => (min >= 60 ? Math.floor(min / 60) + 'h ' + String(min % 60).padStart(2, '0') : min + ' min')
+
+/**
+ * The profile's second tab: what this person has been doing, each activity on its own row with its
+ * time (a gym session and jiu-jitsu on the same day are two rows). Mine comes from this phone, all
+ * of it; someone else's is what they posted in the challenges we share.
+ */
+function PersonHistory({ uid, isMe }) {
+  const S = useStore(s => s.S)
+  const [theirs, setTheirs] = useState(null)
+  useEffect(() => { if (!isMe) postedActivities(uid).then(setTheirs, () => setTheirs([])) }, [uid, isMe])
+  const rows = useMemo(() => {
+    if (!isMe) return (theirs || []).map(c => ({ at: Date.parse(c.created_at), kind: c.kind, title: c.title || KIND_NAME[c.kind] || 'Atividade',
+      detail: [c.minutes ? actDur(c.minutes) : null, Number(c.km) > 0 ? String(c.km).replace('.', ',') + ' km' : null, c.stats?.pace ? 'pace ' + c.stats.pace : null].filter(Boolean).join(' · '),
+      status: LEVELS.find(l => l.id === c.status) }))
+    const gym = (S.workouts || []).filter(w => w && w.start).map(w => ({ at: w.start, kind: 'gym', title: w.name || 'Treino',
+      detail: [w.end > w.start ? actDur(Math.round((w.end - w.start) / 60000)) : null].filter(Boolean).join(' · '),
+      status: workoutStatus(S.workouts, w, x => sessionVolume(x, S), Array.isArray(w.prs) ? w.prs : []) }))
+    const runs = (S.runs || []).filter(r => r && r.start).map(r => ({ at: r.start, kind: ['run', 'walk', 'ride'].includes(r.type) ? r.type : 'sport', title: r.name || 'Atividade',
+      detail: [r.movingSec ? actDur(Math.round(r.movingSec / 60)) : null, r.distM > 0 ? (r.distM / 1000).toFixed(1).replace('.', ',') + ' km' : null].filter(Boolean).join(' · '),
+      status: runStatus(S.runs, r) }))
+    return [...gym, ...runs].sort((a, b) => b.at - a.at).slice(0, 200)
+  }, [isMe, theirs, S.workouts, S.runs])
+  if (!isMe && theirs === null) return <p className="muted small">Carregando…</p>
+  if (!rows.length) return <p className="muted small">{isMe ? 'Nenhuma atividade ainda. Seus treinos, corridas e aulas aparecem aqui.' : 'Nenhuma atividade postada nos desafios que vocês têm em comum.'}</p>
+  return <>
+    {!isMe && <p className="muted small" style={{ margin: '0 0 8px' }}>O que foi postado nos desafios que vocês têm em comum.</p>}
+    <div className="pf-acts">{rows.map((r, i) => <div key={i} className="pf-act">
+      <span className="pf-act-ic"><Icon name={ACT_ICON[r.kind] || 'stopwatch'} /></span>
+      <span className="pf-act-t"><b>{r.title}</b><small>{[actWhen(r.at), r.detail].filter(Boolean).join(' · ')}</small></span>
+      {r.status && <span className="hist-st"><StatusBadge status={r.status} /></span>}
+    </div>)}</div>
+  </>
 }
 function openPerson(uid, person, name) {
   useUI.getState().openSheet(close => <PersonSheet uid={uid} person={person} name={name} close={close} />)
@@ -174,7 +234,7 @@ function MiniCard({ person, size = 'xs' }) {
 }
 /** A name with the rank card beside it. */
 function Who({ name, person, size }) {
-  return <span className="cg-who"><b>{name}</b><MiniCard person={person} size={size} /></span>
+  return <span className="cg-who"><MiniCard person={person} size={size} /><b>{name}</b></span>
 }
 const nameOf = (people, m) => people?.[m.user_id]?.name || m.name || 'Sem nome'
 
@@ -506,17 +566,9 @@ function Ranking({ c, rows, me, people, members = [], checkins = [] }) {
         <span className="n">{r.place}</span><Avatar name={r.name} person={people[r.user_id]} size={38} uid={r.user_id} />
         <span className="t"><span className="cg-who"><b>{r.user_id === me ? 'Você' : nameOf(people, r)}</b>{c.teams && r.team != null ? <i className={'cg-team t' + r.team} /> : null}<MiniCard person={people[r.user_id]} /></span><small className="muted">{r.last ? 'última ' + ago(r.last) : 'ainda não postou'}</small></span>
         <span className="pts">{fmtScore(r.score, c.scoring)}<small>{unit(r.score)}</small></span>
-        {r.user_id !== me && (!r.last || r.last.slice(0, 10) < todayIso()) && <PokeBtn cid={c.id} uid={r.user_id} />}
       </div>)}
     </div>
   </>
-}
-
-/** Poke someone who has not posted today ("bora treinar hoje!"). */
-function PokeBtn({ cid, uid }) {
-  const [state, setState] = useState('')
-  const go = async () => { setState('…'); try { setState((await poke(cid, uid)) ? 'Cutucado!' : 'Já cutucou') } catch { setState('Erro') } }
-  return <button type="button" className="cg-poke" disabled={!!state} onClick={go}>{state || 'Cutucar'}</button>
 }
 
 function MiniRoute({ points }) {
@@ -541,7 +593,8 @@ function Feed({ data, people: given, reload }) {
   const names = Object.fromEntries(members.map(m => [m.user_id, nameOf(people, m)]))
   const [open, setOpen] = useState({})
   const [draft, setDraft] = useState({})
-  if (!checkins.length) return <div className="card"><p className="muted" style={{ margin: 0 }}>Ninguém postou ainda. Termine um treino e poste aqui!</p></div>
+  if (!checkins.length) return <div className="card">
+    <p className="muted" style={{ margin: 0 }}>Ninguém postou ainda. Termine um treino e poste aqui!</p></div>
   const toggle = async (c, kind) => {
     const on = !reactions.some(r => r.checkin_id === c.id && r.user_id === me && r.kind === kind)
     try { await setReaction(c.id, kind, on); reload() } catch (e) { alert(e.message) }
@@ -553,6 +606,7 @@ function Feed({ data, people: given, reload }) {
   }
   const remove = async c => { if (window.confirm('Apagar este check-in?')) { try { await deleteCheckin(c); reload() } catch (e) { alert(e.message) } } }
   return <div className="cg-feed">
+    <StatusDefs />
     {checkins.map(c => {
       const st = LEVELS.find(l => l.id === c.status)
       const route = routeOf(c)
@@ -561,16 +615,21 @@ function Feed({ data, people: given, reload }) {
         Number(c.km) > 0 ? String(c.km).replace('.', ',') + ' km' : null, c.stats?.pace ? 'pace ' + c.stats.pace : null,
         c.stats?.volume ? (c.stats.volume >= 1000 ? (c.stats.volume / 1000).toFixed(1).replace('.', ',') + ' t' : c.stats.volume + ' kg') : null,
         c.stats?.sets ? c.stats.sets + ' séries' : null].filter(Boolean)
+      const badges = c.verified !== false ? <>
+        <span className="cg-seal" title="Gravado no CARGA"><CargaMark height={14} />CARGA</span>
+        {st && <StatusBadge status={st} />}
+      </> : null
       return <article key={c.id} className="cg-post">
         <div className="cg-post-top"><Avatar name={names[c.user_id]} person={people[c.user_id]} size={38} uid={c.user_id} />
           <span className="t"><Who name={c.user_id === me ? 'Você' : names[c.user_id]} person={people[c.user_id]} /><small className="muted">{ago(c.created_at)} · {c.title || KIND_NAME[c.kind]}</small></span>
-          {/* the CARGA seal: this one was recorded in the app (a photo alone carries none) */}
-          {c.verified !== false && <span className="cg-seal" title="Gravado no CARGA"><CargaMark height={16} />CARGA</span>}
-          {c.verified !== false && st && <StatusBadge status={st} />}
+          {/* the CARGA seal: this one was recorded in the app (a photo alone carries none). With a
+              photo or a map they sit on its corner instead, so the name's line stays short */}
+          {!(c.photo_url || route) && badges}
           {c.user_id === me && <button type="button" className="iconbtn cg-del" onClick={() => remove(c)} aria-label="Apagar"><Icon name="trash" /></button>}
         </div>
         {(c.photo_url || route) && <div className="cg-ph">
           {c.photo_url ? <img src={c.photo_url} alt={'Foto de ' + names[c.user_id]} loading="lazy" /> : <MiniRoute points={route} />}
+          {c.verified !== false && <div className="cg-ph-badges">{badges}</div>}
           {tags.length > 0 && <div className="cg-tags">{tags.map(t => <span key={t}>{t}</span>)}</div>}
         </div>}
         {!c.photo_url && !route && tags.length > 0 && <div className="cg-tags inline">{tags.map(t => <span key={t}>{t}</span>)}</div>}

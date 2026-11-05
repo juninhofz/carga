@@ -4128,3 +4128,37 @@ body:has(.run-live) #tabbar{display:none}
 .hist-st{flex:none;display:inline-flex}
 .hist-st .sr-chip{font-size:11px;padding:3px 8px 3px 5px;gap:4px}
 .hist-st .sr-chip svg{width:13px;height:13px}
+
+/* CARGA: the rank card before a name, as tall as the name (the leader's balloon keeps its own) */
+.cg-who .cg-mc .rc-xs{font-size:.92px}
+.cg-who .cg-mc .rc{box-shadow:0 1px 3px rgba(0,0,0,.45)}
+.cg-lead .cg-who .cg-mc .rc-xs{font-size:1.45px}
+/* the seal and the status on the photo's (or map's) top corner */
+.cg-ph-badges{position:absolute;top:10px;right:10px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;max-width:70%}
+.cg-ph-badges .cg-seal,.cg-ph-badges .sr-chip{background:rgba(0,0,0,.6);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.cg-ph-badges .cg-seal{color:#ffb070}
+.cg-ph-badges .sr-chip{font-size:12px;padding:4px 10px 4px 6px}
+.cg-ph-badges .sr-chip svg{width:15px;height:15px}
+.cg-lead .cg-who .cg-mc{order:2}
+.cg-ph-badges .sr-chip.sr-b5{background:linear-gradient(90deg,#ffd166,#ff6b00);color:#1a0b00}
+
+/* CARGA: the profile's like and its two tabs */
+.pf-like-row{display:flex;justify-content:center;margin:2px 0 10px}
+.pf-like{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:999px;padding:8px 16px;background:var(--surface-2,rgba(127,127,127,.14));color:inherit;font:700 14px/1 inherit;cursor:pointer}
+.pf-like svg{width:17px;height:17px}
+.pf-like b{font-weight:800;opacity:.8}
+.pf-like.on{background:rgba(255,45,85,.16);color:#ff2d55}
+.pf-like.on svg{fill:currentColor}
+.pf-like-n{display:inline-flex;align-items:center;gap:6px;color:var(--label-2,#999);font-size:14px;font-weight:600}
+.pf-like-n svg{width:16px;height:16px}
+.pf-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--surface-2,rgba(127,127,127,.12));border-radius:12px;padding:4px;margin:0 0 12px}
+.pf-tabs button{border:0;border-radius:9px;padding:8px;background:transparent;color:inherit;font:700 14px/1.1 inherit;cursor:pointer;opacity:.7}
+.pf-tabs button.on{background:#ff6b00;color:#fff;opacity:1}
+.pf-acts{display:grid;gap:2px}
+.pf-act{display:flex;align-items:center;gap:10px;padding:9px 2px;border-top:1px solid var(--separator,rgba(127,127,127,.15))}
+.pf-act:first-child{border-top:0}
+.pf-act-ic{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:rgba(255,107,0,.14);color:#ff8a3d;flex:none}
+.pf-act-ic svg{width:17px;height:17px}
+.pf-act-t{flex:1;min-width:0;display:grid}
+.pf-act-t b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pf-act-t small{color:var(--label-2,#999);font-size:12px}

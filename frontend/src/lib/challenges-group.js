@@ -248,6 +248,31 @@ export async function setVisibility(id, visibility) {
   if (error) fail(error)
 }
 
+/** A profile's likes: how many, and whether I gave one. */
+export async function likeInfo(uid) {
+  const mine = await me()
+  const [all, own] = await Promise.all([
+    db().from('profile_likes').select('liker', { count: 'exact', head: true }).eq('liked', uid),
+    mine ? db().from('profile_likes').select('liker').eq('liked', uid).eq('liker', mine).maybeSingle() : Promise.resolve({ data: null }),
+  ])
+  if (all.error) fail(all.error)
+  return { count: all.count || 0, mine: !!own.data, me: mine }
+}
+export async function setLike(uid, on) {
+  const mine = await me()
+  if (!mine) fail({ message: 'Entre na sua conta para curtir.' })
+  const r = on ? await db().from('profile_likes').insert({ liked: uid }) : await db().from('profile_likes').delete().eq('liked', uid).eq('liker', mine)
+  if (r.error && r.error.code !== '23505') fail(r.error)
+}
+
+/** What someone posted in the challenges we share, one row per activity (the same workout posted in two challenges is one). */
+export async function postedActivities(uid) {
+  const { data, error } = await db().from('checkins').select('activity_id, kind, title, minutes, km, status, stats, created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(300)
+  if (error) fail(error)
+  const seen = new Set()
+  return (data || []).filter(c => !seen.has(c.activity_id) && seen.add(c.activity_id))
+}
+
 export async function leaveChallenge(id) {
   const uid = await me()
   const { error } = await db().from('challenge_members').delete().eq('challenge_id', id).eq('user_id', uid)
