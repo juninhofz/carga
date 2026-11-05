@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { pushState, enableNotices, syncNotices } from '../lib/carga-push.js'
+import { syncActivities, pingToday } from '../lib/activity-sync.js'
+import { useStore } from '../store/useStore.js'
 import { createPortal } from 'react-dom'
 import Icon from './Icon.jsx'
 import { useCloud } from './CloudAccount.jsx'
@@ -22,6 +24,16 @@ const ago = ts => {
 /** Mounted once: loads and follows the notifications while signed in, and shows a banner for a new one. */
 export function NotesLive() {
   const user = useCloud(s => s.user)
+  // CARGA: the activities' summaries for the profile's history (lib/activity-sync.js), a moment after a change
+  // and the daily hello for the owner's count of people with and without an account
+  useEffect(() => { const tm = setTimeout(() => pingToday(!!user), 4000); return () => clearTimeout(tm) }, [user?.id])
+  const workouts = useStore(s => s.S.workouts)
+  const runs = useStore(s => s.S.runs)
+  useEffect(() => {
+    if (!user) return undefined
+    const tm = setTimeout(() => syncActivities(useStore.getState().S), 2500)
+    return () => clearTimeout(tm)
+  }, [user?.id, workouts, runs])
   const nav = useNavigate()
   const [banner, setBanner] = useState(null)
   useEffect(() => {

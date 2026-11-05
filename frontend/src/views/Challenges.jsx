@@ -6,6 +6,7 @@ import { useCloud } from '../components/CloudAccount.jsx'
 import { CLOUD_ON } from '../lib/cloud.js'
 import { StatusBadge } from '../components/StatusReveal.jsx'
 import { STATUS_DEFS } from '../lib/status-art.js'
+import { activitiesOf } from '../lib/activity-sync.js'
 // the status chips draw their icons from these symbols (StatusReveal puts them in only where it plays)
 const StatusDefs = () => <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true" dangerouslySetInnerHTML={{ __html: '<defs>' + STATUS_DEFS + '</defs>' }} />
 import { PersonPhoto } from '../components/ProfilePhoto.jsx'
@@ -24,7 +25,7 @@ import { exerciseNameFor } from '../lib/i18n.js'
 import {
   COVERS, coverCss, SCORING, REACTIONS, leaderboard, teamScores, progressOf, runActivity, workoutActivity, myChallenges,
   createChallenge, joinChallenge, manualActivity, VISIBILITY, discoverChallenges, joinOpen, setVisibility, DUEL_LIFTS, liftsOf, liftBoards, leaveChallenge, deleteChallenge, loadChallenge, postCheckin, deleteCheckin, setReaction,
-  addComment, loadMessages, sendMessage, watchChallenge, shrinkPhoto, routeOf, likeInfo, setLike, postedActivities
+  addComment, loadMessages, sendMessage, watchChallenge, shrinkPhoto, routeOf, likeInfo, setLike
 } from '../lib/challenges-group.js'
 
 /* CARGA group challenges (approved mockup, 2026-11-04): your challenges, create one, join by code
@@ -158,16 +159,17 @@ const actDur = min => (min >= 60 ? Math.floor(min / 60) + 'h ' + String(min % 60
 
 /**
  * The profile's second tab: what this person has been doing, each activity on its own row with its
- * time (a gym session and jiu-jitsu on the same day are two rows). Mine comes from this phone, all
- * of it; someone else's is what they posted in the challenges we share.
+ * time (a gym session and jiu-jitsu on the same day are two rows). Mine comes from this phone;
+ * someone else's from the summaries their phone sends (lib/activity-sync.js), which only people
+ * who share a challenge with them can read.
  */
 function PersonHistory({ uid, isMe }) {
   const S = useStore(s => s.S)
   const [theirs, setTheirs] = useState(null)
-  useEffect(() => { if (!isMe) postedActivities(uid).then(setTheirs, () => setTheirs([])) }, [uid, isMe])
+  useEffect(() => { if (!isMe) activitiesOf(uid).then(setTheirs, () => setTheirs([])) }, [uid, isMe])
   const rows = useMemo(() => {
-    if (!isMe) return (theirs || []).map(c => ({ at: Date.parse(c.created_at), kind: c.kind, title: c.title || KIND_NAME[c.kind] || 'Atividade',
-      detail: [c.minutes ? actDur(c.minutes) : null, Number(c.km) > 0 ? String(c.km).replace('.', ',') + ' km' : null, c.stats?.pace ? 'pace ' + c.stats.pace : null].filter(Boolean).join(' · '),
+    if (!isMe) return (theirs || []).map(c => ({ at: Date.parse(c.start), kind: c.kind, title: c.title || KIND_NAME[c.kind] || 'Atividade',
+      detail: [c.minutes ? actDur(c.minutes) : null, Number(c.km) > 0 ? String(c.km).replace('.', ',') + ' km' : null].filter(Boolean).join(' · '),
       status: LEVELS.find(l => l.id === c.status) }))
     const gym = (S.workouts || []).filter(w => w && w.start).map(w => ({ at: w.start, kind: 'gym', title: w.name || 'Treino',
       detail: [w.end > w.start ? actDur(Math.round((w.end - w.start) / 60000)) : null].filter(Boolean).join(' · '),
@@ -178,9 +180,8 @@ function PersonHistory({ uid, isMe }) {
     return [...gym, ...runs].sort((a, b) => b.at - a.at).slice(0, 200)
   }, [isMe, theirs, S.workouts, S.runs])
   if (!isMe && theirs === null) return <p className="muted small">Carregando…</p>
-  if (!rows.length) return <p className="muted small">{isMe ? 'Nenhuma atividade ainda. Seus treinos, corridas e aulas aparecem aqui.' : 'Nenhuma atividade postada nos desafios que vocês têm em comum.'}</p>
+  if (!rows.length) return <p className="muted small">{isMe ? 'Nenhuma atividade ainda. Seus treinos, corridas e aulas aparecem aqui.' : 'Nenhuma atividade ainda. Aparece aqui o que a pessoa fizer, assim que ela abrir o app com a conta dela.'}</p>
   return <>
-    {!isMe && <p className="muted small" style={{ margin: '0 0 8px' }}>O que foi postado nos desafios que vocês têm em comum.</p>}
     <div className="pf-acts">{rows.map((r, i) => <div key={i} className="pf-act">
       <span className="pf-act-ic"><Icon name={ACT_ICON[r.kind] || 'stopwatch'} /></span>
       <span className="pf-act-t"><b>{r.title}</b><small>{[actWhen(r.at), r.detail].filter(Boolean).join(' · ')}</small></span>

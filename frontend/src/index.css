@@ -4183,3 +4183,19 @@ body:has(.run-live) #tabbar{display:none}
 .own-who{flex:1;min-width:0;display:grid}.own-who b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .own-who small,.own-n small{font-size:12px;color:var(--label-2,#999)}
 .own-n{display:grid;text-align:end;flex:none}
+
+/* CARGA: the history button on Home */
+.lv-hist{display:flex;align-items:center;gap:12px;width:100%;border:0;text-align:start;cursor:pointer;color:inherit;font:inherit}
+.lv-hist-ic{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;background:rgba(255,107,0,.15);color:#ff8a3d;flex:none}
+.lv-hist-ic svg{width:19px;height:19px}
+.lv-hist-t{flex:1;min-width:0;display:grid}
+.lv-hist-t b{font-size:16px}
+.lv-hist-t small{font-size:13px;color:var(--label-2,#999)}
+.lv-hist>svg{width:18px;height:18px;opacity:.5}
+
+.own-dev{display:grid;gap:8px}
+.own-dev-h,.own-dev-r{display:grid;grid-template-columns:1.1fr 1fr 1fr 1fr;align-items:center;text-align:end;gap:6px}
+.own-dev-h b{font-size:12px;color:var(--label-2,#999);font-weight:700}
+.own-dev-r span{text-align:start;font-weight:700}
+.own-dev-r b{font:italic 900 24px/1 "Barlow Condensed","Arial Narrow",Impact,sans-serif;font-variant-numeric:tabular-nums}
+.own-dev-r b:last-child{color:#ff8a3d}

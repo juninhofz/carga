@@ -65,6 +65,15 @@ const SEEN = 'carga.level.seen'
 const readSeen = () => { try { return JSON.parse(localStorage.getItem(SEEN) || 'null') } catch { return null } }
 const writeSeen = v => { try { localStorage.setItem(SEEN, JSON.stringify(v)) } catch { /* private mode */ } }
 
+function HistoryButton() {
+  const nav = useNavigate()
+  return <button type="button" className="card lv-hist" onClick={() => nav('/history')}>
+    <span className="lv-hist-ic"><Icon name="history" /></span>
+    <span className="lv-hist-t"><b>Meu histórico</b><small>Academia, corridas e esportes, dia a dia</small></span>
+    <Icon name="chevronRight" />
+  </button>
+}
+
 const MEDALS_KEY = 'carga.medals.mine'
 /** The 1st, 2nd and 3rd places from the group challenges, on the card (signed in, once there is one). */
 function MedalCounts() {
@@ -185,6 +194,8 @@ export function LevelCard({ S, now, after = null }) {
       <div className="card lv-tile"><b>🔥 {fmtNum(L.streak)}</b><span>{t('full weeks in a row')}{W && W.mult > 1 ? ' · ' + multText(W.mult) : ''}</span></div>
       <div className="card lv-tile"><b>{fmtNum(L.stats.workouts)}</b><span>{t('workouts · {0} records', fmtNum(L.stats.prs))}</span></div>
     </div>
+    {/* CARGA: the history, one tap from Home (views/History.jsx: every workout, run and class) */}
+    <HistoryButton />
 
     {L.flash && !L.pause && <div className={'card lv-flash' + (L.flash.done ? ' done' : '')}>
       <span className="lv-flash-ic" aria-hidden="true">⚡</span>

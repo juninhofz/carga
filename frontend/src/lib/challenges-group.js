@@ -265,14 +265,6 @@ export async function setLike(uid, on) {
   if (r.error && r.error.code !== '23505') fail(r.error)
 }
 
-/** What someone posted in the challenges we share, one row per activity (the same workout posted in two challenges is one). */
-export async function postedActivities(uid) {
-  const { data, error } = await db().from('checkins').select('activity_id, kind, title, minutes, km, status, stats, created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(300)
-  if (error) fail(error)
-  const seen = new Set()
-  return (data || []).filter(c => !seen.has(c.activity_id) && seen.add(c.activity_id))
-}
-
 export async function leaveChallenge(id) {
   const uid = await me()
   const { error } = await db().from('challenge_members').delete().eq('challenge_id', id).eq('user_id', uid)

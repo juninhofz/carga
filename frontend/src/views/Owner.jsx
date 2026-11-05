@@ -47,6 +47,15 @@ export default function Owner() {
         <div className="own-t"><b>{n(s.active.month)}</b><span>nos últimos 30 dias</span></div>
         <div className="own-t"><b>{n(s.push_on)}</b><span>com avisos ligados</span></div>
       </div>
+      <div className="own-k">Celulares usando o CARGA</div>
+      <div className="card own-dev">
+        <div className="own-dev-h"><span /><b>com conta</b><b>sem conta</b><b>total</b></div>
+        {[['today', 'Hoje'], ['week', '7 dias'], ['month', '30 dias']].map(([k, l]) => {
+          const d = s.devices?.[k] || { signed: 0, guest: 0 }
+          return <div key={k} className="own-dev-r"><span>{l}</span><b>{n(d.signed)}</b><b>{n(d.guest)}</b><b>{n(d.signed + d.guest)}</b></div>
+        })}
+        <small className="muted">Conta cada celular uma vez por dia, sem nenhum dado pessoal. Começou a contar em 5 de novembro.</small>
+      </div>
       <div className="card own-chart">
         <div className="own-k" style={{ margin: 0 }}>Contas novas por dia · 30 dias</div>
         <div className="own-bars" role="img" aria-label="Contas novas por dia nos últimos 30 dias">
@@ -69,7 +78,7 @@ export default function Owner() {
           <span className="own-n"><b>Nív. {p.level || 1}</b><small>{n(p.challenges)} desafios · {n(p.posts)} posts</small></span>
         </div>)}
       </div>
-      <p className="muted small">Quem usa o CARGA sem criar conta não aparece aqui: os dados dessas pessoas ficam só no celular delas.</p>
+      <p className="muted small">Quem usa sem conta só aparece na contagem de celulares: os dados dessas pessoas ficam no celular delas.</p>
     </>}
   </div>
 }
