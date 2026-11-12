@@ -1,4 +1,4 @@
-/* openGym on the Apple Watch, en. Written by ios/ci/watch-strings.mjs: change that, not this. */
+/* CARGA on the Apple Watch, en. Written by ios/ci/watch-strings.mjs: change that, not this. */
 
 "Today" = "Today";
 "Start workout" = "Start workout";
@@ -35,7 +35,7 @@
 "Last time: %@" = "Last time: %@";
 "No workout running" = "No workout running";
 "Not synced yet" = "Not synced yet";
-"Open openGym on your iPhone once and your routines show up here." = "Open openGym on your iPhone once and your routines show up here.";
+"Open CARGA on your iPhone once and your routines show up here." = "Open CARGA on your iPhone once and your routines show up here.";
 "Start one on your iPhone and it shows up here." = "Start one on your iPhone and it shows up here.";
 "All sets done" = "All sets done";
 "measuring" = "measuring";
@@ -62,4 +62,4 @@
 "Tap to change it." = "Tap to change it.";
 "Added weight" = "Added weight";
 "Your rest, your next set, or today's workout." = "Your rest, your next set, or today's workout.";
-"Opens openGym." = "Opens openGym.";
+"Opens CARGA." = "Opens CARGA.";

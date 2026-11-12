@@ -31,7 +31,7 @@ export const SITE = ''
 
 // "openGym" in a translated string becomes APP_NAME. A path (Documents/openGym) is left alone:
 // it names the real folder the Android backup writes to (lib/mobile.js AUTO_BACKUP_DIR).
-export const brandText = (s, name = APP_NAME) => (typeof s === 'string' ? s.replace(/(?<![/\w])openGym/g, name) : s)
+export const brandText = (s, name = APP_NAME) => (typeof s === 'string' ? s.replace(/(?<![/\w])openGym/g, name).replace(/Documents\/openGym/g, 'Documents/' + name) : s)
 
 // The chart range buttons (1M, 3M, 1Y, 30d) are written as abbreviations, outside t(). In
 // Portuguese a year is "ano" and a day "dia": 1A, 30 d.

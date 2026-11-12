@@ -6,7 +6,7 @@ import WidgetKit
 /*
  * openGym's widgets (the widget extension, ios/ci/add-widgets.rb): today's workout on the Home
  * Screen in three sizes and on the Lock Screen, the streak on the Lock Screen, the configurable
- * "openGym" widget (v1.4.4: you pick what it shows, below), and the running workout's Live
+ * "CARGA" widget (v1.4.4: you pick what it shows, below), and the running workout's Live
  * Activity (LiveActivityWidget.swift). A tap opens the screen it is about (lib/widget-links.js). What they show is the snapshot the app writes
  * to the App Group (WidgetBridgePlugin.swift, lib/widgets.js); the views are in
  * App/WidgetViews.swift, which the app compiles too for its CI pictures.
@@ -171,7 +171,7 @@ struct ConfigurableWidget: Widget {
         AppIntentConfiguration(kind: "OpenGymPick", intent: GymWidgetIntent.self, provider: GymProvider()) { entry in
             ConfigurableWidgetView(entry: entry)
         }
-        .configurationDisplayName("openGym")
+        .configurationDisplayName("CARGA")
         .description("Your streak, weight goal, week, next workout, records or volume. You pick.")
         .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular, .accessoryRectangular, .accessoryInline])
     }

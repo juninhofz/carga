@@ -145,7 +145,7 @@ struct WidgetView: View {
                 } else {
                     HStack(spacing: 6) {
                         OpenGymLogo().frame(width: 26, height: 16)
-                        Text(verbatim: "openGym").font(.headline)
+                        Text(verbatim: "CARGA").font(.headline)
                     }
                 }
             }
@@ -171,7 +171,7 @@ struct OpenGymWidget: Widget {
                 // A tap on "Start" opens the watch app and starts today's workout.
                 .widgetURL(entry.state.mode == "today" ? URL(string: "opengym-watch://start") : URL(string: "opengym-watch://open"))
         }
-        .configurationDisplayName("openGym")
+        .configurationDisplayName("CARGA")
         .description("Your rest, your next set, or today's workout.")
         .supportedFamilies([.accessoryRectangular, .accessoryCircular, .accessoryInline, .accessoryCorner])
     }
@@ -203,14 +203,14 @@ struct LauncherView: View {
         case .accessoryCorner:
             OpenGymLogo()
                 .padding(4)
-                .widgetLabel { Text(verbatim: "openGym") }
+                .widgetLabel { Text(verbatim: "CARGA") }
         case .accessoryInline:
-            Text(verbatim: "openGym")
+            Text(verbatim: "CARGA")
         default:
             HStack(spacing: 8) {
                 OpenGymLogo().frame(width: 30, height: 20)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(verbatim: "openGym").font(.headline)
+                    Text(verbatim: "CARGA").font(.headline)
                     if entry.state.mode == "today" {
                         Text(verbatim: entry.state.title).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
                     }
@@ -229,8 +229,8 @@ struct OpenGymLauncher: Widget {
                 .containerBackground(.black, for: .widget)
                 .widgetURL(URL(string: "opengym-watch://open"))
         }
-        .configurationDisplayName("openGym")
-        .description("Opens openGym.")
+        .configurationDisplayName("CARGA")
+        .description("Opens CARGA.")
         .supportedFamilies([.accessoryCircular, .accessoryCorner, .accessoryInline, .accessoryRectangular])
     }
 }

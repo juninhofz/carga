@@ -1,4 +1,4 @@
-/* openGym on the Apple Watch, uk: Info.plist. Written by ios/ci/watch-strings.mjs. */
+/* CARGA on the Apple Watch, uk: Info.plist. Written by ios/ci/watch-strings.mjs. */
 
-"NSHealthShareUsageDescription" = "openGym показує пульс під час тренування і біля кожного підходу.";
-"NSHealthUpdateUsageDescription" = "openGym зберігає тренування в Apple Здоров’я, якщо ти це ввімкнеш.";
+"NSHealthShareUsageDescription" = "CARGA показує пульс під час тренування і біля кожного підходу.";
+"NSHealthUpdateUsageDescription" = "CARGA зберігає тренування в Apple Здоров’я, якщо ти це ввімкнеш.";

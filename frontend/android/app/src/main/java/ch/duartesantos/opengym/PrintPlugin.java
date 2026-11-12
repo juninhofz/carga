@@ -37,7 +37,7 @@ public class PrintPlugin extends Plugin {
             call.reject("html is required");
             return;
         }
-        final String jobName = call.getString("name", "openGym");
+        final String jobName = call.getString("name", "CARGA");
         // The sheet starts on the paper people use where the phone is (lib/print-doc.js paperFor);
         // it can be changed there. Page numbers and margins come from the document's own @page
         // rules, which this WebView (Chromium) prints.

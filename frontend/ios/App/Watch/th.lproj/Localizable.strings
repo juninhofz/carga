@@ -1,4 +1,4 @@
-/* openGym on the Apple Watch, th. Written by ios/ci/watch-strings.mjs: change that, not this. */
+/* CARGA on the Apple Watch, th. Written by ios/ci/watch-strings.mjs: change that, not this. */
 
 "Today" = "วันนี้";
 "Start workout" = "เริ่มออกกำลังกาย";
@@ -35,7 +35,7 @@
 "Last time: %@" = "ครั้งก่อน: %@";
 "No workout running" = "ไม่มีการฝึกที่กำลังทำอยู่";
 "Not synced yet" = "ยังไม่ได้ซิงค์";
-"Open openGym on your iPhone once and your routines show up here." = "เปิด openGym บน iPhone สักครั้ง แล้วรูทีนของคุณจะแสดงที่นี่";
+"Open CARGA on your iPhone once and your routines show up here." = "เปิด CARGA บน iPhone สักครั้ง แล้วรูทีนของคุณจะแสดงที่นี่";
 "Start one on your iPhone and it shows up here." = "เริ่มบน iPhone แล้วจะแสดงที่นี่";
 "All sets done" = "ครบทุกเซ็ตแล้ว";
 "measuring" = "กำลังวัด …";
@@ -62,4 +62,4 @@
 "Tap to change it." = "แตะเพื่อเปลี่ยน";
 "Added weight" = "น้ำหนักเพิ่ม";
 "Your rest, your next set, or today's workout." = "ช่วงพัก เซ็ตถัดไป หรือการฝึกวันนี้";
-"Opens openGym." = "เปิด openGym";
+"Opens CARGA." = "เปิด CARGA";

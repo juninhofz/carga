@@ -35,34 +35,34 @@
       var box = document.createElement('div'), h = document.createElement('p'), p = document.createElement('p');
       h.className = 'h';
       h.textContent = title;
-      p.textContent = 'Reloading often helps. If it keeps happening, please send us this:';
+      p.textContent = 'Recarregar costuma resolver. Se continuar acontecendo, mande isto para a gente:';
       var c = document.createElement('code');
       c.textContent = (detail || 'No error, it just never finished loading.') + ' (' + navigator.userAgent + ')';
       var r = document.createElement('button');
       r.type = 'button';
-      r.textContent = 'Reload';
+      r.textContent = 'Recarregar';
       r.onclick = function () { location.reload(); };
       box.appendChild(h); box.appendChild(p); box.appendChild(c); box.appendChild(r);
       b.appendChild(box);
     }
     window.addEventListener('error', function (e) {
       var t = e && e.target;
-      if (t && t.tagName === 'SCRIPT') return fail('openGym could not start on this browser.', 'Could not load ' + (t.src || 'a script'));
+      if (t && t.tagName === 'SCRIPT') return fail('O CARGA não conseguiu abrir neste navegador.', 'Não carregou ' + (t.src || 'um arquivo'));
       if (!e || !e.message) return;
       last = e.message + (e.filename ? ' at ' + e.filename.split('/').pop() + ':' + e.lineno : '');
-      if (/SyntaxError|Unexpected|Invalid regular expression/i.test(e.message)) fail('openGym could not start on this browser.', last);
+      if (/SyntaxError|Unexpected|Invalid regular expression/i.test(e.message)) fail('O CARGA não conseguiu abrir neste navegador.', last);
     }, true);
     window.addEventListener('unhandledrejection', function (e) {
       var r = e && e.reason;
       if (r) last = String((r && r.message) || r);
     });
     setTimeout(function () {
-      fail(last ? 'openGym could not start on this browser.' : 'openGym is taking too long to start.', last);
+      fail(last ? 'O CARGA não conseguiu abrir neste navegador.' : 'O CARGA está demorando para abrir.', last);
     }, 10000);
   })();
 </script>
 <title>CARGA</title>
-<meta name="description" content="Personal gym & body weight tracker">
+<meta name="description" content="CARGA: treino, corrida e desafios">
 <meta name="theme-color" content="#0d0d0d">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">

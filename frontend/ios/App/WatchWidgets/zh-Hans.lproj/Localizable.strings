@@ -1,4 +1,4 @@
-/* openGym on the Apple Watch, zh-Hans. Written by ios/ci/watch-strings.mjs: change that, not this. */
+/* CARGA on the Apple Watch, zh-Hans. Written by ios/ci/watch-strings.mjs: change that, not this. */
 
 "Today" = "今天";
 "Start workout" = "开始训练";
@@ -35,7 +35,7 @@
 "Last time: %@" = "上次: %@";
 "No workout running" = "没有进行中的训练";
 "Not synced yet" = "尚未同步";
-"Open openGym on your iPhone once and your routines show up here." = "在 iPhone 上打开一次 openGym，你的训练计划就会出现在这里。";
+"Open CARGA on your iPhone once and your routines show up here." = "在 iPhone 上打开一次 CARGA，你的训练计划就会出现在这里。";
 "Start one on your iPhone and it shows up here." = "在 iPhone 上开始，它就会出现在这里。";
 "All sets done" = "所有组已完成";
 "measuring" = "测量中 …";
@@ -62,4 +62,4 @@
 "Tap to change it." = "轻点以更改。";
 "Added weight" = "附加重量";
 "Your rest, your next set, or today's workout." = "你的休息、下一组或今天的训练。";
-"Opens openGym." = "打开 openGym。";
+"Opens CARGA." = "打开 CARGA。";

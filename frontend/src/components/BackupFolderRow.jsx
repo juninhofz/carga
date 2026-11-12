@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
+import { APP_NAME } from '../lib/brand.js'
 import { t } from '../lib/i18n.js'
 import { backupFolder, chooseBackupFolder, resetBackupFolder, onBackupFolderChange } from '../lib/mobile.js'
 import { useUI } from '../store/useUI.js'
 import { Row } from './ui.jsx'
 
-const DEFAULT_FOLDER = 'Documents/openGym'
+const DEFAULT_FOLDER = 'Documents/' + APP_NAME
 
 /* Where auto-backup puts its copies on this Android phone (#161): Documents/openGym, or a folder
    chosen with the system picker — a sync app's, an SD card's. The choice is this phone's alone

@@ -254,7 +254,7 @@ struct WidgetEmpty: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Image(systemName: "dumbbell.fill").font(.title3).foregroundStyle(.secondary)
-            Text("Open openGym once to see your plan here.").font(.caption).foregroundStyle(.secondary)
+            Text("Open CARGA once to see your plan here.").font(.caption).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
@@ -398,7 +398,7 @@ struct NextInlineView: View {
     }
 }
 
-// MARK: - the configurable widget ("openGym": what to show, OpenGymWidgets.swift)
+// MARK: - the configurable widget ("CARGA": what to show, OpenGymWidgets.swift)
 
 /// What the configurable widget can show. The menu's words are in OpenGymWidgets.swift (AppEnum).
 enum GymWidgetKind: String, CaseIterable, Codable {
@@ -670,7 +670,7 @@ extension WorkoutActivityAttributes {
     /// The line with no set to show: all done, or sets left that the activity does not carry
     /// (many taps with the page asleep), where "All sets done" was simply wrong (Discord).
     func noSetText(_ state: ContentState) -> String {
-        state.done < state.total ? (labels.openApp ?? "Open openGym for the next set") : labels.allDone
+        state.done < state.total ? (labels.openApp ?? "Open CARGA for the next set") : labels.allDone
     }
 
     /// The word over the clock: the count-in, the hold, or the rest.

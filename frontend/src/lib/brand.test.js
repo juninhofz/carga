@@ -6,8 +6,9 @@ describe('brandText', () => {
     expect(brandText('Reload openGym', 'CARGA')).toBe('Reload CARGA')
     expect(brandText('Your 2026 in openGym is ready', 'CARGA')).toBe('Your 2026 in CARGA is ready')
   })
-  it('leaves the backup folder path alone: it names the real folder', () => {
-    expect(brandText('copies go to Documents/openGym again', 'CARGA')).toBe('copies go to Documents/openGym again')
+  // CARGA: the backup folder is named after the app (lib/mobile.js AUTO_BACKUP_DIR), so its path follows too
+  it('names the backup folder the app writes to', () => {
+    expect(brandText('copies go to Documents/openGym again', 'CARGA')).toBe('copies go to Documents/CARGA again')
   })
   it('passes anything that is not a string through', () => {
     expect(brandText(undefined, 'CARGA')).toBe(undefined)

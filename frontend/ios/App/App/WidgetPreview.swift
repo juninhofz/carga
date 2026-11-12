@@ -55,7 +55,7 @@ enum WidgetPreview {
         guard let a = decode(WorkoutActivityAttributes.self, """
         {"v":2,"wid":"preview","start":null,"accent":"#30d158","ink":"#000000",
          "labels":{"done":"Log set","rest":"Rest","next":"Up next","allDone":"All sets done","restOver":"Rest’s over. Next set!",
-           "nextExercise":"Next exercise","skipRest":"Skip rest","openApp":"Open openGym for the next set"}}
+           "nextExercise":"Next exercise","skipRest":"Skip rest","openApp":"Open CARGA for the next set"}}
         """), let s = decode(WorkoutActivityAttributes.ContentState.self, """
         {"name":"Push Day","cur":{"exId":"0025","entryIdx":0,"setIdx":2,"exName":"Barbell Bench Press","setLine":"Set 3 of 4",
           "target":"80 kg × 6","restAfter":120,"unit":0},"ahead":[],"restEndsAt":\(rest ? String(end) : "null"),"restLeft":null,
