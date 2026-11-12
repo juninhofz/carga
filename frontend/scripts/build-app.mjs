@@ -36,6 +36,8 @@ const only = process.argv[2]
 run('npx cap sync' + (only ? ' ' + only : ''))
 
 // the live-update bundle: dist zipped (index.html at the root), its checksum and the feed
+// (not on the iPhone build machine: CARGA_NO_BUNDLE=1; the bundle is made where the site is published)
+if (process.env.CARGA_NO_BUNDLE) { console.log('app pronto (versão das telas ' + BUNDLE + ')'); process.exit(0) }
 const out = path.resolve('app-update-out')
 fs.mkdirSync(out, { recursive: true })
 for (const f of fs.readdirSync(out)) if (f.endsWith('.zip') || f === 'latest.json') fs.unlinkSync(path.join(out, f))

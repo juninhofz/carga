@@ -1,11 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- CARGA's mark (lib/carga-mark.js: the loaded bar bent into a C) as the status-bar icon. Status-bar
+     icons are an alpha mask, so it stays white. Drawn by a script from the same geometry as the logo. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-    <!-- Status-bar icons are an alpha mask, so this stays white. -->
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2.45"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M17.56,19.03L16.95,19.03L16.34,19.03L15.72,19.03L15.11,19.03L14.50,19.03L13.88,19.03L13.27,19.03L12.66,19.00L12.05,18.92L11.45,18.79L10.86,18.61L10.30,18.37L9.75,18.09L9.24,17.76L8.75,17.39L8.30,16.97L7.88,16.52L7.51,16.03L7.18,15.51L6.90,14.97L6.66,14.40L6.48,13.82L6.35,13.22L6.27,12.61L6.24,12.00L6.27,11.39L6.35,10.78L6.48,10.18L6.66,9.60L6.90,9.03L7.18,8.49L7.51,7.97L7.88,7.48L8.30,7.03L8.75,6.61L9.24,6.24L9.75,5.91L10.30,5.63L10.86,5.39L11.45,5.21L12.05,5.08L12.66,5.00L13.27,4.97L13.88,4.97L14.50,4.97L15.11,4.97L15.72,4.97L16.34,4.97L16.95,4.97L17.56,4.97" />
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M2,8h2.4v8H2zM4.8,9.6h1.8v4.8H4.8zM7,11.1h10v1.8H7zM17.4,9.6h1.8v4.8h-1.8zM19.6,8H22v8h-2.4z" />
+        android:pathData="M15.11,22.56L13.58,22.56L13.58,15.50L15.11,15.50ZM13.58,1.44L15.11,1.44L15.11,8.50L13.58,8.50ZM16.34,21.71L15.11,21.71L15.11,16.35L16.34,16.35ZM15.11,2.29L16.34,2.29L16.34,7.65L15.11,7.65ZM17.26,20.87L16.34,20.87L16.34,17.19L17.26,17.19ZM16.34,3.13L17.26,3.13L17.26,6.81L16.34,6.81Z" />
 </vector>

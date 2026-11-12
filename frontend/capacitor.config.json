@@ -24,6 +24,10 @@
       "updateUrl": "",
       "channelUrl": "",
       "appReadyTimeout": 15000
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_dumbbell",
+      "iconColor": "#FF6B00"
     }
   }
 }

@@ -1,0 +1,57 @@
+# CARGA for iPhone, unsigned, to install with AltStore / SideStore on one's own iPhone with a free
+# Apple ID (no Apple Developer account). Run it by hand: Actions → "iPhone (instalar pelo computador)"
+# → Run workflow. The .ipa is the run's artifact "CARGA-iphone".
+# Only the app itself: no widgets, watch app or animation downloader, which a free Apple ID cannot
+# sign (each is its own app id, and the free account allows three). The public repo's macOS
+# minutes are free.
+name: iPhone (instalar pelo computador)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ipa:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      # the app's web build (animations from the site, live updates), copied into ios/ (pod install)
+      - run: node scripts/build-app.mjs ios
+        working-directory: frontend
+        env:
+          CARGA_NO_BUNDLE: '1'
+      - name: Archive, unsigned
+        working-directory: frontend/ios/App
+        run: |
+          set -o pipefail
+          mkdir -p build
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath build/App.xcarchive \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" archive \
+            | tee build/archive.log | grep -E "error:|BUILD|ARCHIVE" || true
+          test -d build/App.xcarchive/Products/Applications/App.app
+          cd build/App.xcarchive/Products/Applications
+          rm -rf App.app/PlugIns App.app/Watch
+          mkdir -p ../../../Payload && cp -R App.app ../../../Payload/
+          cd ../../.. && zip -qry CARGA.ipa Payload
+          ls -la CARGA.ipa
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: CARGA-iphone
+          path: frontend/ios/App/build/CARGA.ipa
+          retention-days: 30
+      - if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: log
+          path: frontend/ios/App/build/archive.log
