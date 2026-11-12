@@ -376,6 +376,12 @@ enum LiveActivityTick {
         let content = UNMutableNotificationContent()
         content.title = title
         content.sound = .default
+        // CARGA: the spoken "Acabou o descanso" when the voice is on (CargaVoice, app only: the
+        // file is looked for by name so this compiles into the widget extension too)
+        if let lib = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first,
+           FileManager.default.fileExists(atPath: lib.appendingPathComponent("Sounds/carga-voz-geral.caf").path) {
+            content.sound = UNNotificationSound(named: UNNotificationSoundName("carga-voz-geral.caf"))
+        }
         content.interruptionLevel = .active
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(1, at.timeIntervalSinceNow), repeats: false)
         UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: restRequestId, content: content, trigger: trigger))

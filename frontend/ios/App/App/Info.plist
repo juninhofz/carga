@@ -105,6 +105,7 @@
 	     Not watchOS's workout-processing, which Apple lists for the watch only. -->
 	<key>UIBackgroundModes</key>
 	<array>
+		<string>location</string>
 		<string>fetch</string>
 		<string>processing</string>
 	</array>

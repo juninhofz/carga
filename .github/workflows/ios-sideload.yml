@@ -1,9 +1,8 @@
 # CARGA for iPhone, unsigned, to install with AltStore / SideStore on one's own iPhone with a free
 # Apple ID (no Apple Developer account). Run it by hand: Actions → "iPhone (instalar pelo computador)"
 # → Run workflow. The .ipa is the run's artifact "CARGA-iphone".
-# Only the app itself: no widgets, watch app or animation downloader, which a free Apple ID cannot
-# sign (each is its own app id, and the free account allows three). The public repo's macOS
-# minutes are free.
+# The app and its widget extension (the Lock Screen panels): two of the three app ids a free Apple
+# ID may have. No watch app or animation downloader. The public repo's macOS minutes are free.
 name: iPhone (instalar pelo computador)
 
 on:
@@ -30,6 +29,12 @@ jobs:
         working-directory: frontend
         env:
           CARGA_NO_BUNDLE: '1'
+      # CARGA's own Swift files, then the widget extension: the workout's and the run's panels on
+      # the Lock Screen (Live Activities). The watch app and the asset downloader stay out.
+      - run: ruby ios/ci/add-carga.rb
+        working-directory: frontend
+      - run: ruby ios/ci/add-widgets.rb
+        working-directory: frontend
       - name: Archive, unsigned
         working-directory: frontend/ios/App
         run: |
@@ -41,7 +46,8 @@ jobs:
             | tee build/archive.log | grep -E "error:|BUILD|ARCHIVE" || true
           test -d build/App.xcarchive/Products/Applications/App.app
           cd build/App.xcarchive/Products/Applications
-          rm -rf App.app/PlugIns App.app/Watch
+          rm -rf App.app/Watch
+          ls App.app/PlugIns || true
           mkdir -p ../../../Payload && cp -R App.app ../../../Payload/
           cd ../../.. && zip -qry CARGA.ipa Payload
           ls -la CARGA.ipa

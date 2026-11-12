@@ -31,6 +31,7 @@ class MainViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(PhoneWorkoutPlugin())
         bridge?.registerPluginInstance(WidgetBridgePlugin())
         bridge?.registerPluginInstance(LiveActivityPlugin())
+        bridge?.registerPluginInstance(RunTrackerPlugin())
         bridge?.registerPluginInstance(AppIconPlugin())
         bridge?.registerPluginInstance(NfcTagsPlugin())
         bridge?.registerPluginInstance(VoiceBridgePlugin())

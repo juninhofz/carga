@@ -18,6 +18,7 @@ struct OpenGymWidgets: WidgetBundle {
         StreakWidget()
         ConfigurableWidget()
         WorkoutLiveActivity()
+        RunLiveActivity()
     }
 }
 

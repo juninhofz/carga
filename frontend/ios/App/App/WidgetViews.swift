@@ -739,35 +739,97 @@ struct LiveLockView: View {
     let attributes: WorkoutActivityAttributes
     let state: WorkoutActivityAttributes.ContentState
 
+    // CARGA (approved 2026-11-12): black, the mark in the middle, the set big, or the rest / hold
+    // counting down in orange, the next one, the two buttons.
     var body: some View {
-        let accent = Color(hex: attributes.accent) ?? .green
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .top, spacing: 10) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(state.cur?.exName ?? attributes.noSetText(state)).font(.headline).lineLimit(1)
-                    if let c = state.cur {
-                        Text([c.setLine, c.target].filter { !$0.isEmpty }.joined(separator: " · "))
-                            .font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
-                    } else {
-                        Text(state.name).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
+        let clock = state.holding || state.restRange != nil || state.restLeft != nil
+        VStack(alignment: .leading, spacing: 9) {
+            CargaHeader(left: state.resting ? "DESCANSO" : state.holding ? "SEGURE" : "TREINO",
+                        right: "\(min(state.total, state.done + 1)) de \(state.total)")
+            if clock {
+                HStack(alignment: .center, spacing: 12) {
+                    LiveRest(attributes: attributes, state: state, font: .system(size: 40, weight: .heavy))
+                        .foregroundStyle(CargaColor.orange)
+                        .frame(maxWidth: 120, alignment: .leading)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(state.resting ? "PRÓXIMA SÉRIE" : "AGORA").font(.caption2.weight(.bold)).foregroundStyle(.white.opacity(0.65))
+                        Text(state.cur?.exName ?? attributes.noSetText(state)).font(.subheadline.weight(.bold)).foregroundStyle(.white).lineLimit(1)
+                        if let c = state.cur {
+                            Text([c.setLine, c.target].filter { !$0.isEmpty }.joined(separator: " · ")).font(.caption).foregroundStyle(.white.opacity(0.8)).lineLimit(1)
+                        }
                     }
                 }
-                Spacer(minLength: 6)
-                if state.holding || state.restRange != nil || state.restLeft != nil {
-                    VStack(alignment: .trailing, spacing: 0) {
-                        Text(attributes.clockLabel(state)).font(.caption2.weight(.semibold)).textCase(.uppercase).foregroundStyle(.secondary)
-                        LiveRest(attributes: attributes, state: state).frame(maxWidth: 96, alignment: .trailing)
+            } else {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(state.cur?.exName ?? attributes.noSetText(state)).font(.title3.weight(.heavy)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
+                    if let c = state.cur {
+                        (Text(c.setLine + (c.target.isEmpty ? "" : " · ")).foregroundStyle(.white.opacity(0.85))
+                            + Text(c.target).foregroundStyle(CargaColor.orange).bold())
+                            .font(.subheadline).lineLimit(1)
+                    } else {
+                        Text(state.name).font(.subheadline).foregroundStyle(.white.opacity(0.75)).lineLimit(1)
                     }
                 }
             }
-            HStack(spacing: 10) {
-                ProgressBar(value: Double(state.done) / Double(max(1, state.total)), accent: accent)
-                Text("\(state.done)/\(state.total)").font(.caption.weight(.semibold)).monospacedDigit().foregroundStyle(.secondary)
-                LiveSecondaryButton(attributes: attributes, state: state)
+            ProgressBar(value: Double(state.done) / Double(max(1, state.total)), accent: CargaColor.orange)
+            if let n = state.nextUnitStart ?? state.ahead.first, !clock {
+                Text("Depois: \(n.exName) · \(n.target)").font(.caption).foregroundStyle(.white.opacity(0.65)).lineLimit(1)
+            }
+            HStack(spacing: 8) {
                 if let c = state.cur { LiveDoneButton(attributes: attributes, cur: c) }
+                LiveSecondaryButton(attributes: attributes, state: state)
+                Spacer(minLength: 0)
+            }
+            .tint(CargaColor.orange)
+        }
+        .padding(14)
+    }
+}
+
+/// CARGA's colours on the Lock Screen.
+enum CargaColor {
+    static let orange = Color(red: 1, green: 0.42, blue: 0)
+    static let panel = Color(red: 0.078, green: 0.067, blue: 0.063)
+    static let plate = Color(red: 0.965, green: 0.933, blue: 0.91)
+}
+
+/// The CARGA mark drawn here (no picture in a widget): the bar bent into a C, the plates at its ends.
+struct CargaMark: View {
+    var size: CGFloat = 18
+    var body: some View {
+        ZStack {
+            Circle()
+                .trim(from: 0.12, to: 0.88)
+                .stroke(CargaColor.orange, style: StrokeStyle(lineWidth: size * 0.17, lineCap: .round))
+                .frame(width: size * 0.72, height: size * 0.72)
+            ForEach([-1.0, 1.0], id: \.self) { side in
+                HStack(spacing: size * 0.03) {
+                    RoundedRectangle(cornerRadius: 1).fill(CargaColor.plate).frame(width: size * 0.07, height: size * 0.32)
+                    RoundedRectangle(cornerRadius: 1).fill(CargaColor.plate).frame(width: size * 0.06, height: size * 0.24)
+                }
+                .offset(x: size * 0.33, y: side * size * 0.27)
             }
         }
-        .padding(16)
+        .frame(width: size, height: size)
+    }
+}
+
+/// The panel's top line: a word on the left, the mark and CARGA in the middle, a count on the right.
+struct CargaHeader: View {
+    let left: String
+    let right: String
+    var body: some View {
+        ZStack {
+            HStack {
+                Text(left).font(.caption2.weight(.bold)).foregroundStyle(.white.opacity(0.7)).lineLimit(1)
+                Spacer()
+                Text(right).font(.caption2.weight(.heavy)).foregroundStyle(CargaColor.orange).lineLimit(1)
+            }
+            HStack(spacing: 5) {
+                CargaMark(size: 18)
+                Text("CARGA").font(.system(size: 16, weight: .black)).italic().foregroundStyle(.white)
+            }
+        }
     }
 }
 

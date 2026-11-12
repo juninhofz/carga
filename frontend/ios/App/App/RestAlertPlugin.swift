@@ -32,6 +32,7 @@ public class RestAlertPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesizerDe
         CAPPluginMethod(name: "setAccent", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "speak", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "hush", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "voice", returnType: CAPPluginReturnPromise),
     ]
 
     static let requestId = "opengym.rest"
@@ -116,6 +117,7 @@ public class RestAlertPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesizerDe
             tone: RestTone.normalised(call.getString("tone") ?? ((call.getBool("classic") ?? false) ? "classic" : "chime")),
             cues: cues
         )
+        CargaVoice.prepare(cues: cues.map { $0.title })
         DispatchQueue.main.async {
             if UIApplication.shared.applicationState != .active {
                 self.withdraw()
@@ -253,6 +255,12 @@ public class RestAlertPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesizerDe
         }
     }
 
+    /// CARGA: { on, line, rate }: the voice a locked iPhone plays at the rest's end (CargaVoice).
+    @objc func voice(_ call: CAPPluginCall) {
+        CargaVoice.set(on: call.getBool("on") ?? false, line: call.getString("line") ?? "", rate: Float(call.getDouble("rate") ?? 1))
+        call.resolve()
+    }
+
     @objc func hush(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
             self.speech.stopSpeaking(at: .immediate)
@@ -320,7 +328,10 @@ public class RestAlertPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesizerDe
         for (id, at, title) in alerts where at > Date() {
             let content = UNMutableNotificationContent()
             content.title = title
-            if p.sound {
+            if let voice = CargaVoice.sound(for: title, rest: id == RestAlertPlugin.requestId && p.cues.isEmpty) {
+                // CARGA: the line spoken into a sound (CargaVoice): heard in the earphones, locked
+                content.sound = UNNotificationSound(named: UNNotificationSoundName(voice))
+            } else if p.sound {
                 content.sound = RestTone.soundFile(p.tone) != nil
                     ? UNNotificationSound(named: UNNotificationSoundName(RestTone.soundName(p.tone)))
                     : .default
