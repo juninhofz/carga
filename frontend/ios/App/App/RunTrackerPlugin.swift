@@ -197,6 +197,7 @@ public class RunTrackerPlugin: CAPPlugin, CAPBridgedPlugin, CLLocationManagerDel
     }
 
     // ---------------- the Live Activity ----------------
+    @available(iOS 16.1, *)
     private func content() -> RunActivityAttributes.ContentState {
         RunActivityAttributes.ContentState(distM: distM, paceSec: paceSec(),
                                            runningSince: runningSince.map { RunTrackerPlugin.ms($0) },
