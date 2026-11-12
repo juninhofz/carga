@@ -4042,6 +4042,9 @@ function gymShareData(st, w, status) {
     big: min >= 60 ? { v: Math.floor(min / 60) + ':' + String(min % 60).padStart(2, '0'), u: 'h' } : { v: String(min), u: 'min' },
     stats: [['Volume', vol >= 1000 ? (vol / 1000).toFixed(1).replace('.', ',') + ' t' : Math.round(vol) + ' ' + st.unit], ['Séries', String(list.reduce((n, x) => n + Number(x[1].split('×')[0]), 0))], ['Exerc.', String(list.length)]],
     segments: null, list, at: w.start,
+    // CARGA: which workout (its points and a level it made are worked out from it) and its records
+    wid: w.id,
+    prNames: (Array.isArray(w.prs) ? w.prs : []).map(id => { const ex = EXIDX[id]; const nm = ex ? exerciseNameFor(ex) : String(id); return nm.charAt(0).toUpperCase() + nm.slice(1) }),
   }
 }
 

@@ -4192,3 +4192,10 @@ body:has(.run-live) #tabbar{display:none}
 .sha-post{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:8px;border:0;border-radius:14px;padding:13px;background:rgba(255,107,0,.14);color:#ff8a3d;font:800 16px/1 inherit;cursor:pointer}
 .sha-post:disabled{opacity:.5}
 .sha-post svg{width:18px;height:18px}
+
+/* CARGA: what shows on the picture, switched on and off (components/ShareActivity.jsx) */
+.sha-show{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0 2px}
+.sha-show>span{font:700 12px/1 inherit;letter-spacing:.08em;text-transform:uppercase;color:var(--label-2);margin-right:2px}
+.sha-t{display:inline-flex;align-items:center;gap:4px;border:1.5px solid var(--separator);background:none;color:var(--label-2);border-radius:999px;padding:6px 11px;font:600 13px/1 inherit;cursor:pointer}
+.sha-t.on{border-color:#ff6b00;background:rgba(255,107,0,.14);color:var(--label)}
+.sha-t svg{width:12px;height:12px}

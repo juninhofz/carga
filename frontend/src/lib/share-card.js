@@ -10,6 +10,7 @@
 import { makeCanvas, toPng } from './share-image.js'
 import { TILES } from './gym-places.js'
 import { drawMarkOn, MARK_ASPECT } from './carga-mark.js'
+import { GYM_MODELS, SHOW_DEFAULT, drawGymModel, drawSeal, fmtWhen, SAFE_TOP } from './share-gym.js'
 
 export const W = 1080, H = 1920
 const FONT = '"Barlow Condensed","Arial Narrow",Impact,sans-serif'
@@ -60,18 +61,7 @@ function drawIcon(ctx, id, x, y, size, color) {
   ctx.restore()
 }
 
-/** The CARGA mark and name, small, at x, y (top-left). */
-function drawLogo(ctx, x, y, ink) {
-  ctx.save()
-  drawMarkOn(ctx, x, y + 28, 62, { bar: ORANGE, plate: ink === INK ? '#fff' : ink, ground: ink === INK ? ORANGE : '#000' })
-  ctx.fillStyle = ink
-  ctx.font = `900 46px ${FONT}`
-  ctx.textBaseline = 'middle'
-  ctx.fillText('CARGA', x + 62 * MARK_ASPECT + 18, y + 30)
-  ctx.restore()
-}
-
-function drawChip(ctx, x, y, status, label, scheme) {
+export function drawChip(ctx, x, y, status, label, scheme) {
   if (!status) return 0
   const [bg, fg] = scheme || CHIP[status.id] || CHIP.firme
   ctx.save()
@@ -89,6 +79,7 @@ function drawChip(ctx, x, y, status, label, scheme) {
 }
 
 function drawBig(ctx, x, y, big, ink, align = 'left') {
+  if (!big) return
   ctx.save()
   ctx.fillStyle = ink
   ctx.textBaseline = 'alphabetic'
@@ -105,6 +96,7 @@ function drawBig(ctx, x, y, big, ink, align = 'left') {
 }
 
 function drawStats(ctx, x, y, w, stats, ink, sub, align = 'left') {
+  if (!stats.length) return
   ctx.save()
   const col = w / stats.length
   stats.forEach(([label, value], i) => {
@@ -190,8 +182,8 @@ async function drawMap(ctx, segments, box) {
 
 /* ---------- the models ---------- */
 
-// CARGA (2026-11-05): the receipt, the person's photo, the CARGA mark big enough to ask "what app
-// is that?", the rank card; the map stays for the runs with a route.
+// Everything between SAFE_TOP and SAFE_BOTTOM (lib/share-gym.js): Instagram lays its profile bar
+// over the top of a Story and its message box over the bottom; the CARGA seal goes just above it.
 export const MODELS = [
   { id: 'map', name: 'Mapa', needsRoute: true },
   { id: 'dark', name: 'Escuro' },
@@ -199,17 +191,11 @@ export const MODELS = [
   { id: 'photo', name: 'Com foto' },
   { id: 'sticker', name: 'Adesivo' },
 ]
-// a gym workout: its time and the exercises done, in each of these
-export const GYM_MODELS = [
-  { id: 'logo', name: 'CARGA' },
-  { id: 'receipt', name: 'Recibo' },
-  { id: 'rank', name: 'Carta de rank', needsRank: true },
-  { id: 'photo', name: 'Com foto' },
-]
+export { GYM_MODELS, SHOW_DEFAULT }
 
 /** The exercises, one per row: name on the left, sets and weight on the right. */
 function drawList(ctx, x, y, w, list, ink, sub, rowH = 58, max = 7) {
-  const rows = list.slice(0, max)
+  const rows = list.slice(0, Math.max(0, max))
   ctx.save()
   rows.forEach(([n, d], i) => {
     const yy = y + i * rowH
@@ -218,26 +204,31 @@ function drawList(ctx, x, y, w, list, ink, sub, rowH = 58, max = 7) {
     ctx.fillStyle = sub; ctx.font = `600 34px ${BODY}`; ctx.textAlign = 'right'
     ctx.fillText(d, x + w, yy)
   })
-  if (list.length > max) { ctx.fillStyle = sub; ctx.font = `600 30px ${BODY}`; ctx.textAlign = 'left'; ctx.fillText('+ ' + (list.length - max) + ' exercícios', x, y + rows.length * rowH) }
+  if (list.length > rows.length && rows.length) { ctx.fillStyle = sub; ctx.font = `600 30px ${BODY}`; ctx.textAlign = 'left'; ctx.fillText('+ ' + (list.length - rows.length) + ' exercícios', x, y + rows.length * rowH) }
   ctx.restore()
-  return rows.length * rowH + (list.length > max ? rowH : 0)
+  return rows.length * rowH + (list.length > rows.length && rows.length ? rowH : 0)
 }
 
 const MONO = '"Space Mono","Courier New",ui-monospace,monospace'
 const when = a => (a.at ? new Date(a.at) : new Date())
-const fmtWhen = d => d.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }) + ' · ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 
 /** The lines a receipt lists: the exercises of a workout, or the numbers of a run or a class. */
 const receiptLines = a => (a.list?.length ? a.list : a.stats.map(([l, v]) => [l, v]))
 
 function drawReceipt(ctx, a, label) {
-  // orange ground, a paper slip slightly turned, torn at both ends
+  // orange ground, a paper slip slightly turned, torn at both ends, inside the safe band
   const g = ctx.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#ff7a1a'); g.addColorStop(1, '#ff5500')
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H)
-  const lines = receiptLines(a).slice(0, 9)
-  const px = 130, pw = W - 260, rowH = 62
-  const ph = 860 + (lines.length + (a.list?.length ? 3 : 0)) * rowH
-  const py = Math.max(120, (H - ph) / 2)
+  const gym = a.gym
+  const extra = gym ? [a.big && ['Tempo', a.big.v + ' ' + a.big.u], a.sets && ['Séries', a.sets], a.pts && ['Pontos', '+' + a.pts]].filter(Boolean) : []
+  const total = gym ? (a.volume ? ['TOTAL', a.volume] : null) : (a.big ? ['TEMPO', a.big.v + ' ' + a.big.u] : null)
+  const rowH = 60
+  const fixed = 110 + (a.noDate ? 0 : 52) + 40 + 64 + (extra.length ? 40 : 0) + (total ? 156 : 0) + (label ? 66 : 0) + 40 + 80 + 110 + 30
+  const maxLines = Math.max(0, Math.floor((1260 - fixed - extra.length * rowH) / rowH))
+  const lines = receiptLines(a).slice(0, maxLines)
+  const px = 130, pw = W - 260
+  const ph = fixed + (lines.length + extra.length) * rowH
+  const py = SAFE_TOP + Math.max(0, (1290 - ph) / 2)
   ctx.save()
   ctx.translate(W / 2, py + ph / 2); ctx.rotate(-0.035); ctx.translate(-W / 2, -(py + ph / 2))
   ctx.shadowColor = 'rgba(0,0,0,.3)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 18
@@ -254,7 +245,7 @@ function drawReceipt(ctx, a, label) {
   let y = py + 110
   ctx.fillStyle = ink; ctx.textAlign = 'center'
   ctx.font = `700 64px ${MONO}`; ctx.fillText('CARGA', W / 2, y)
-  y += 52; ctx.font = `400 30px ${MONO}`; ctx.fillText(fmtWhen(when(a)), W / 2, y)
+  if (!a.noDate) { y += 52; ctx.font = `400 30px ${MONO}`; ctx.fillText(fmtWhen(when(a)), W / 2, y) }
   const dash = yy => { ctx.save(); ctx.strokeStyle = '#b49a80'; ctx.setLineDash([12, 10]); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(l, yy); ctx.lineTo(r, yy); ctx.stroke(); ctx.restore() }
   y += 40; dash(y)
   ctx.font = `700 36px ${MONO}`; ctx.textAlign = 'left'; y += 64; ctx.fillText((a.title || 'Atividade').toUpperCase().slice(0, 24), l, y)
@@ -264,19 +255,16 @@ function drawReceipt(ctx, a, label) {
     ctx.textAlign = 'left'; ctx.fillText(n.length > 20 ? n.slice(0, 19) + '.' : n, l, y)
     ctx.textAlign = 'right'; ctx.fillText(d, r, y)
   }
-  // a workout: how long it took and how many sets, before the total
-  if (a.list?.length) {
+  if (extra.length) {
     y += 40; dash(y)
-    for (const [n, d] of [['Tempo', a.big.v + ' ' + a.big.u], ['Séries', a.stats[1]?.[1] || '']]) {
-      y += rowH
-      ctx.textAlign = 'left'; ctx.fillText(n, l, y)
-      ctx.textAlign = 'right'; ctx.fillText(d, r, y)
-    }
+    for (const [n, d] of extra) { y += rowH; ctx.textAlign = 'left'; ctx.fillText(n, l, y); ctx.textAlign = 'right'; ctx.fillText(d, r, y) }
   }
-  y += 40; dash(y)
-  ctx.font = `700 46px ${MONO}`
-  y += 76; ctx.textAlign = 'left'; ctx.fillText(a.list?.length ? 'TOTAL' : 'TEMPO', l, y)
-  ctx.textAlign = 'right'; ctx.fillText(a.list?.length ? (a.stats[0]?.[1] || '') : a.big.v + ' ' + a.big.u, r, y)
+  if (total) {
+    y += 40; dash(y)
+    ctx.font = `700 46px ${MONO}`
+    y += 76; ctx.textAlign = 'left'; ctx.fillText(total[0], l, y)
+    ctx.textAlign = 'right'; ctx.fillText(total[1], r, y)
+  }
   y += 40; dash(y)
   if (label) { y += 66; ctx.textAlign = 'center'; ctx.font = `700 38px ${MONO}`; ctx.fillText('STATUS: ' + label.toUpperCase(), W / 2, y) }
   // the barcode
@@ -286,86 +274,80 @@ function drawReceipt(ctx, a, label) {
   while (x < r - 30) { const w = 3 + ((k * 7) % 9); ctx.fillRect(x, y, w, 80); x += w + 4 + ((k * 3) % 7); k++ }
   y += 130; ctx.textAlign = 'center'; ctx.font = `400 30px ${MONO}`; ctx.fillText('obrigado pela carga', W / 2, y)
   ctx.restore()
+  drawSeal(ctx, true)
 }
 
+/** The CARGA mark big enough to ask "what app is that?"; the workout under it. It is its own seal. */
 function drawLogoModel(ctx, a, label) {
   ctx.fillStyle = '#0d0b0a'; ctx.fillRect(0, 0, W, H)
-  const glow = ctx.createRadialGradient(W / 2, 330, 40, W / 2, 330, 560); glow.addColorStop(0, 'rgba(255,107,0,.35)'); glow.addColorStop(1, 'rgba(255,107,0,0)')
+  const glow = ctx.createRadialGradient(W / 2, 380, 40, W / 2, 380, 520); glow.addColorStop(0, 'rgba(255,107,0,.35)'); glow.addColorStop(1, 'rgba(255,107,0,0)')
   ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H)
-  drawMarkOn(ctx, W / 2 - 300 * MARK_ASPECT / 2, 300, 300, { bar: ORANGE, plate: '#f6eee8', ground: '#0d0b0a' })
+  drawMarkOn(ctx, W / 2 - 220 * MARK_ASPECT / 2, SAFE_TOP + 135, 220, { bar: ORANGE, plate: '#f6eee8', ground: '#0d0b0a' })
   ctx.save()
   ctx.fillStyle = '#f6eee8'; ctx.textAlign = 'center'
-  ctx.font = `italic 900 210px ${FONT}`; ctx.fillText('CARGA', W / 2, 650)
-  ctx.fillStyle = ORANGE; ctx.font = `800 36px ${FONT}`
-  ctx.fillText('T R E I N O   ·   C O R R I D A   ·   D E S A F I O S', W / 2, 712)
+  ctx.font = `italic 900 170px ${FONT}`; ctx.fillText('CARGA', W / 2, SAFE_TOP + 380)
+  ctx.fillStyle = ORANGE; ctx.font = `800 32px ${FONT}`
+  ctx.fillText('T R E I N O   ·   C O R R I D A   ·   D E S A F I O S', W / 2, SAFE_TOP + 430)
   ctx.restore()
+  let y = SAFE_TOP + 460
   if (a.status) {
     ctx.save(); ctx.font = `800 40px ${FONT}`
     const w = ctx.measureText(label.toUpperCase()).width + 110
     ctx.restore()
-    drawChip(ctx, W / 2 - w / 2, 756, a.status, label)
+    drawChip(ctx, W / 2 - w / 2, y, a.status, label)
+    y += 90
   }
-  ctx.fillStyle = 'rgba(255,255,255,.07)'; ctx.beginPath(); ctx.roundRect(70, 860, W - 140, 990, 44); ctx.fill()
+  const panelTop = y, panelBottom = 1550
+  ctx.fillStyle = 'rgba(255,255,255,.07)'; ctx.beginPath(); ctx.roundRect(70, panelTop, W - 140, panelBottom - panelTop, 44); ctx.fill()
+  y = panelTop + 90
   ctx.save(); ctx.textAlign = 'center'; ctx.fillStyle = '#f6eee8'; ctx.font = `800 62px ${FONT}`
-  ctx.fillText((a.title || '').toUpperCase(), W / 2, 950); ctx.restore()
-  drawBig(ctx, W / 2, 1150, a.big, '#fff', 'center')
-  drawStats(ctx, 120, 1230, W - 240, a.stats, '#fff', 'rgba(255,255,255,.55)', 'center')
+  ctx.fillText((a.title || '').toUpperCase(), W / 2, y); ctx.restore()
+  if (a.big) { drawBig(ctx, W / 2, y + 200, a.big, '#fff', 'center'); y += 200 }
+  if (a.stats.length) { drawStats(ctx, 120, y + 70, W - 240, a.stats, '#fff', 'rgba(255,255,255,.55)', 'center'); y += 170 }
   if (a.list?.length) {
-    ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.fillRect(130, 1355, W - 260, 2)
-    drawList(ctx, 130, 1430, W - 260, a.list, '#fff', 'rgba(255,255,255,.6)', 58, 6)
+    ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.fillRect(130, y + 10, W - 260, 2)
+    drawList(ctx, 130, y + 80, W - 260, a.list, '#fff', 'rgba(255,255,255,.6)', 58, Math.floor((panelBottom - 40 - (y + 80)) / 58) - 1)
+  }
+  if (!a.noDate) { ctx.save(); ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(246,238,232,.45)'; ctx.font = `600 30px ${BODY}`; ctx.fillText(fmtWhen(when(a)), W / 2, panelBottom + 50); ctx.restore() }
+}
+
+/**
+ * A gym workout as the person chose to show it (`show`, SHOW_DEFAULT when not given): the shape the
+ * older models draw, with what is off left out.
+ */
+function gymView(a, show) {
+  const on = id => show[id] !== false
+  const stat = l => a.stats.find(s => s[0] === l)?.[1]
+  return {
+    ...a, gym: true,
+    big: on('time') ? a.big : null,
+    stats: a.stats.filter(([l]) => (l === 'Volume' ? on('volume') : l === 'Séries' ? on('sets') : on('lifts'))),
+    list: on('lifts') ? a.list : [],
+    status: on('status') ? a.status : null,
+    statusLabel: on('status') ? a.statusLabel : '',
+    noDate: !on('date'),
+    volume: on('volume') ? stat('Volume') : '',
+    sets: on('sets') ? stat('Séries') : '',
+    pts: on('pts') ? a.pts || 0 : 0,
   }
 }
 
-function drawRankModel(ctx, a, label) {
-  const k = a.rank
-  ctx.fillStyle = '#0d0b0a'; ctx.fillRect(0, 0, W, H)
-  const glow = ctx.createRadialGradient(W / 2, 560, 40, W / 2, 560, 640); glow.addColorStop(0, k.c + '55'); glow.addColorStop(1, 'rgba(0,0,0,0)')
-  ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H)
-  drawLogo(ctx, W / 2 - 130, 80, '#fff')
-  const cw = 400, ch = 560, cx = W / 2, cy = 560
-  ctx.save()
-  ctx.translate(cx, cy); ctx.rotate(-0.07)
-  ctx.shadowColor = k.c + '88'; ctx.shadowBlur = 80
-  const edge = ctx.createLinearGradient(-cw / 2, -ch / 2, cw / 2, ch / 2); edge.addColorStop(0, k.c); edge.addColorStop(1, k.c2)
-  ctx.fillStyle = edge; ctx.beginPath(); ctx.roundRect(-cw / 2, -ch / 2, cw, ch, 30); ctx.fill()
-  ctx.shadowColor = 'transparent'
-  const face = ctx.createLinearGradient(0, -ch / 2, 0, ch / 2); face.addColorStop(0, '#2a2420'); face.addColorStop(1, '#0e0c0b')
-  ctx.fillStyle = face; ctx.beginPath(); ctx.roundRect(-cw / 2 + 18, -ch / 2 + 18, cw - 36, ch - 36, 20); ctx.fill()
-  ctx.fillStyle = k.c; ctx.textAlign = 'center'
-  ctx.font = `italic 900 ${k.r.length > 1 ? 190 : 270}px ${FONT}`; ctx.fillText(k.r, 0, 60)
-  ctx.fillStyle = '#f6eee8'; ctx.font = `800 46px ${FONT}`; ctx.fillText(k.name.toUpperCase(), 0, 160)
-  ctx.fillStyle = 'rgba(246,238,232,.6)'; ctx.font = `700 32px ${FONT}`; ctx.fillText('NÍVEL ' + k.level, 0, 210)
-  ctx.restore()
-  ctx.save(); ctx.textAlign = 'center'
-  ctx.fillStyle = '#f6eee8'; ctx.font = `italic 900 84px ${FONT}`; ctx.fillText((a.title || '').toUpperCase(), W / 2, 975)
-  ctx.restore()
-  drawStats(ctx, 110, 1050, W - 220, [['Tempo', a.big.v + ' ' + a.big.u], ...a.stats.slice(0, 2)], '#fff', 'rgba(255,255,255,.55)', 'center')
-  let y = 1210
-  if (a.list?.length) { ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.fillRect(130, y - 50, W - 260, 2); y += drawList(ctx, 130, y, W - 260, a.list, '#fff', 'rgba(255,255,255,.6)', 56, 6) }
-  if (a.status) {
-    ctx.save(); ctx.font = `800 40px ${FONT}`
-    const w = ctx.measureText(label.toUpperCase()).width + 110
-    ctx.restore()
-    drawChip(ctx, W / 2 - w / 2, Math.max(y + 10, 1600), a.status, label)
-  }
-  ctx.save(); ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(246,238,232,.5)'; ctx.font = `600 32px ${BODY}`
-  ctx.fillText(fmtWhen(when(a)), W / 2, 1810); ctx.restore()
-}
-
-
-/** The picture of `a` in `model` as a PNG blob. `photo` is an Image for the photo model. */
-export async function drawShare(a, model, photo) {
+/** The picture of `a` in `model` as a PNG blob. `photo` is an Image for the photo models; `show`
+ *  says what a gym workout shows (lib/share-gym.js SHOW_ITEMS). */
+export async function drawShare(a0, model, photo, show = SHOW_DEFAULT) {
   await loadFonts()
   const c = makeCanvas(W, H, FONT)
   if (!c) return null
   const { canvas, ctx } = c
+  if (a0.list && drawGymModel(ctx, model, a0, show, photo, { drawChip, drawIcon })) return toPng(canvas)
+  const a = a0.list ? gymView(a0, show) : a0
   const M = 80
   const label = a.statusLabel || a.status?.name || ''
   const listOrRoute = async (box, color, ink, sub, shadow) => {
     if (a.segments?.length) { strokeRoute(ctx, fitRoute(a.segments, box), color, 14, shadow); return }
     if (a.list?.length) {
       ctx.save()
-      a.list.slice(0, 7).forEach(([n, d], i) => {
+      a.list.slice(0, Math.floor((box.h - 20) / 104)).forEach(([n, d], i) => {
         const y = box.y + 40 + i * 104
         ctx.fillStyle = ink; ctx.font = `600 44px ${BODY}`; ctx.textAlign = 'left'; ctx.fillText(n.length > 26 ? n.slice(0, 25) + '…' : n, box.x, y)
         ctx.fillStyle = sub; ctx.font = `600 40px ${BODY}`; ctx.textAlign = 'right'; ctx.fillText(d, box.x + box.w, y)
@@ -388,30 +370,27 @@ export async function drawShare(a, model, photo) {
 
   if (model === 'receipt') drawReceipt(ctx, a, label)
   else if (model === 'logo') drawLogoModel(ctx, a, label)
-  else if (model === 'rank' && a.rank) drawRankModel(ctx, a, label)
   else if (model === 'map' && a.segments?.length) {
     ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H)
-    const box = { x: 0, y: 0, w: W, h: 1180 }
+    const box = { x: 0, y: 0, w: W, h: 1000 }
     const lines = await drawMap(ctx, a.segments, box)
     strokeRoute(ctx, lines, ORANGE, 14, 'rgba(0,0,0,.55)')
-    const g = ctx.createLinearGradient(0, 0, 0, 220); g.addColorStop(0, 'rgba(0,0,0,.6)'); g.addColorStop(1, 'rgba(0,0,0,0)')
-    ctx.fillStyle = g; ctx.fillRect(0, 0, W, 220)
-    drawLogo(ctx, M, 70, '#fff')
-    ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.font = `500 22px ${BODY}`; ctx.fillText('© OpenStreetMap', W - 230, 1160)
-    ctx.fillStyle = ORANGE; ctx.fillRect(0, 1180, W, 10)
-    drawChip(ctx, M, 1240, a.status, label)
-    drawBig(ctx, M, 1580, a.big, '#fff')
-    drawStats(ctx, M, 1700, W - M * 2, a.stats, '#fff', 'rgba(255,255,255,.6)')
+    ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.font = `500 22px ${BODY}`; ctx.fillText('© OpenStreetMap', W - 230, 980)
+    ctx.fillStyle = ORANGE; ctx.fillRect(0, 1000, W, 10)
+    drawChip(ctx, M, 1050, a.status, label)
+    drawBig(ctx, M, 1360, a.big, '#fff')
+    drawStats(ctx, M, 1440, W - M * 2, a.stats, '#fff', 'rgba(255,255,255,.6)')
+    drawSeal(ctx)
   } else if (model === 'orange') {
     const g = ctx.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#ff7a1a'); g.addColorStop(1, '#ff4d00')
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H)
-    drawLogo(ctx, M, 80, INK)
-    drawChip(ctx, M, 190, a.status, label, ['rgba(0,0,0,.16)', INK])
-    title(INK, 340)
-    ctx.fillStyle = 'rgba(0,0,0,.1)'; ctx.beginPath(); ctx.roundRect(M, 400, W - M * 2, 900, 40); ctx.fill()
-    await listOrRoute({ x: M + 40, y: 420, w: W - M * 2 - 80, h: 860 }, INK, INK, 'rgba(26,11,0,.65)')
-    drawBig(ctx, M, 1600, a.big, INK)
-    drawStats(ctx, M, 1720, W - M * 2, a.stats, INK, 'rgba(26,11,0,.65)')
+    drawChip(ctx, M, SAFE_TOP, a.status, label, ['rgba(0,0,0,.16)', INK])
+    title(INK, SAFE_TOP + 150)
+    ctx.fillStyle = 'rgba(0,0,0,.1)'; ctx.beginPath(); ctx.roundRect(M, SAFE_TOP + 190, W - M * 2, 640, 40); ctx.fill()
+    await listOrRoute({ x: M + 40, y: SAFE_TOP + 210, w: W - M * 2 - 80, h: 600 }, INK, INK, 'rgba(26,11,0,.65)')
+    drawBig(ctx, M, 1320, a.big, INK)
+    drawStats(ctx, M, 1410, W - M * 2, a.stats, INK, 'rgba(26,11,0,.65)')
+    drawSeal(ctx, true)
   } else if (model === 'photo') {
     ctx.fillStyle = '#2b3138'; ctx.fillRect(0, 0, W, H)
     if (photo) {
@@ -419,37 +398,40 @@ export async function drawShare(a, model, photo) {
       ctx.drawImage(photo, (W - photo.width * s) / 2, (H - photo.height * s) / 2, photo.width * s, photo.height * s)
     }
     const g = ctx.createLinearGradient(0, 0, 0, H)
-    g.addColorStop(0, 'rgba(0,0,0,.45)'); g.addColorStop(0.2, 'rgba(0,0,0,0)'); g.addColorStop(0.55, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.82)')
+    g.addColorStop(0, 'rgba(0,0,0,.35)'); g.addColorStop(0.18, 'rgba(0,0,0,0)'); g.addColorStop(0.42, 'rgba(0,0,0,0)'); g.addColorStop(0.75, 'rgba(0,0,0,.8)'); g.addColorStop(1, 'rgba(0,0,0,.85)')
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H)
-    drawLogo(ctx, M, 80, '#fff')
-    if (a.segments?.length) strokeRoute(ctx, fitRoute(a.segments, { x: M, y: 360, w: W - M * 2, h: 640 }), ORANGE, 12, 'rgba(0,0,0,.45)')
+    if (a.segments?.length) strokeRoute(ctx, fitRoute(a.segments, { x: M, y: SAFE_TOP + 40, w: W - M * 2, h: 520 }), ORANGE, 12, 'rgba(0,0,0,.45)')
+    let y = 1540
+    if (a.stats.length) { drawStats(ctx, M, y - 110, W - M * 2, a.stats, '#fff', 'rgba(255,255,255,.7)'); y -= 140 }
+    if (a.big) { drawBig(ctx, M, y, a.big, '#fff'); y -= 230 }
+    if (a.title) { title('#fff', y); y -= 80 }
+    if (a.status) { drawChip(ctx, M, y - 60, a.status, label, ['rgba(255,107,0,.92)', INK]); y -= 90 }
     if (a.list?.length) {
-      const n = Math.min(a.list.length, 6) + (a.list.length > 6 ? 1 : 0)
-      const ph = 50 + n * 56, py = 1210 - ph
-      ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.beginPath(); ctx.roundRect(M - 20, py - 30, W - M * 2 + 40, ph, 30); ctx.fill()
-      drawList(ctx, M + 10, py + 30, W - M * 2 - 20, a.list, '#fff', 'rgba(255,255,255,.75)', 56, 6)
+      const n = Math.max(0, Math.min(a.list.length, Math.floor((y - SAFE_TOP - 120) / 56)))
+      if (n) {
+        const ph = 50 + n * 56 + (a.list.length > n ? 56 : 0), py = y - ph - 10
+        ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.beginPath(); ctx.roundRect(M - 20, py - 30, W - M * 2 + 40, ph, 30); ctx.fill()
+        drawList(ctx, M + 10, py + 30, W - M * 2 - 20, a.list, '#fff', 'rgba(255,255,255,.75)', 56, n)
+      }
     }
-    drawChip(ctx, M, 1250, a.status, label, ['rgba(255,107,0,.92)', INK])
-    title('#fff', 1400)
-    drawBig(ctx, M, 1640, a.big, '#fff')
-    drawStats(ctx, M, 1740, W - M * 2, a.stats, '#fff', 'rgba(255,255,255,.7)')
+    drawSeal(ctx)
   } else if (model === 'sticker') {
-    // transparent: only the route (or the icon), the numbers and the mark, with a soft shadow
+    // transparent: only the route (or the icon), the numbers and the seal, with a soft shadow
     ctx.shadowColor = 'rgba(0,0,0,.55)'; ctx.shadowBlur = 18
-    await listOrRoute({ x: 140, y: 380, w: W - 280, h: 640 }, ORANGE, '#fff', 'rgba(255,255,255,.8)')
-    drawBig(ctx, W / 2, 1320, a.big, '#fff', 'center')
-    drawStats(ctx, M, 1430, W - M * 2, [...a.stats.slice(0, 2), ['Status', a.status?.name || '']], '#fff', 'rgba(255,255,255,.85)', 'center')
+    await listOrRoute({ x: 140, y: SAFE_TOP + 40, w: W - 280, h: 640 }, ORANGE, '#fff', 'rgba(255,255,255,.8)')
+    drawBig(ctx, W / 2, 1230, a.big, '#fff', 'center')
+    drawStats(ctx, M, 1340, W - M * 2, [...a.stats.slice(0, 2), ['Status', a.status?.name || '']], '#fff', 'rgba(255,255,255,.85)', 'center')
+    drawSeal(ctx)
     ctx.shadowBlur = 0
-    drawLogo(ctx, W / 2 - 140, 1620, '#fff')
   } else {
     ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H)
-    drawLogo(ctx, M, 80, '#fff')
-    drawChip(ctx, M, 190, a.status, label)
-    title('#fff', 340)
-    ctx.fillStyle = '#111'; ctx.beginPath(); ctx.roundRect(M, 400, W - M * 2, 900, 40); ctx.fill()
-    await listOrRoute({ x: M + 40, y: 420, w: W - M * 2 - 80, h: 860 }, ORANGE, '#fff', 'rgba(255,255,255,.6)')
-    drawBig(ctx, M, 1600, a.big, '#fff')
-    drawStats(ctx, M, 1720, W - M * 2, a.stats, '#fff', 'rgba(255,255,255,.6)')
+    drawChip(ctx, M, SAFE_TOP, a.status, label)
+    title('#fff', SAFE_TOP + 150)
+    ctx.fillStyle = '#111'; ctx.beginPath(); ctx.roundRect(M, SAFE_TOP + 190, W - M * 2, 640, 40); ctx.fill()
+    await listOrRoute({ x: M + 40, y: SAFE_TOP + 210, w: W - M * 2 - 80, h: 600 }, ORANGE, '#fff', 'rgba(255,255,255,.6)')
+    drawBig(ctx, M, 1320, a.big, '#fff')
+    drawStats(ctx, M, 1410, W - M * 2, a.stats, '#fff', 'rgba(255,255,255,.6)')
+    drawSeal(ctx)
   }
   return toPng(canvas)
 }
