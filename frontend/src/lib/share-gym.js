@@ -545,19 +545,26 @@ function bandModel(ctx, h, v, a, photo) {
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H)
   }
   chip(ctx, h, 80, SAFE_TOP + 10, v, ['rgba(13,10,9,.75)', '#ff8a3d'])
-  ctx.save(); ctx.translate(W / 2, 900); ctx.rotate(-0.087); ctx.fillStyle = OR; ctx.fillRect(-W, -18, W * 2, 36); ctx.restore()
-  const g = ctx.createLinearGradient(0, 900, 0, 1250); g.addColorStop(0, 'rgba(13,10,9,.9)'); g.addColorStop(1, GROUND)
+  // the lower part in CARGA orange, cut on a slant, a black slash along the cut
+  const g = ctx.createLinearGradient(0, 900, W, H); g.addColorStop(0, '#ff7a1a'); g.addColorStop(1, '#ff4d00')
   ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(0, 990); ctx.lineTo(W, 918); ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath(); ctx.fill()
+  ctx.save(); ctx.translate(W / 2, 954); ctx.rotate(-0.0665); ctx.fillStyle = INK; ctx.fillRect(-W, -16, W * 2, 32); ctx.restore()
+  const sub = 'rgba(18,8,0,.62)'
   let y = 1040
-  if (v.up) { levelLine(ctx, v, 80, y + 40, OR); y += 80 }
+  if (v.up) {
+    ctx.save(); ctx.font = `italic 900 56px ${FONT}`; ctx.fillStyle = INK
+    ctx.beginPath(); ctx.moveTo(80, y + 40); ctx.lineTo(100, y + 4); ctx.lineTo(120, y + 40); ctx.closePath(); ctx.fill()
+    ctx.fillText('SUBIU DE NÍVEL  ' + v.up.from + ' → ' + v.up.to, 132, y + 40); ctx.restore()
+    y += 80
+  }
   const z = fit(ctx, v.title.toUpperCase(), W - 160, 104)
-  text(ctx, v.title.toUpperCase(), 80, y + z * 0.86, `italic 900 ${z}px ${FONT}`, PAPER); y += z + 20
-  y += statRow(ctx, v.items, 80, y, W - 160) + 26
+  text(ctx, v.title.toUpperCase(), 80, y + z * 0.86, `italic 900 ${z}px ${FONT}`, INK); y += z + 20
+  y += statRow(ctx, v.items, 80, y, W - 160, { ink: INK, sub }) + 26
   const footY = SAFE_BOTTOM - 60
-  liftRows(ctx, v, 80, y, W - 160, Math.floor((footY - y - 10) / 58), { rowH: 58, size: 38 })
-  text(ctx, v.date, 80, footY + 30, `600 32px ${BODY}`, '#9a918a')
-  if (v.pts) text(ctx, '+' + v.pts + ' pts', W - 80, footY + 30, `800 46px ${FONT}`, OR, 'right')
-  drawSeal(ctx)
+  liftRows(ctx, v, 80, y, W - 160, Math.floor((footY - y - 70) / 58), { ink: INK, sub: INK, rule: 'rgba(18,8,0,.22)', rowH: 58, size: 38 })
+  text(ctx, v.date, 80, footY + 30, `600 32px ${BODY}`, sub)
+  if (v.pts) text(ctx, '+' + v.pts + ' pts', W - 80, footY + 30, `800 46px ${FONT}`, INK, 'right')
+  drawSeal(ctx, true)
 }
 
 /** Draws gym model `id` (one of the new ones); false when it is not one of them. */
