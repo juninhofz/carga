@@ -267,6 +267,7 @@ export function initReminderSync(getState) {
   const resync = () => {
     if (document.visibilityState === 'hidden') return
     syncReminder(getState()).catch(() => {})
+    import('./supplements.js').then(m => m.syncSupplements(getState())).catch(() => {})
   }
   document.addEventListener('visibilitychange', resync)
   // addListener is a promise of its own — it rejects when the App plugin is not behind the bridge

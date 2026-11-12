@@ -60,3 +60,6 @@ frontend/dist/.vercel/
 # The openGym CI (store releases, its own servers) does not run for CARGA
 .github/workflows/
 .github/FUNDING.yml
+
+# CARGA: the live-update bundle (frontend/scripts/build-app.mjs), published with the site
+frontend/app-update-out/

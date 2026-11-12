@@ -1,5 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { startLiveUpdates } from './lib/live-update.js'
 import App from './App.jsx'
 import { MOBILE } from './lib/mobile.js'
 import { useStore } from './store/useStore.js'
@@ -27,6 +28,8 @@ if (!MOBILE) guardFocusZoom()
 // The CARGA opening, in a root of its own so it starts painting before the app has anything to show.
 const opening = document.createElement('div')
 document.body.appendChild(opening)
+// the installed app: tell the updater this bundle started, then look for a newer one (lib/live-update.js)
+startLiveUpdates()
 createRoot(opening).render(<OpeningSplash />)
 
 createRoot(document.getElementById('root')).render(

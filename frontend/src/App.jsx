@@ -59,6 +59,7 @@ import PermissionSteps from './views/PermissionSteps.jsx'
 import Home from './views/Home.jsx'
 import Plan from './views/Plan.jsx'
 import Personal from './views/Personal.jsx'
+import SupplementsPage from './components/Supplements.jsx'
 import Run, { useRunLive } from './views/Run.jsx'
 import { ChallengesHome, CreateChallenge, JoinByLink, ChallengePage, PostCheckin } from './views/Challenges.jsx'
 import { NotesLive, NotesPage } from './components/Notes.jsx'
@@ -347,6 +348,7 @@ function Shell() {
       {isOn(S, 'checkin') && <Route path="/checkin" element={<CheckIn />} />}
       <Route path="/plan" element={<Plan />} />
       <Route path="/personal" element={<Personal />} />
+      <Route path="/suplementos" element={<SupplementsPage />} />
       <Route path="/corrida" element={<Run />} />
       <Route path="/corrida/:id" element={<Run />} />
       <Route path="/desafios" element={<ChallengesHome />} />

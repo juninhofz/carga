@@ -5,6 +5,7 @@ import { registerCustom, EXIDX } from '../lib/exercises.js'
 import { exerciseNameFor } from '../lib/i18n.js'
 import Icon from '../components/Icon.jsx'
 import { buildPlan, toApp, DAY_NAMES, sportName } from '../lib/personal/plan.js'
+import { SupplementPick, SupplementDetail, saveSupplements } from '../components/Supplements.jsx'
 
 /* The CARGA Personal: a full questionnaire, one question a screen, that adapts as it goes (the
    sport questions only for someone with a sport), and at the end the whole plan the engine
@@ -61,6 +62,8 @@ const Q = [
   { id: 'sleep', block: 'Recuperação', title: 'Quantas horas você dorme por noite?', kind: 'one', options: [['lt6', '😴', 'Menos de 6'], ['6-7', '🛌', 'De 6 a 7'], ['7-8', '😌', 'De 7 a 8'], ['8plus', '🌙', 'Mais de 8']] },
   { id: 'job', block: 'Recuperação', title: 'Seu trabalho é…', kind: 'one', options: [['seated', '💻', 'Sentado a maior parte'], ['standing', '🚶', 'Em pé, andando'], ['heavy', '🏗️', 'Pesado, com esforço físico']] },
   { id: 'stress', block: 'Recuperação', title: 'Como anda o seu estresse?', kind: 'one', options: [['low', '😊', 'Baixo'], ['mid', '😐', 'Normal'], ['high', '😫', 'Alto']] },
+  { id: 'supps', block: 'Suplementos', title: 'Você toma algum suplemento?', help: 'Escolha os que você toma. O CARGA pode te lembrar na hora de cada um.', kind: 'supps' },
+  { id: 'suppsDetail', block: 'Suplementos', title: 'Como você toma cada um?', help: 'Quanto, quantas vezes por dia, em que horário e com que frequência.', kind: 'suppDetail', when: a => (a.supps || []).length > 0 },
   { id: 'notes', block: 'Final', title: 'Mais alguma coisa que o seu personal deveria saber?', help: 'Escreva à vontade: uma meta, um esporte que não estava na lista, uma limitação. A gente lê e usa para melhorar os planos.', kind: 'text' },
 ]
 
@@ -162,6 +165,9 @@ function Step({ q, a, set }) {
       {a.shortOnSport && <Chips options={[[30, '30 min'], [45, '45 min'], [60, '1 hora']]} value={a.sportDayMin || 45} onChange={x => set({ sportDayMin: x })} />}
     </div>
   }
+  if (q.kind === 'supps') return <SupplementPick list={a.supps || []} timeOfDay={a.timeOfDay} none={!(a.supps || []).length && a._none_supps}
+    onChange={l => set({ supps: l, _none_supps: false })} onNone={() => set({ supps: [], _none_supps: true })} />
+  if (q.kind === 'suppDetail') return <SupplementDetail list={a.supps || []} onChange={l => set({ supps: l })} />
   if (q.kind === 'text') return <textarea className="pz-area" rows={6} value={v || ''} placeholder="Opcional" onChange={e => set({ notes: e.target.value })} />
   return null
 }
@@ -174,6 +180,8 @@ function answered(q, a) {
   if (q.kind === 'days') return (a.gymDays || []).length > 0
   if (q.kind === 'sports') return (a.sports || []).length > 0 || !!a._none_sports
   if (q.kind === 'sportDetail') return (a.sports || []).every(s => (s.days || []).length > 0)
+  if (q.kind === 'supps') return (a.supps || []).length > 0 || !!a._none_supps
+  if (q.kind === 'suppDetail') return (a.supps || []).every(x => (x.name || x.kind !== 'other') && (x.times || []).length > 0)
   return true
 }
 
@@ -236,6 +244,7 @@ export default function Personal() {
   const nav = useNavigate()
   const methods = useStore(s => s.S.methods) || []
   const active = useStore(s => s.S.activeMethod)
+  const supps = useStore(s => s.S.supplements) || []
   const [a, setA] = useState(() => ({ ...DEFAULTS, ...(readDraft() || {}) }))
   const [i, setI] = useState(-1)
   const [done, setDone] = useState(false)
@@ -245,7 +254,8 @@ export default function Personal() {
   const plan = useMemo(() => (done ? buildPlan(a) : null), [done, a])
   const blocks = [...new Set(Q.map(x => x.block))]
 
-  const use = () => { applyMethod(plan, a); try { localStorage.removeItem(DRAFT) } catch { /* fine */ } nav('/plan') }
+  // the supplements answered here become the profile's list, with their reminders
+  const use = () => { applyMethod(plan, a); if (a.supps || a._none_supps) saveSupplements(a.supps || []); try { localStorage.removeItem(DRAFT) } catch { /* fine */ } nav('/plan') }
   const switchTo = m => useStore.getState().update(s => { s.week = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], ...m.week }; s.activeMethod = m.id })
   const remove = m => useStore.getState().update(s => { s.methods = (s.methods || []).filter(x => x.id !== m.id); if (s.activeMethod === m.id) s.activeMethod = null })
 
@@ -260,6 +270,11 @@ export default function Personal() {
         <p className="muted">São {steps.length} perguntas sobre o seu objetivo, sua rotina, seu esporte e seu corpo. Quanto mais você contar, mais o plano fica com a sua cara. Leva uns 5 minutos.</p>
         <button type="button" className="pz-next" onClick={() => setI(0)}>{readDraft() ? 'Continuar de onde parei' : 'Começar'}</button>
       </div>
+      <button type="button" className="card pz-cta" onClick={() => nav('/suplementos')}>
+        <span className="pz-ic" aria-hidden="true">💊</span>
+        <span className="pz-ct"><b>Seus suplementos</b><small>{supps.length ? supps.length + (supps.length === 1 ? ' suplemento' : ' suplementos') + ' · lembretes na hora certa' : 'Diga o que você toma e o CARGA te lembra'}</small></span>
+        <Icon name="chevronRight" />
+      </button>
       {methods.length > 0 && <div className="card">
         <h3 className="lv-h">Seus métodos</h3>
         <p className="muted small">Troque de método quando quiser: a semana passa a seguir o escolhido.</p>

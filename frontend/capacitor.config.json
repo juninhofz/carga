@@ -1,5 +1,5 @@
 {
-  "appId": "ch.duartesantos.opengym",
+  "appId": "app.carga.treino",
   "appName": "CARGA",
   "webDir": "dist",
   "backgroundColor": "#0d0d0d",
@@ -16,6 +16,14 @@
       "launchFadeOutDuration": 180,
       "backgroundColor": "#0d0d0d",
       "showSpinner": false
+    },
+    "CapacitorUpdater": {
+      "autoUpdate": false,
+      "resetWhenUpdate": true,
+      "statsUrl": "",
+      "updateUrl": "",
+      "channelUrl": "",
+      "appReadyTimeout": 15000
     }
   }
 }
