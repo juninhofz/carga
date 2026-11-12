@@ -192,6 +192,15 @@ export function toneNative(kind, { onSilent = false } = {}) {
 // anywhere it cannot (the web, an app from before v1.4.5, a failed call), for lib/speech.js to
 // use the page's own speechSynthesis instead. Never resolves with the plugin itself.
 // `flush`: cut off what is still being said first (a countdown number).
+// CARGA: what the phone says by itself when the rest (or a guided hold) ends with the screen locked:
+// `line` for the rest's end, the chain's own titles for a guided hold's alerts (RestAlert.voice).
+export function voiceNative({ on = false, line = '', lang = 'pt-BR', rate = 1 } = {}) {
+  if (!MOBILE) return Promise.resolve(false)
+  return restPlugin()
+    .then(plugin => (plugin && plugin.RestAlert.voice ? plugin.RestAlert.voice({ on: on === true, line: String(line || ''), lang: String(lang || 'pt-BR'), rate: Number(rate) || 1 }).then(() => true) : false))
+    .catch(() => false)
+}
+
 export function speakNative(text, { lang = '', rate = 1, onSilent = false, flush = false } = {}) {
   if (!MOBILE || !text) return Promise.resolve(false)
   return restPlugin()

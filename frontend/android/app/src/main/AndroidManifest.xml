@@ -256,6 +256,16 @@
              unrestricted battery or exact alarms allowed, see GymReminder.launchCheck), never exported. -->
         <!-- CARGA: a run, walk or ride recorded by the phone itself, so the GPS keeps going with the
              screen locked; its notification is the lock-screen panel with pause and stop. -->
+        <!-- CARGA: the running workout on the lock screen (lib/live-activity.js): the set, the rest,
+             the buttons. specialUse: a workout in progress, shown and controlled from the lock screen. -->
+        <service
+            android:name=".WorkoutPanelService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Shows the workout in progress (the set to do and the rest) with its buttons on the lock screen." />
+        </service>
         <service
             android:name=".RunTrackService"
             android:exported="false"

@@ -2215,6 +2215,8 @@ function ActiveWorkout() {
     restSkip: () => (useUI.getState().skipRest || useUI.getState().stopRest)(),
     // Stop auto on the Lock Screen: the chain ends, as with the bar's own button.
     autoStop: () => useUI.getState().stopAuto?.(),
+    // CARGA: +15s on the Android lock-screen panel's rest
+    restAdd: sec => { const tm = useUI.getState().timer; if (tm && !tm.ready) useUI.getState().addRest(sec) },
     timer: () => useUI.getState().timer,
   }), [])
 

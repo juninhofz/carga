@@ -19,9 +19,12 @@ import { t, tn, tnf, exerciseNameFor } from './i18n-core.js'
 import { EXIDX } from './exercises.js'
 import { viewEntry, exUnitOf } from './ex-unit.js'
 import { speak, SPEECH_RATES, speechRateOf } from './speech.js'
+import { voiceNative } from './rest-alert.js'
 
 /** Whether cues are on for this profile, and a workout is running. */
-export const cuesOn = S => S?.spokenCues === true && !!S?.active
+// CARGA: on unless switched off in Settings (the voice in the earphones is part of training here)
+export const spokenCuesOn = S => S?.spokenCues !== false
+export const cuesOn = S => spokenCuesOn(S) && !!S?.active
 
 // The number a set row goes by: work sets and warm-ups are counted apart, a per-side timed pair is one.
 function setNumber(sets, i) {
@@ -120,6 +123,14 @@ export const cues = {
   restStarted(forIdx) { const S = live(); if (S) say(S, restStartText(S, forIdx)) },
   /** A rest's second ticked: "10 seconds" once, on rests long enough for it to help. */
   restLeft(left, total) { if (left === 10 && total >= 20) { const S = live(); if (S) say(S, t('10 seconds')) } },
+  /** A rest began: the line the phone says by itself if it ends with the screen locked. */
+  armLocked(forIdx) {
+    const S = readStore?.()
+    if (!S) return
+    const on = cuesOn(S)
+    const next = on ? restStartText(S, forIdx) : ''
+    voiceNative({ on, line: next ? t('Rest is over') + '. ' + t('Next set') + ': ' + next + '.' : t('Rest is over') + '.', rate: SPEECH_RATES[speechRateOf(S)] })
+  },
   /** The rest ran out on screen. */
   restOver() { const S = live(); if (S) say(S, t('Rest is over')) },
   /** A count-in or the end of a hold: a number, cutting off whatever is still being said. */

@@ -52,7 +52,8 @@ vi.mock('../sheets.jsx', () => ({
 // The Settings view reads the build-time version constant at render time.
 globalThis.__APP_VERSION__ ??= 'test'
 
-vi.mock('../lib/rest-alert.js', () => ({ setRestAccent: vi.fn() }))
+vi.mock('../lib/rest-alert.js', () => ({
+  voiceNative: vi.fn(() => Promise.resolve(true)), setRestAccent: vi.fn() }))
 
 let host, root
 beforeEach(() => {

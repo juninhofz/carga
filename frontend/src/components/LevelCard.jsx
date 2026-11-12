@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { ensureStretchRoutine, STRETCH_ROUTINE_ID } from '../lib/guided-stretch.js'
+import { beginWorkout } from '../sheets.jsx'
 import { useStore } from '../store/useStore.js'
 import { t, tn } from '../lib/i18n.js'
 import { fmtNum, isoOf } from '../lib/format.js'
@@ -100,7 +102,13 @@ function MedalCounts() {
 function DailyGo({ daily, today }) {
   const nav = useNavigate()
   if (daily.how === 'walk') return <button type="button" className="lv-go" onClick={() => { setPrefs({ type: 'walk' }); nav('/corrida') }}><Icon name="steps" />Caminhar agora</button>
-  if (daily.how === 'stretch') return <button type="button" className="lv-go" onClick={() => { lockOn(); startRun('stretch'); nav('/corrida') }}><Icon name="stopwatch" />Alongar agora</button>
+  // the guided stretch: a workout of timed holds that run by themselves, the voice says each step
+  // (lib/guided-stretch.js); with a workout already running, the plain stretch timer as before
+  if (daily.how === 'stretch') return <button type="button" className="lv-go" onClick={() => {
+    if (useStore.getState().S.active) { lockOn(); startRun('stretch'); nav('/corrida'); return }
+    useStore.getState().update(s => { ensureStretchRoutine(s) })
+    beginWorkout([STRETCH_ROUTINE_ID], null)
+  }}><Icon name="stopwatch" />Alongar agora</button>
   return <button type="button" className="lv-go" onClick={() => useStore.getState().update(s => { tickDaily(s, today, daily.id) })}><Icon name="check" />Fiz!</button>
 }
 

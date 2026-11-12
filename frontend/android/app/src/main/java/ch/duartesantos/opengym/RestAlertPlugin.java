@@ -148,6 +148,20 @@ public class RestAlertPlugin extends Plugin {
      * A spoken cue in the phone's voice (lib/spoken-cues.js): { text, lang, rate, flush }. Music
      * ducks for it and comes back up (SpeechCue). Rejected when the phone has no voice to use.
      */
+    /**
+     * CARGA: what the phone says by itself when a rest or a guided hold ends with the screen locked
+     * (RestAlert.sayAfterTone): { on, line, lang, rate }. Kept until the next call.
+     */
+    @PluginMethod
+    public void voice(PluginCall call) {
+        RestAlert.voiceOn = Boolean.TRUE.equals(call.getBoolean("on", false));
+        RestAlert.voiceLine = call.getString("line", "");
+        RestAlert.voiceLang = call.getString("lang", "pt-BR");
+        Double rate = call.getDouble("rate");
+        RestAlert.voiceRate = rate == null ? 1f : rate.floatValue();
+        call.resolve();
+    }
+
     @PluginMethod
     public void speak(PluginCall call) {
         Context ctx = getContext();

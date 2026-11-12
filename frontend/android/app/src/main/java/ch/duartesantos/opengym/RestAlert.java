@@ -98,6 +98,8 @@ public final class RestAlert {
                                 boolean alarmBuzz, String channelId, String visibility, String importance,
                                 boolean localOnly, String countdownTitle, long totalMs, String cues, boolean countdown) {
         alarmBuzz = vibrate && alarmBuzz;
+        // CARGA: the workout panel (WorkoutPanelService) shows the rest counting down itself
+        if (WorkoutPanelService.current != null) countdown = false;
         channelId = channelFor(channelId, vibrate);
         Intent intent = alarmIntent(ctx);
         intent.putExtra("id", id);
@@ -249,6 +251,37 @@ public final class RestAlert {
     }
 
     /** Runs off the main thread. Holds the CPU until the tone has finished. */
+    // CARGA: the voice with the phone locked (lib/spoken-cues.js hands it over with each rest,
+    // RestAlertPlugin.voice). `voiceLine` is said when the rest itself ends ("Descanso acabou.
+    // Próxima série: ..."); a guided hold's own alerts (the chain's cues) say their titles.
+    static volatile boolean voiceOn;
+    static volatile String voiceLine = "";
+    static volatile String voiceLang = "pt-BR";
+    static volatile float voiceRate = 1f;
+
+    private static void sayAfterTone(Context ctx, Intent intent) {
+        if (!voiceOn) return;
+        String title = intent.getStringExtra("title");
+        boolean restEnd = intent.getIntExtra("id", NOTIFICATION_ID) == NOTIFICATION_ID && voiceLine != null && !voiceLine.isEmpty()
+                && (title == null || title.equals(lastAlertTitle));
+        final String line = restEnd ? voiceLine : title;
+        if (line == null || line.isEmpty()) return;
+        final Context app = ctx.getApplicationContext();
+        // after the tone, so the two do not talk over each other
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(
+                () -> SpeechCue.speak(app, line, voiceLang, voiceRate, false), 900);
+    }
+
+    /**
+     * CARGA: a rest started from the lock-screen panel (Concluir série) while the page sleeps: its
+     * end, with the sound, buzz and voice the page last asked for (no countdown card: the panel has it).
+     */
+    static void bookFromPanel(Context ctx, long at, String title, String line) {
+        if (line != null && !line.isEmpty()) voiceLine = line;
+        schedule(ctx, at, NOTIFICATION_ID, title, lastSound, lastTone, lastVibrate, lastAlarmBuzz, lastChannel,
+                "public", "high", false, "", Math.max(1000, at - System.currentTimeMillis()), "", false);
+    }
+
     public static void fire(Context ctx, Intent intent) {
         if (!claim(intent.getLongExtra("at", 0))) return;
         PowerManager.WakeLock cpu = null;
@@ -279,6 +312,7 @@ public final class RestAlert {
             // the same sound as Settings → Sound picks for the page (RestTone.render).
             boolean play = intent.getBooleanExtra("sound", true);
             if (play) playSound(ctx, toneOf(intent));
+            sayAfterTone(ctx, intent);
             // A chain of holds that run themselves goes on with the page asleep: its next alert.
             chainNext(ctx, intent);
             // The countdown card is the foreground-service notification. Drop it once the

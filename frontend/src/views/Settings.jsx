@@ -488,7 +488,7 @@ export default function Settings({ page = null, find = null, via = null, entryKe
     autoBackup: !!S.autoBackup, synced: !!sync, installTip: !MOBILE && !standalone(), androidWeb: IS_ANDROID, desktopWeb: !IS_ANDROID && !APPLE_UA,
     integrations: config?.integrations?.providers || [],
     rotation: scheduleModeOf(S) === 'rotation' && !externalQ,
-    spokenCues: S.spokenCues === true,
+    spokenCues: S.spokenCues !== false,
     // Settings → Modules: which feature areas are on (pageVisible and the search ask it).
     mod: id => isOn(S, id),
   }
@@ -806,10 +806,10 @@ export default function Settings({ page = null, find = null, via = null, entryKe
         <Section footer={speechSupported() ? t('Only while the app is on screen. Music turns down for a moment, it never stops.') : t('This browser can’t speak. Try another one.')}>
           <Row icon="chat" iconTint="var(--teal)" title={t('Spoken cues')} className={speechSupported() ? '' : 'dis'}
             subtitle={t('Says your next set, “10 seconds” and “Rest is over”, and counts holds down.')}>
-            <Switch aria-label={t('Spoken cues')} checked={S.spokenCues === true} disabled={!speechSupported()}
+            <Switch aria-label={t('Spoken cues')} checked={S.spokenCues !== false} disabled={!speechSupported()}
               onChange={v => { update(s => { s.spokenCues = v }); if (v) speak(sampleCue(S.unit), { rate: SPEECH_RATES[speechRateOf(S)] }) }} />
           </Row>
-          {S.spokenCues === true && <>
+          {S.spokenCues !== false && <>
             <Row icon="speaker" iconTint="var(--teal)" title={t('Speaking rate')}>
               <Segmented className="seg-inline"
                 options={[{ value: 'slow', label: t('Slow') }, { value: 'normal', label: t('Normal') }, { value: 'fast', label: t('Fast') }]}

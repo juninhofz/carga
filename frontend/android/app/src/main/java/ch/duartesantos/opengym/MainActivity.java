@@ -41,6 +41,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(WidgetBridgePlugin.class);
         registerPlugin(WatchBridgePlugin.class);
         registerPlugin(RunTrackerPlugin.class);
+        registerPlugin(LiveActivityPlugin.class);
         super.onCreate(savedInstanceState);
         passSystemBarsToPage();
     }

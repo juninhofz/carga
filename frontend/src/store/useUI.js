@@ -6,12 +6,12 @@ import { api } from '../lib/api.js'
 import { t } from '../lib/i18n.js'
 import { deviceId } from '../lib/push.js'
 import { MOBILE } from '../lib/mobile.js'
-import { armRestAlert, bindNativeRest, disarmRestAlert, holdRestAlert, toneNative } from '../lib/rest-alert.js'
+import { armRestAlert, bindNativeRest, disarmRestAlert, holdRestAlert, toneNative, voiceNative } from '../lib/rest-alert.js'
 import { useStore } from './useStore.js'
 import { REST_MAX } from '../lib/duration.js'
 import { accentValue } from '../lib/accent.js'
 import { COUNT_IN_SEC, chainCues, heldSec, phaseLeft, resumedEnd, shouldWait } from '../lib/auto-holds.js'
-import { cues, bindCueState } from '../lib/spoken-cues.js'
+import { cues, bindCueState, spokenCuesOn } from '../lib/spoken-cues.js'
 
 // Timed holds that run themselves (lib/auto-holds.js): the workout screen hands in what comes
 // next and how to start it (bindAuto, views/Workout.jsx), this store runs the clocks. Without the
@@ -77,6 +77,8 @@ const bookAutoChain = (start, at, owner) => {
   const { S } = useStore.getState()
   const chain = chainCues({ start, at, name: owner.label, plan: owner.plan, forecast: autoForecast(owner), words: autoWords })
   armRestAlert(at, { title: chain.title, totalSec: Math.max(1, Math.round((at - Date.now()) / 1000)), countdown: false, cues: chain.cues, ...alertPrefs(S) })
+  // CARGA: a guided hold with the phone locked says each step ("Prepare-se: …", "Já! …", "Feito: …")
+  voiceNative({ on: spokenCuesOn(S), line: '' })
 }
 
 const notificationsSupported = () => typeof window !== 'undefined' && 'Notification' in window
@@ -366,7 +368,7 @@ export const useUI = create((set, get) => ({
     bookRestEnd(endsAt, sec, kind)
     runRest(set, get)
     // Spoken cues: the next set, said as the rest begins (lib/spoken-cues.js).
-    if (kind !== 'switch') cues.restStarted(forIdx)
+    if (kind !== 'switch') { cues.restStarted(forIdx); cues.armLocked(forIdx) }
   },
   // Holding the rest where it is — a longer break than planned, a machine to wait for, a phone
   // call (#193). Paused time does not count: the countdown stops, and so does everything that

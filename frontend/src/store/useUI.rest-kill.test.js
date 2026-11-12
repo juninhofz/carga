@@ -7,6 +7,7 @@ import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
 
 vi.mock('../lib/mobile.js', async importOriginal => ({ ...(await importOriginal()), MOBILE: true }))
 vi.mock('../lib/rest-alert.js', () => ({
+  voiceNative: vi.fn(() => Promise.resolve(true)),
   armRestAlert: vi.fn(() => Promise.resolve(true)),
   holdRestAlert: vi.fn(),
   disarmRestAlert: vi.fn(),

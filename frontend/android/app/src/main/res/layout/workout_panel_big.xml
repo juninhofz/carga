@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The workout on the lock screen, expanded (WorkoutPanelService): the set to do now, or the rest
+     or the hold counting down, the next one, two buttons. The approved design, 2026-11-12. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:orientation="vertical" android:background="@drawable/run_panel_bg" android:padding="12dp">
+    <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+        <TextView android:id="@+id/wk_kind" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_alignParentStart="true" android:layout_centerVertical="true"
+            android:text="TREINO" android:textColor="#B3F6EEE8" android:textSize="11sp" android:textStyle="bold" android:letterSpacing="0.08" />
+        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_centerInParent="true"
+            android:orientation="horizontal" android:gravity="center_vertical">
+            <ImageView android:layout_width="14dp" android:layout_height="21dp" android:src="@drawable/carga_mark" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp"
+                android:text="CARGA" android:textColor="#FFFFFFFF" android:textSize="16sp" android:textStyle="bold|italic" android:fontFamily="sans-serif-condensed" />
+        </LinearLayout>
+        <TextView android:id="@+id/wk_count" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true" android:layout_centerVertical="true"
+            android:text="1 de 18" android:textColor="#FFFF6B00" android:textSize="11sp" android:textStyle="bold" />
+    </RelativeLayout>
+    <!-- the set -->
+    <LinearLayout android:id="@+id/wk_set" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginTop="8dp">
+        <TextView android:id="@+id/wk_name" android:layout_width="match_parent" android:layout_height="wrap_content" android:maxLines="1" android:ellipsize="end"
+            android:text="Agachamento" android:textColor="#FFFFFFFF" android:textSize="24sp" android:textStyle="bold" android:fontFamily="sans-serif-condensed" />
+        <TextView android:id="@+id/wk_line" android:layout_width="match_parent" android:layout_height="wrap_content" android:maxLines="1" android:ellipsize="end"
+            android:text="Série 1 de 4 · 8 × 100 kg" android:textColor="#D9F6EEE8" android:textSize="14sp" />
+    </LinearLayout>
+    <!-- the rest or the hold -->
+    <LinearLayout android:id="@+id/wk_clock_row" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal"
+        android:gravity="center_vertical" android:layout_marginTop="8dp" android:visibility="gone">
+        <Chronometer android:id="@+id/wk_clock" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:textColor="#FFFF6B00" android:textSize="40sp" android:textStyle="bold" android:fontFamily="sans-serif-condensed" />
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginStart="12dp">
+            <TextView android:id="@+id/wk_clock_label" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="PRÓXIMA SÉRIE" android:textColor="#A6F6EEE8" android:textSize="10sp" android:textStyle="bold" android:letterSpacing="0.08" />
+            <TextView android:id="@+id/wk_clock_name" android:layout_width="match_parent" android:layout_height="wrap_content" android:maxLines="1" android:ellipsize="end"
+                android:text="Agachamento" android:textColor="#FFFFFFFF" android:textSize="15sp" android:textStyle="bold" />
+            <TextView android:id="@+id/wk_clock_line" android:layout_width="match_parent" android:layout_height="wrap_content" android:maxLines="1" android:ellipsize="end"
+                android:text="8 × 100 kg" android:textColor="#CCF6EEE8" android:textSize="13sp" />
+        </LinearLayout>
+    </LinearLayout>
+    <ProgressBar android:id="@+id/wk_progress" style="@android:style/Widget.ProgressBar.Horizontal" android:layout_width="match_parent" android:layout_height="5dp"
+        android:layout_marginTop="8dp" android:max="100" android:progress="30" android:progressDrawable="@drawable/wk_progress" />
+    <TextView android:id="@+id/wk_next" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:maxLines="1" android:ellipsize="end"
+        android:text="Depois: Leg press" android:textColor="#B3F6EEE8" android:textSize="12sp" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="10dp">
+        <LinearLayout android:id="@+id/wk_b1" android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1.25"
+            android:background="@drawable/run_btn_orange" android:gravity="center" android:orientation="horizontal">
+            <ImageView android:id="@+id/wk_b1_icon" android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_wk_check" />
+            <TextView android:id="@+id/wk_b1_text" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp"
+                android:text="Concluir série" android:textColor="#FF120800" android:textSize="14sp" android:textStyle="bold" android:maxLines="1" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/wk_b2" android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1"
+            android:background="@drawable/run_btn_dark" android:gravity="center" android:orientation="horizontal" android:layout_marginStart="8dp">
+            <ImageView android:id="@+id/wk_b2_icon" android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_wk_next" />
+            <TextView android:id="@+id/wk_b2_text" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp"
+                android:text="Próximo exercício" android:textColor="#FFFFFFFF" android:textSize="14sp" android:textStyle="bold" android:maxLines="1" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

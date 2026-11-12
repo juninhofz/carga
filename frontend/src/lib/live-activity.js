@@ -237,6 +237,10 @@ export function applyLiveEvents (events, getState) {
     } else if (ev.type === 'autoStop' && ours) {
       if (!handlers) break
       handlers.autoStop?.()
+    } else if (ev.type === 'restAdd' && ours) {
+      // CARGA: +15s on the Android panel's rest
+      if (!handlers) break
+      handlers.restAdd?.(num(ev.sec) || 15)
     } else if (ev.type === 'restSkip' && ours) {
       if (!handlers) break
       if (restSkipApplies(handlers.timer?.(), num(ev.at))) handlers.restSkip?.()
@@ -254,7 +258,10 @@ export function applyLiveEvents (events, getState) {
 let pluginP = null
 // Inside an object: a Capacitor plugin proxy answers `then` (lib/rest-alert.js, the Coach hang #42).
 const livePlugin = () => pluginP || (pluginP = (async () => {
-  if (!MOBILE || (await nativePlatform()) !== 'ios') return null
+  // CARGA: the Android app has the same activity on its lock screen (LiveActivityPlugin.java)
+  if (!MOBILE) return null
+  const os = await nativePlatform()
+  if (os !== 'ios' && os !== 'android') return null
   const { registerPlugin } = await import('@capacitor/core')
   return { LiveActivity: registerPlugin('LiveActivity') }
 })().catch(() => null))
