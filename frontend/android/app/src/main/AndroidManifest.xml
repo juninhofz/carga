@@ -254,6 +254,12 @@
              approach zone (GymScanService). At most 15 minutes, at most 3 a day; its notification
              is a silent one. Started by the approach alert's broadcast (Android 12+: only with
              unrestricted battery or exact alarms allowed, see GymReminder.launchCheck), never exported. -->
+        <!-- CARGA: a run, walk or ride recorded by the phone itself, so the GPS keeps going with the
+             screen locked; its notification is the lock-screen panel with pause and stop. -->
+        <service
+            android:name=".RunTrackService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
         <service
             android:name=".GymScanService"
             android:exported="false"

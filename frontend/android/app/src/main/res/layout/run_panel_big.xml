@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The run's lock-screen panel, expanded (RunTrackService): black, the CARGA mark in the middle,
+     pace, distance and time, and the two buttons. Option "Preto com laranja", 2026-11-12. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:orientation="vertical" android:background="@drawable/run_panel_bg" android:padding="12dp">
+    <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+        <TextView android:id="@+id/kind" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_alignParentStart="true" android:layout_centerVertical="true"
+            android:text="CORRIDA" android:textColor="#B3F6EEE8" android:textSize="11sp" android:textStyle="bold" android:letterSpacing="0.1" />
+        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_centerInParent="true"
+            android:orientation="horizontal" android:gravity="center_vertical">
+            <ImageView android:layout_width="14dp" android:layout_height="21dp" android:src="@drawable/carga_mark" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp"
+                android:text="CARGA" android:textColor="#FFFFFFFF" android:textSize="16sp" android:textStyle="bold|italic" android:fontFamily="sans-serif-condensed" />
+        </LinearLayout>
+        <TextView android:id="@+id/state" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true" android:layout_centerVertical="true"
+            android:text="● AO VIVO" android:textColor="#FFFF6B00" android:textSize="10sp" android:textStyle="bold" />
+    </RelativeLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="10dp">
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center_horizontal">
+            <TextView android:id="@+id/pace_label" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="PACE" android:textColor="#B3F6EEE8" android:textSize="10sp" android:textStyle="bold" android:letterSpacing="0.1" />
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="bottom">
+                <TextView android:id="@+id/pace" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--:--" android:textColor="#FFFFFFFF" android:textSize="26sp" android:textStyle="bold" android:fontFamily="sans-serif-condensed" />
+                <TextView android:id="@+id/pace_unit" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="/km" android:textColor="#B3F6EEE8" android:textSize="11sp" android:layout_marginStart="3dp" android:layout_marginBottom="2dp" />
+            </LinearLayout>
+        </LinearLayout>
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center_horizontal">
+            <TextView android:id="@+id/dist_label" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="DISTÂNCIA" android:textColor="#B3F6EEE8" android:textSize="10sp" android:textStyle="bold" android:letterSpacing="0.1" />
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="bottom">
+                <TextView android:id="@+id/dist" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0,00" android:textColor="#FFFFFFFF" android:textSize="26sp" android:textStyle="bold" android:fontFamily="sans-serif-condensed" />
+                <TextView android:id="@+id/dist_unit" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="km" android:textColor="#B3F6EEE8" android:textSize="11sp" android:layout_marginStart="3dp" android:layout_marginBottom="2dp" />
+            </LinearLayout>
+        </LinearLayout>
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center_horizontal">
+            <TextView android:id="@+id/time_label" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="TEMPO" android:textColor="#B3F6EEE8" android:textSize="10sp" android:textStyle="bold" android:letterSpacing="0.1" />
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="bottom">
+                <Chronometer android:id="@+id/time" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#FFFFFFFF" android:textSize="26sp" android:textStyle="bold" android:fontFamily="sans-serif-condensed" />
+                
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="12dp">
+        <LinearLayout android:id="@+id/btn_pause" android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1"
+            android:background="@drawable/run_btn_orange" android:gravity="center" android:orientation="horizontal">
+            <ImageView android:id="@+id/btn_pause_icon" android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_run_pause" />
+            <TextView android:id="@+id/btn_pause_text" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp"
+                android:text="Pausar" android:textColor="#FF120800" android:textSize="14sp" android:textStyle="bold" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/btn_stop" android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1" android:layout_marginStart="8dp"
+            android:background="@drawable/run_btn_dark" android:gravity="center" android:orientation="horizontal">
+            <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_run_stop" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp"
+                android:text="Parar" android:textColor="#FFFFFFFF" android:textSize="14sp" android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

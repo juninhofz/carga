@@ -9,6 +9,7 @@
 import { create } from 'zustand'
 import { useStore } from '../store/useStore.js'
 import { hasGps, addFix, startTrack, pauseTrack, resumeTrack, finishTrack, fmtPace, fmtKm, fmtClock, fmtSpeed, elapsedMs, movingMsNow, currentPace, paceOf, SPORTS, GOOD_ACC } from './run-track.js'
+import { bindNative, nativeActive, nativeStart, nativePause, nativeResume, nativeEnd } from './run-native.js'
 
 const LIVE = 'carga.run.live'
 const PREFS = 'carga.run.prefs'
@@ -26,6 +27,7 @@ let watchId = null
 let savedAt = 0
 
 function onFix(pos) {
+  if (nativeActive() && useRun.getState().track) return   // the phone records (lib/run-native.js)
   const c = pos.coords
   const fix = { lat: c.latitude, lng: c.longitude, acc: c.accuracy, alt: c.altitude ?? undefined, t: pos.timestamp || Date.now() }
   const st = useRun.getState()
@@ -70,6 +72,8 @@ export function startRun(type) {
   write(LIVE, track)
   useRun.setState({ track })
   if (!hasGps(track.type)) { say('Atividade iniciada'); showOnLock(); return }
+  // the installed app: the phone records, with the lock-screen panel (lib/run-native.js)
+  if (nativeActive()) nativeStart(track.type, SPORTS[track.type]?.name || 'Corrida')
   watchGps()
   // the fix that is already there starts the line, if it is fresh
   const f = useRun.getState().fix
@@ -81,6 +85,7 @@ export function pauseRun() {
   const track = pauseTrack(useRun.getState().track)
   write(LIVE, track)
   useRun.setState({ track })
+  nativePause()
   say('Pausado')
   showOnLock()
 }
@@ -88,6 +93,7 @@ export function resumeRun() {
   const track = resumeTrack(useRun.getState().track)
   write(LIVE, track)
   useRun.setState({ track })
+  nativeResume()
   if (hasGps(track.type)) watchGps()
   say('Retomando')
   showOnLock()
@@ -100,6 +106,7 @@ export function finishRun() {
   const bw = Array.isArray(S.bodyweight) && S.bodyweight.length ? Number(S.bodyweight[S.bodyweight.length - 1].w) : 0
   const kg = bw > 0 ? (S.unit === 'lb' ? bw * 0.4536 : bw) : 70
   const run = finishTrack(st.track, { kg })
+  nativeEnd()
   write(LIVE, null)
   useRun.setState({ track: null })
   releaseGps()
@@ -109,6 +116,7 @@ export function finishRun() {
   return run.id
 }
 export function discardRun() {
+  nativeEnd()
   lockOff()
   write(LIVE, null)
   useRun.setState({ track: null })
@@ -162,6 +170,7 @@ async function swReg() {
 }
 
 function showOnLock(now) {
+  if (nativeActive()) return   // the phone's own panel is on the lock screen
   const t = useRun.getState().track
   if (!t || !('Notification' in window) || Notification.permission !== 'granted') return
   if (!now && Date.now() - lastShown < 4000) return
@@ -198,3 +207,33 @@ try {
     if (m.open) location.hash = '#/corrida'
   })
 } catch { /* no service worker here */ }
+
+/* ---------- the phone's own recorder (installed app) ---------- */
+
+// Each batch the phone queued, in order: the fixes into the track, the panel's Pause / Resume, and
+// Stop, which saves the run (the next time the app is on screen it is in the history).
+export function applyNative(events) {
+  let st = useRun.getState()
+  let track = st.track
+  if (!track) return
+  let fix = st.fix, gps = st.gps, stop = false
+  const before = track.splits.length
+  for (const e of events) {
+    if (e.kind === 'fix') {
+      fix = { lat: e.lat, lng: e.lng, acc: e.acc, alt: e.alt ?? undefined, t: e.t }
+      gps = e.acc <= GOOD_ACC ? 'ok' : 'weak'
+      if (track.status === 'running') track = addFix(track, fix).track
+    } else if (e.kind === 'pause' && track.status === 'running') track = pauseTrack(track, e.t)
+    else if (e.kind === 'resume' && track.status === 'paused') track = resumeTrack(track, e.t)
+    else if (e.kind === 'stop') { if (track.status === 'running') track = pauseTrack(track, e.t); stop = true }
+  }
+  useRun.setState({ track, fix, gps })
+  write(LIVE, track)
+  if (track.splits.length > before) announce(track)
+  if (stop) {
+    const id = finishRun()
+    if (id) location.hash = '#/corrida'
+  }
+}
+// a run left recording when the app was closed: its queued fixes are applied as soon as the page loads
+bindNative(applyNative)

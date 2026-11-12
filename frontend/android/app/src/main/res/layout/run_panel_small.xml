@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The run panel, collapsed (RunTrackService): pace, distance, time and the pause button. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:orientation="horizontal" android:gravity="center_vertical"
+    android:background="@drawable/run_panel_bg" android:paddingStart="12dp" android:paddingEnd="8dp" android:paddingTop="6dp" android:paddingBottom="6dp">
+    <ImageView android:layout_width="12dp" android:layout_height="18dp" android:src="@drawable/carga_mark" android:layout_marginEnd="8dp" />
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center_horizontal">
+            <TextView android:id="@+id/pace_label" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="PACE" android:textColor="#B3F6EEE8" android:textSize="10sp" android:textStyle="bold" android:letterSpacing="0.1" />
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="bottom">
+                <TextView android:id="@+id/pace" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--:--" android:textColor="#FFFFFFFF" android:textSize="18sp" android:textStyle="bold" android:fontFamily="sans-serif-condensed" />
+                <TextView android:id="@+id/pace_unit" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="/km" android:textColor="#B3F6EEE8" android:textSize="11sp" android:layout_marginStart="3dp" android:layout_marginBottom="2dp" />
+            </LinearLayout>
+        </LinearLayout>
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center_horizontal">
+            <TextView android:id="@+id/dist_label" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="KM" android:textColor="#B3F6EEE8" android:textSize="10sp" android:textStyle="bold" android:letterSpacing="0.1" />
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="bottom">
+                <TextView android:id="@+id/dist" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0,00" android:textColor="#FFFFFFFF" android:textSize="18sp" android:textStyle="bold" android:fontFamily="sans-serif-condensed" />
+                
+            </LinearLayout>
+        </LinearLayout>
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center_horizontal">
+            <TextView android:id="@+id/time_label" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="TEMPO" android:textColor="#B3F6EEE8" android:textSize="10sp" android:textStyle="bold" android:letterSpacing="0.1" />
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="bottom">
+                <Chronometer android:id="@+id/time" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#FFFFFFFF" android:textSize="18sp" android:textStyle="bold" android:fontFamily="sans-serif-condensed" />
+                
+            </LinearLayout>
+        </LinearLayout>
+    <ImageView android:id="@+id/btn_pause" android:layout_width="36dp" android:layout_height="36dp" android:padding="9dp"
+        android:background="@drawable/run_btn_round" android:src="@drawable/ic_run_pause_w" />
+</LinearLayout>
