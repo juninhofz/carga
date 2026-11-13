@@ -132,7 +132,7 @@ function HoldButton({ onDone, children, className }) {
 
 function RunLive() {
   const nav = useNavigate()
-  const { track, fix, gps, nativeFixes } = useRun()
+  const { track, fix, gps, nativeFixes, nat } = useRun()
   const now = useNow(true, 500)
   const [view, setView] = useState('stats')
   useEffect(() => { if (track && hasGps(track.type)) watchGps() }, [])
@@ -142,9 +142,13 @@ function RunLive() {
   // the phone's own recorder: how many fixes it handed over (lib/run-native.js)
   const nativeOn = nativeActive()
   const paused = track.status === 'paused'
-  const moving = movingMsNow(track, now)
-  const pace = currentPace(track, now)
-  const avg = paceOf(moving / 1000, track.dist)
+  // The installed app: the numbers are the phone's own, the very ones its lock-screen panel shows
+  // (lib/run-native.js snapshot), so both always agree; the track still draws the map.
+  const live = nativeOn && nat && (paused || Date.now() - nat.at < 6000) ? nat : null
+  const dist = live ? Math.max(live.distM, track.dist) : track.dist
+  const moving = live ? live.movingSec * 1000 + (live.paused ? 0 : Math.max(0, now - live.at)) : movingMsNow(track, now)
+  const pace = live && live.paceSec > 0 ? live.paceSec : currentPace(track, now)
+  const avg = paceOf(moving / 1000, dist)
   const segs = []
   const cuts = [0, ...track.brk, track.pts.length]
   for (let i = 0; i + 1 < cuts.length; i++) segs.push(track.pts.slice(cuts[i], cuts[i + 1]).map(p => [p.lat, p.lng]))
@@ -178,10 +182,10 @@ function RunLive() {
       {paused && <div className="run-paused">Pausado</div>}
       {!paused && !track.moving && track.pts.length > 1 && <div className="run-paused soft">Pausa automática</div>}
       <div className="run-big"><span>Tempo</span><b>{fmtClock(elapsedMs(track, now))}</b></div>
-      <div className="run-big main"><span>Distância (km)</span><b>{fmtKm(track.dist)}</b></div>
+      <div className="run-big main"><span>Distância (km)</span><b>{fmtKm(dist)}</b></div>
       <div className="run-pair">
         <div><span>{ride ? 'Velocidade' : 'Pace atual'}</span><b>{ride ? (pace ? (3600 / pace).toFixed(1).replace('.', ',') : '0,0') : fmtPace(pace)}</b><small>{ride ? 'km/h' : '/km'}</small></div>
-        <div><span>{ride ? 'Média' : 'Pace médio'}</span><b>{ride ? fmtSpeed(track.dist, moving / 1000) : fmtPace(avg)}</b><small>{ride ? 'km/h' : '/km'}</small></div>
+        <div><span>{ride ? 'Média' : 'Pace médio'}</span><b>{ride ? fmtSpeed(dist, moving / 1000) : fmtPace(avg)}</b><small>{ride ? 'km/h' : '/km'}</small></div>
         <div><span>Em movimento</span><b>{fmtClock(moving)}</b><small>{track.gain ? Math.round(track.gain) + ' m ↑' : ' '}</small></div>
       </div>
     </div>

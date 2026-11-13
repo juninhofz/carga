@@ -97,6 +97,22 @@ public class RunTrackerPlugin extends Plugin {
         call.resolve();
     }
 
+    /** The phone's own distance, pace and moving time: what its lock-screen panel shows. */
+    @PluginMethod
+    public void snapshot(PluginCall call) {
+        JSObject r = new JSObject();
+        RunTrackService s = RunTrackService.current;
+        if (s == null) { r.put("running", false); call.resolve(r); return; }
+        org.json.JSONObject o = s.snapshotJson();
+        r.put("running", o.optBoolean("running"));
+        r.put("distM", o.optDouble("distM"));
+        r.put("paceSec", o.optDouble("paceSec"));
+        r.put("movingSec", o.optDouble("movingSec"));
+        r.put("paused", o.optBoolean("paused"));
+        r.put("stopped", o.optBoolean("stopped"));
+        call.resolve(r);
+    }
+
     @PluginMethod
     public void drain(PluginCall call) {
         JSObject r = new JSObject();

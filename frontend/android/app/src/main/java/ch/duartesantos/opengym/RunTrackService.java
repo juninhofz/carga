@@ -255,6 +255,20 @@ public class RunTrackService extends Service {
         return distM > 50 ? movingNow() / 1000.0 / distM * 1000 : 0;
     }
 
+    /** The numbers the panel shows, for the page (RunTrackerPlugin.snapshot): the app and the lock screen agree. */
+    JSONObject snapshotJson() {
+        JSONObject o = new JSONObject();
+        try {
+            o.put("running", running);
+            o.put("distM", distM);
+            o.put("paceSec", paceSec());
+            o.put("movingSec", movingNow() / 1000.0);
+            o.put("paused", paused);
+            o.put("stopped", stopped);
+        } catch (Exception ignored) { }
+        return o;
+    }
+
     // ---------------- the panel ----------------
     private void channel() {
         if (Build.VERSION.SDK_INT < 26) return;

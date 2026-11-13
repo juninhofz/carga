@@ -3,19 +3,27 @@
 // queues fixes and says "queued", the page drains them into the run on screen, and Save keeps it.
 import { describe, it, expect, vi } from 'vitest'
 
-const phone = { queue: [], listeners: {}, calls: [] }
+const phone = { queue: [], listeners: {}, calls: [], snapshot: null }
 vi.mock('./mobile.js', async (orig) => ({ ...(await orig()), MOBILE: true }))
+// A Capacitor plugin is a Proxy that answers `then` with a native call that never settles: a promise
+// resolved with the bare plugin hangs for good (lib/rest-alert.js restPlugin, the Coach hang #42).
+// The fake behaves the same way, so a recorder that hands the plugin out bare fails here.
 vi.mock('@capacitor/core', async (orig) => ({
   ...(await orig()),
-  registerPlugin: name => (name === 'RunTracker' ? {
-    status: async () => ({ supported: true }),
-    start: async o => { phone.calls.push(['start', o]) },
-    pause: async () => { phone.calls.push(['pause']) },
-    resume: async () => { phone.calls.push(['resume']) },
-    end: async () => { phone.calls.push(['end']) },
-    drain: async () => { const events = phone.queue; phone.queue = []; return { events } },
-    addListener: async (ev, cb) => { phone.listeners[ev] = cb; return { remove() {} } },
-  } : {}),
+  registerPlugin: name => {
+    if (name !== 'RunTracker') return {}
+    const methods = {
+      status: async () => ({ supported: true }),
+      start: async o => { phone.calls.push(['start', o]) },
+      pause: async () => { phone.calls.push(['pause']) },
+      resume: async () => { phone.calls.push(['resume']) },
+      end: async () => { phone.calls.push(['end']) },
+      drain: async () => { const events = phone.queue; phone.queue = []; return { events } },
+      snapshot: async () => phone.snapshot || null,
+      addListener: async (ev, cb) => { phone.listeners[ev] = cb; return { remove() {} } },
+    }
+    return new Proxy({}, { get: (_, prop) => (prop === 'then' ? () => {} : methods[prop]) })
+  },
 }))
 Object.defineProperty(navigator, 'geolocation', { configurable: true, value: { watchPosition: () => 1, clearWatch: () => {} } })
 
@@ -28,13 +36,16 @@ describe('the run recorded by the phone, end to end', () => {
     const { useStore } = await import('../store/useStore.js')
     await tick(); await tick()
     rec.startRun('run')
+    await tick()
     expect(phone.calls[0]?.[0]).toBe('start')
     const t0 = rec.useRun.getState().track.startedAt
     phone.queue.push(...Array.from({ length: 11 }, (_, i) => fixAt(i, t0 + 1000 + i * 30000)))
+    phone.snapshot = { running: true, distM: 1003, paceSec: 300, movingSec: 301, paused: false }
     phone.listeners.queued?.()
-    await tick(); await tick()
+    await tick(); await tick(); await tick()
     const t = rec.useRun.getState().track
     expect(t.dist).toBeGreaterThan(900)
+    expect(rec.useRun.getState().nat.distM).toBe(1003)
     const id = rec.finishRun()
     expect(id).toBeTruthy()
     expect(useStore.getState().S.runs[0].distM).toBeGreaterThan(900)

@@ -10,6 +10,7 @@ import { create } from 'zustand'
 import { useStore } from '../store/useStore.js'
 import { hasGps, addFix, startTrack, pauseTrack, resumeTrack, finishTrack, fmtPace, fmtKm, fmtClock, fmtSpeed, elapsedMs, movingMsNow, currentPace, paceOf, SPORTS, GOOD_ACC } from './run-track.js'
 import { bindNative, nativeActive, nativeStart, nativePause, nativeResume, nativeEnd } from './run-native.js'
+import { kcalOf } from './run-track.js'
 
 const LIVE = 'carga.run.live'
 const PREFS = 'carga.run.prefs'
@@ -22,6 +23,7 @@ export const useRun = create(() => ({
   gps: 'off',         // off | searching | ok | weak | denied | unsupported
   nativeFixes: 0,     // fixes the phone's own recorder handed over in this run (shown on the run screen)
   nativeAt: 0,        // when the last of them arrived
+  nat: null,          // the phone's own numbers { distM, paceSec, movingSec, paused, at }: what its lock-screen panel shows
   prefs: { type: 'run', voice: true, ...(read(PREFS) || {}) },
 }))
 
@@ -73,7 +75,7 @@ export function setPrefs(patch) {
 export function startRun(type) {
   const track = startTrack(type || useRun.getState().prefs.type)
   write(LIVE, track)
-  useRun.setState({ track, nativeFixes: 0, nativeAt: 0 })
+  useRun.setState({ track, nativeFixes: 0, nativeAt: 0, nat: null })
   if (!hasGps(track.type)) { say('Atividade iniciada'); showOnLock(); return }
   // the installed app: the phone records, with the lock-screen panel (lib/run-native.js)
   if (nativeActive()) nativeStart(track.type, SPORTS[track.type]?.name || 'Corrida')
@@ -109,6 +111,12 @@ export function finishRun() {
   const bw = Array.isArray(S.bodyweight) && S.bodyweight.length ? Number(S.bodyweight[S.bodyweight.length - 1].w) : 0
   const kg = bw > 0 ? (S.unit === 'lb' ? bw * 0.4536 : bw) : 70
   const run = finishTrack(st.track, { kg })
+  const nat = nativeActive() ? st.nat : null
+  if (nat && nat.distM > run.distM) {
+    run.distM = Math.round(nat.distM)
+    run.movingSec = Math.max(run.movingSec, Math.round(nat.movingSec))
+    run.kcal = kcalOf(run.type, run.distM, run.movingSec, kg)
+  }
   nativeEnd()
   write(LIVE, null)
   useRun.setState({ track: null })
@@ -244,4 +252,4 @@ export function applyNative(events) {
   }
 }
 // a run left recording when the app was closed: its queued fixes are applied as soon as the page loads
-bindNative(applyNative)
+bindNative(applyNative, s => useRun.setState({ nat: { distM: s.distM || 0, paceSec: s.paceSec || 0, movingSec: s.movingSec || 0, paused: !!s.paused, at: Date.now() } }))

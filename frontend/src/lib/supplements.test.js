@@ -16,12 +16,12 @@ describe('supplement reminders', () => {
     expect(n[0].schedule.at.getDate()).toBe(13)
   })
   it('says do / da right, and keeps BCAA and Vitamina D readable', () => {
-    const titles = ['whey', 'vitd', 'bcaa'].map(k => buildSupplementNotifications({ supplements: [{ ...newSupplement(k), every: 1, times: ['23:59'] }] }, at(2026, 11, 12))[0].title)
+    const titles = ['whey', 'vitd', 'bcaa'].map(k => buildSupplementNotifications({ supplements: [{ ...newSupplement(k, 'any', '2026-11-12'), every: 1, times: ['23:59'] }] }, at(2026, 11, 12))[0].title)
     expect(titles).toEqual(['Hora do whey 💊', 'Hora da vitamina D 💊', 'Hora do BCAA 💊'])
   })
   it('twice a day gives two reminders a day, ten hours apart by default', () => {
     expect(spreadTimes('08:00', 2)).toEqual(['08:00', '18:00'])
-    const s = { ...newSupplement('whey'), perDay: 2, times: ['09:00', '21:00'], every: 1 }
+    const s = { ...newSupplement('whey', 'any', '2026-11-12'), perDay: 2, times: ['09:00', '21:00'], every: 1 }
     const n = buildSupplementNotifications({ supplements: [s] }, at(2026, 11, 12))
     expect(n.filter(x => x.schedule.at.getDate() === 12).map(x => x.schedule.at.getHours())).toEqual([9, 21])
   })

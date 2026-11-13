@@ -22,6 +22,7 @@ public class RunTrackerPlugin: CAPPlugin, CAPBridgedPlugin, CLLocationManagerDel
         CAPPluginMethod(name: "resume", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "end", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "drain", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "snapshot", returnType: CAPPluginReturnPromise),
     ]
 
     private let manager = CLLocationManager()
@@ -65,6 +66,14 @@ public class RunTrackerPlugin: CAPPlugin, CAPBridgedPlugin, CLLocationManagerDel
         }
         lock.unlock()
         notifyListeners("queued", data: [:])
+    }
+
+    /// The phone's own distance, pace and moving time: what its Lock Screen panel shows.
+    @objc func snapshot(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            call.resolve(["running": self.running, "distM": self.distM, "paceSec": self.paceSec(),
+                          "movingSec": self.movingNow(), "paused": self.paused, "stopped": self.stopped])
+        }
     }
 
     @objc func drain(_ call: CAPPluginCall) {
