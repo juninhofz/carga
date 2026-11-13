@@ -51,8 +51,13 @@ public class RunTrackerPlugin: CAPPlugin, CAPBridgedPlugin, CLLocationManagerDel
     }
 
     // ---------------- the queue ----------------
+    private var mem: [[String: Any]] = []   // the same events in memory, in case the file fails
+
     private func queue(_ e: [String: Any]) {
         lock.lock()
+        mem.append(e)
+        if mem.count > 20000 { mem.removeFirst(mem.count - 20000) }
+        try? FileManager.default.createDirectory(at: queueURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         if let data = try? JSONSerialization.data(withJSONObject: e), var line = String(data: data, encoding: .utf8) {
             line += "\n"
             if let h = try? FileHandle(forWritingTo: queueURL) { h.seekToEndOfFile(); h.write(line.data(using: .utf8)!); try? h.close() }
@@ -71,6 +76,9 @@ public class RunTrackerPlugin: CAPPlugin, CAPBridgedPlugin, CLLocationManagerDel
             }
             try? FileManager.default.removeItem(at: queueURL)
         }
+        // the file holds everything memory holds; without it (it could not be written) memory answers
+        if out.isEmpty { out = mem }
+        mem = []
         lock.unlock()
         call.resolve(["events": out])
     }
@@ -107,6 +115,9 @@ public class RunTrackerPlugin: CAPPlugin, CAPBridgedPlugin, CLLocationManagerDel
     }
 
     private func begin() {
+        // again here, not only at load: without the delegate the GPS runs and nobody hears it
+        manager.delegate = self
+        RunControl.handler = { [weak self] what in self?.panel(what) }
         running = true; paused = false; stopped = false
         movingSec = 0; distM = 0; last = nil; recent = []
         runningSince = Date()

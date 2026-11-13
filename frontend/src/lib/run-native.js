@@ -45,6 +45,7 @@ export async function bindNative(apply) {
     App.addListener('appStateChange', s => { if (s.isActive) drain() })
   } catch { /* fine */ }
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') drain() })
+  setInterval(() => { if (document.visibilityState === 'visible') drain() }, 4000)
   drain()
   return true
 }

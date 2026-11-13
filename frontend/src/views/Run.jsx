@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { nativeActive } from '../lib/run-native.js'
 import { createPortal } from 'react-dom'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import StatusReveal, { StatusBadge } from '../components/StatusReveal.jsx'
@@ -131,13 +132,15 @@ function HoldButton({ onDone, children, className }) {
 
 function RunLive() {
   const nav = useNavigate()
-  const { track, fix, gps } = useRun()
+  const { track, fix, gps, nativeFixes } = useRun()
   const now = useNow(true, 500)
   const [view, setView] = useState('stats')
   useEffect(() => { if (track && hasGps(track.type)) watchGps() }, [])
   if (!track) return null
   const sport = SPORTS[track.type]
   const gpsOn = hasGps(track.type)
+  // the phone's own recorder: how many fixes it handed over (lib/run-native.js)
+  const nativeOn = nativeActive()
   const paused = track.status === 'paused'
   const moving = movingMsNow(track, now)
   const pace = currentPace(track, now)
@@ -166,7 +169,7 @@ function RunLive() {
   </div>
   return <div className={'run-live' + (paused ? ' paused' : '') + (view === 'map' ? ' mapview' : '')}>
     <div className="run-live-top">
-      <span className={'run-gps ' + gps}><i />{gps === 'ok' ? 'GPS' : gps === 'weak' ? 'Sinal fraco' : 'Sem GPS'}</span>
+      <span className={'run-gps ' + gps}><i />{gps === 'ok' ? 'GPS' : gps === 'weak' ? 'Sinal fraco' : 'Sem GPS'}{nativeOn ? ' · celular ' + nativeFixes : ''}</span>
       <b>{sport.name}</b>
       <button type="button" className="run-toggle" onClick={() => setView(view === 'map' ? 'stats' : 'map')}>{view === 'map' ? 'Números' : 'Mapa'}</button>
     </div>

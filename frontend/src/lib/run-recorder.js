@@ -20,6 +20,8 @@ export const useRun = create(() => ({
   track: read(LIVE),
   fix: null,          // the last raw fix { lat, lng, acc, t }
   gps: 'off',         // off | searching | ok | weak | denied | unsupported
+  nativeFixes: 0,     // fixes the phone's own recorder handed over in this run (shown on the run screen)
+  nativeAt: 0,        // when the last of them arrived
   prefs: { type: 'run', voice: true, ...(read(PREFS) || {}) },
 }))
 
@@ -27,7 +29,8 @@ let watchId = null
 let savedAt = 0
 
 function onFix(pos) {
-  if (nativeActive() && useRun.getState().track) return   // the phone records (lib/run-native.js)
+  // the phone records (lib/run-native.js); the browser's fixes stand in while it sends none
+  if (nativeActive() && useRun.getState().track && Date.now() - (useRun.getState().nativeAt || 0) < 15000) return
   const c = pos.coords
   const fix = { lat: c.latitude, lng: c.longitude, acc: c.accuracy, alt: c.altitude ?? undefined, t: pos.timestamp || Date.now() }
   const st = useRun.getState()
@@ -70,7 +73,7 @@ export function setPrefs(patch) {
 export function startRun(type) {
   const track = startTrack(type || useRun.getState().prefs.type)
   write(LIVE, track)
-  useRun.setState({ track })
+  useRun.setState({ track, nativeFixes: 0, nativeAt: 0 })
   if (!hasGps(track.type)) { say('Atividade iniciada'); showOnLock(); return }
   // the installed app: the phone records, with the lock-screen panel (lib/run-native.js)
   if (nativeActive()) nativeStart(track.type, SPORTS[track.type]?.name || 'Corrida')
@@ -111,7 +114,11 @@ export function finishRun() {
   useRun.setState({ track: null })
   releaseGps()
   lockOff()
-  if (run.distM < 10 && run.movingSec < 10) return null
+  if (run.distM < 10 && run.movingSec < 10) {
+    // no GPS distance came in: an activity of a minute or more is still kept, with its time
+    if ((run.elapsedSec || 0) < 60) return null
+    run.movingSec = run.elapsedSec
+  }
   useStore.getState().update(s => { s.runs = [run, ...(Array.isArray(s.runs) ? s.runs : []).filter(r => r.id !== run.id)] })
   return run.id
 }
@@ -216,18 +223,19 @@ export function applyNative(events) {
   let st = useRun.getState()
   let track = st.track
   if (!track) return
-  let fix = st.fix, gps = st.gps, stop = false
+  let fix = st.fix, gps = st.gps, stop = false, got = 0
   const before = track.splits.length
   for (const e of events) {
     if (e.kind === 'fix') {
       fix = { lat: e.lat, lng: e.lng, acc: e.acc, alt: e.alt ?? undefined, t: e.t }
+      got++
       gps = e.acc <= GOOD_ACC ? 'ok' : 'weak'
       if (track.status === 'running') track = addFix(track, fix).track
     } else if (e.kind === 'pause' && track.status === 'running') track = pauseTrack(track, e.t)
     else if (e.kind === 'resume' && track.status === 'paused') track = resumeTrack(track, e.t)
     else if (e.kind === 'stop') { if (track.status === 'running') track = pauseTrack(track, e.t); stop = true }
   }
-  useRun.setState({ track, fix, gps })
+  useRun.setState(got ? { track, fix, gps, nativeFixes: (st.nativeFixes || 0) + got, nativeAt: Date.now() } : { track, fix, gps })
   write(LIVE, track)
   if (track.splits.length > before) announce(track)
   if (stop) {
